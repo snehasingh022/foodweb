@@ -22,7 +22,7 @@ interface RootState {
   value: number;
 }
 
-function renderActiveShape(props:RootState) {
+function renderActiveShape(props:any) {
   const RADIAN = Math.PI / 180;
   const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
   const sin = Math.sin(-RADIAN * midAngle);

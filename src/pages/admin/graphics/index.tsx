@@ -1,24 +1,22 @@
+import dynamic from 'next/dynamic';
+
+// The entire component is now wrapped in dynamic import with ssr: false
+// This ensures Next.js doesn't try to render it on the server
+export default dynamic(() => Promise.resolve(Graphics), { ssr: false });
+
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Select, message, Spin } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined } from '@ant-design/icons';
-import { db, analytics } from '../../../authentication/firebase';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  setDoc, 
-  serverTimestamp,
-  addDoc
+
+// Import types for TypeScript but not the actual implementation
+import type { 
+  DocumentData, 
+  DocumentReference, 
+  CollectionReference 
 } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const { Option } = Select;
-
-const storage = getStorage();
 
 interface ArchiveImage {
   id: string;
@@ -52,6 +50,9 @@ function Graphics() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [firebaseInitialized, setFirebaseInitialized] = useState(false);
+  const [db, setDb] = useState<any>(null);
+  const [storage, setStorage] = useState<any>(null);
 
   const PageRoutes = [
     {
@@ -94,14 +95,49 @@ function Graphics() {
     ? partnerScreenOptions 
     : userScreenOptions;
 
+  // Initialize Firebase on client-side only
   useEffect(() => {
-    fetchSliderImages();
-    fetchArchiveImages();
-  }, [currentCarousel]);
+    const initializeFirebase = async () => {
+      try {
+        // Dynamically import Firebase modules
+        const firebaseAuth = await import('../../../authentication/firebase');
+        const fireStorage = await import('firebase/storage');
+        
+        if (firebaseAuth.db) {
+          setDb(firebaseAuth.db);
+          setStorage(fireStorage.getStorage());
+          setFirebaseInitialized(true);
+        }
+      } catch (error) {
+        console.error('Failed to initialize Firebase:', error);
+        message.error('Failed to connect to database');
+      }
+    };
+
+    initializeFirebase();
+  }, []);
+
+  useEffect(() => {
+    if (firebaseInitialized) {
+      fetchSliderImages();
+      fetchArchiveImages();
+    }
+  }, [firebaseInitialized, currentCarousel]);
 
   const fetchSliderImages = async () => {
+    if (!firebaseInitialized) return;
+    
     setLoading(true);
     try {
+      if (!db) {
+        console.error('Firestore is not initialized');
+        message.error('Database connection error');
+        setLoading(false);
+        return;
+      }
+
+      // Dynamic import of Firestore functions
+      const { doc, getDoc } = await import('firebase/firestore');
       const docRef = doc(db, 'sliderImages', currentCarousel);
       const docSnapshot = await getDoc(docRef);
 
@@ -120,7 +156,16 @@ function Graphics() {
   };
 
   const fetchArchiveImages = async () => {
+    if (!firebaseInitialized) return;
+    
     try {
+      if (!db) {
+        console.error('Firestore is not initialized');
+        return;
+      }
+
+      // Dynamic import of Firestore functions
+      const { collection, getDocs } = await import('firebase/firestore');
       const archiveRef = collection(db, 'archive');
       const querySnapshot = await getDocs(archiveRef);
       const archiveData = querySnapshot.docs.map(doc => ({
@@ -135,6 +180,12 @@ function Graphics() {
 
   const handleImageUpload = async (file: File, collectionId: string): Promise<string> => {
     try {
+      if (!storage) {
+        throw new Error('Firebase storage is not initialized');
+      }
+
+      // Dynamic import of Storage functions
+      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
       const storageRef = ref(storage, `/adminPanel/sliderImages/${collectionId}/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
@@ -147,6 +198,14 @@ function Graphics() {
 
   const handleImageUploadToArchive = async (file: File): Promise<string> => {
     try {
+      if (!db || !storage) {
+        throw new Error('Firebase is not fully initialized');
+      }
+
+      // Dynamic import of functions
+      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      
       const storageRef = ref(storage, `adminPanel/archive/images/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
@@ -167,6 +226,11 @@ function Graphics() {
   };
 
   const handleAddImage = async () => {
+    if (!firebaseInitialized) {
+      message.error('Firebase is not initialized yet');
+      return;
+    }
+    
     if (!selectedDestination) {
       message.error('Please select a destination');
       return;
@@ -174,6 +238,11 @@ function Graphics() {
 
     try {
       setLoading(true);
+      
+      if (!db) {
+        throw new Error('Firestore is not initialized');
+      }
+      
       const sliderImageId = currentCarousel;
       
       let imageURL = '';
@@ -192,6 +261,9 @@ function Graphics() {
         return;
       }
 
+      // Dynamic import of Firestore functions
+      const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+      
       const newImageData = {
         imageUrl: imageURL,
         carouselName: currentCarousel,
@@ -230,8 +302,21 @@ function Graphics() {
   };
 
   const handleDeleteImage = async (index: number) => {
+    if (!firebaseInitialized) {
+      message.error('Firebase is not initialized yet');
+      return;
+    }
+    
     try {
       setLoading(true);
+      
+      if (!db) {
+        throw new Error('Firestore is not initialized');
+      }
+      
+      // Dynamic import of Firestore functions
+      const { doc, getDoc, updateDoc } = await import('firebase/firestore');
+      
       const docRef = doc(db, 'sliderImages', currentCarousel);
       const docSnapshot = await getDoc(docRef);
 
@@ -265,6 +350,11 @@ function Graphics() {
   };
 
   const handleImageArchiveChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!firebaseInitialized) {
+      message.error('Firebase is not initialized yet');
+      return;
+    }
+    
     const file = e.target.files?.[0];
     if (file) {
       try {
@@ -280,6 +370,15 @@ function Graphics() {
     setImagePreview(url);
     setUploadDialogOpen(false);
   };
+
+  // Display loading state if Firebase is not yet initialized
+  if (!firebaseInitialized) {
+    return (
+      <div className="flex justify-center items-center min-h-[500px]">
+        <Spin size="large" tip="Connecting to database..." />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -593,6 +692,4 @@ function Graphics() {
       </Modal>
     </>
   );
-}
-
-export default Graphics; 
+} 

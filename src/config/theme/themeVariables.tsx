@@ -47,6 +47,7 @@ const btnsm = '38px';
 const btnxs = '32px';
 
 const theme = {
+  rtl: false,
   lightMode,
   darkMode,
   'primary-color': primaryColor, // primary color for all components

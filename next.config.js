@@ -15,6 +15,11 @@ const nextConfig = {
   images: {
     domains: ['lh3.googleusercontent.com'],
   },
+  // Disable trace generation to prevent EPERM errors
+  distDir: '.next-custom',
+  generateBuildId: async () => {
+    return 'build-id'
+  },
 }
 
 module.exports = nextConfig

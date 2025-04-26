@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import KnowledgeBaseTop from './overview/KnowledgeBaseTop';
 import { PageHeaders } from '@/components/page-headers';
 
-const PopularArticle = dynamic(() => import('./overview/PopularArticle'), {
+const PopularArticle = dynamic(() => import('@/components/knowledgeBase/PopularArticle'), {
   loading: () => (
     <>
       <Skeleton active />

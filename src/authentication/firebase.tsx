@@ -1,8 +1,8 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
+import { getFirestore, Firestore } from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -19,15 +19,32 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let auth:any;
-let analytics:any;
-let db:any;
+let app: FirebaseApp;
+let auth: Auth;
+let analytics: Analytics | null;
+let db: Firestore;
 
+// Initialize Firebase only on the client side and if it hasn't been initialized already
 if (typeof window !== "undefined") {
-  const app = initializeApp(firebaseConfig);
-  auth = getAuth(app); // Initialize auth only on the client side
-  analytics = getAnalytics(app); // Initialize analytics only on the client side
-  db = getFirestore(app); // Initialize Firestore
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApps()[0]; // Use the already initialized app
+  }
+  
+  auth = getAuth(app);
+  db = getFirestore(app);
+  
+  // Initialize analytics only if supported
+  const initAnalytics = async () => {
+    if (await isSupported()) {
+      analytics = getAnalytics(app);
+    } else {
+      analytics = null;
+    }
+  };
+  
+  initAnalytics().catch(console.error);
 }
 
-export { auth, analytics, db };
+export { auth, analytics, db, app };

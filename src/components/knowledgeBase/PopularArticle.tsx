@@ -43,7 +43,7 @@ function PopularArticle () {
           Still no luck? We can help!
         </h2>
         <p className="mb-[30px] text-body dark:text-white/60 text-[15px] font-normal">
-          Contact us and we’ll get back to you as soon as possible.
+          Contact us and we'll get back to you as soon as possible.
         </p>
         <Buttons className="bg-primary text-white mx-auto px-8 h-[50px] text-sm font-medium" type="primary" size="large">
           Submit a Request
@@ -53,4 +53,4 @@ function PopularArticle () {
   );
 }
 
-export default PopularArticle;
+export default PopularArticle; 
