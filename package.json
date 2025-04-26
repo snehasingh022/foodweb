@@ -10,7 +10,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "node patch-react-responsive-masonry.js"
   },
   "dependencies": {
     "@ant-design/compatible": "^5.1.2",
