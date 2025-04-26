@@ -6,6 +6,7 @@ import { ThemeProvider } from 'styled-components';
 import Footer from '@/layout/footer';
 import Sidebar from '@/layout/sidebar';
 import HeaderTop from '@/layout/header';
+import { useAuth } from '@/authentication/AuthContext';
 
 const { Content } = Layout;
 
@@ -37,6 +38,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     };
   });
 
+  const { currentUser, isAdmin } = useAuth();
+
   if(mainContent === 'darkMode') {
     document.body.classList.add('dark');
     document.body.classList.add('dark');
@@ -58,7 +61,12 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     if (!isLoggedIn && !router.pathname.startsWith('/login') && !router.pathname.startsWith('/register') && !router.pathname.startsWith('/forgot-password')) {
       router.push('/');
     }
-  }, [router]);
+    
+    // If the user is logged in but not an admin, redirect to login page
+    if (isLoggedIn && currentUser && !isAdmin) {
+      router.push('/');
+    }
+  }, [router, isLoggedIn, currentUser, isAdmin]);
   
   return (
     <ThemeProvider theme={theme}>

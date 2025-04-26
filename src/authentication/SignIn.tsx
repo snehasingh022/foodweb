@@ -41,16 +41,27 @@ function SignIn() {
 
   const handleLogin = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      await login(data.email, data.password)
-      setError("");
       setLoading(true);
+      await login(data.email, data.password);
+      setError("");
       // @ts-ignore
       dispatch(logInAction(() => router.push('/admin')));
-      console.log('Succesfully Logged In!');
-    } catch (err) {
+      console.log('Successfully Logged In!');
+    } catch (err: any) {
       console.log(err);
       setLoading(false);
-      setError("Failed to Login!");
+      // Check for specific error messages
+      if (err.message && err.message.includes("Unauthorized")) {
+        setError("Unauthorized: You are not registered as an admin");
+      } else if (err.code === "auth/user-not-found") {
+        setError("User not found. Please check your email.");
+      } else if (err.code === "auth/wrong-password") {
+        setError("Invalid password. Please try again.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Too many failed login attempts. Please try again later.");
+      } else {
+        setError("Failed to login. Please check your credentials.");
+      }
     }
   }
 

@@ -42,6 +42,20 @@ import {
   UilUsersAlt,
   UilWindowSection,
   UilEllipsisV,
+  UilTicket,
+  UilMoneyBill,
+  UilTagAlt,
+  UilUsersAlt as UilTeam,
+  UilPlaneDeparture,
+  UilShip,
+  UilCreateDashboard as UilCustomTours,
+  UilHeadphones as UilHelpdesk,
+  UilComment,
+  UilNewspaper,
+  UilTag,
+  UilApps,
+  UilImageV,
+  UilPalette,
 } from '@iconscout/react-unicons';
 import React, { useState, useEffect } from 'react';
 import { Menu } from 'antd';
@@ -50,6 +64,7 @@ import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import versions from '../demoData/changelog.json';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAuth } from '../authentication/AuthContext';
 
 import { changeMenuMode, changeDirectionMode, changeLayoutMode } from '../redux/themeLayout/actionCreator';
 
@@ -57,6 +72,18 @@ function MenuItems() {
 
     const path = '/admin';
     const { t } = useTranslation();
+    const { currentUser } = useAuth();
+    
+    // Determine if user is helpdesk role
+    const [userRole, setUserRole] = useState('');
+    
+    useEffect(() => {
+      if (currentUser?.role) {
+        setUserRole(currentUser.role);
+      }
+    }, [currentUser]);
+
+    const isHelpdesk = userRole === 'helpdesk';
 
     interface RootState {
       ChangeLayoutMode: {
@@ -155,25 +182,240 @@ function MenuItems() {
         };
     }
 
-    const items = [
-        getItem(t('dashboard'), 'dashboard', !topMenu && <UilCreateDashboard />, [
-          getItem(
-            <Link href={`${path}`}>
-              {t('demo')} {t('1')}
-            </Link>,
-            'demo-1',
-            null,
-            null,
+    // Create only the dashboard and support items for helpdesk users
+    const helpdeskItems = [
+        // Dashboard (minimal version)
+        getItem(
+          <Link href={`${path}`}>
+            {t('Dashboard')}
+          </Link>,
+          'dashboard-main',
+          !topMenu && <UilCreateDashboard />,
+          null,
+        ),
+        
+        // SECTION: SUPPORT (Only section accessible to helpdesk users)
+        getItem(
+          !topMenu && (
+            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
+              {t('Support')}
+            </p>
           ),
-          getItem(
-            <Link href={`${path}/demo-2`}>
-              {t('demo')} {t('2')}
-            </Link>,
-            'demo-2',
-            null,
-            null,
+          'support-title',
+          null,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/helpdesk`}>
+            {t('Helpdesk')}
+          </Link>,
+          'helpdesk',
+          !topMenu && <UilHelpdesk />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/queries`}>
+            {t('Queries')}
+          </Link>,
+          'queries',
+          !topMenu && <UilComment />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/support/tickets`}>
+            {t('support')}
+          </Link>,
+          'support',
+          !topMenu && <UilHeadphones />,
+          null,
+        ),
+    ];
+
+    // The full menu items for admin and other roles
+    const adminItems = [
+        // SECTION 1: MAIN MENU
+        getItem(
+          !topMenu && (
+            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
+              {t('Main Menu')}
+            </p>
           ),
-        ]),
+          'main-menu-title',
+          null,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}`}>
+            {t('Dashboard')}
+          </Link>,
+          'dashboard-main',
+          !topMenu && <UilCreateDashboard />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/users`}>
+            {t('Users')}
+          </Link>,
+          'users',
+          !topMenu && <UilUsersAlt />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/bookings`}>
+            {t('Bookings')}
+          </Link>,
+          'bookings',
+          !topMenu && <UilCalendarAlt />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/payments`}>
+            {t('Payments')}
+          </Link>,
+          'payments',
+          !topMenu && <UilMoneyBill />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/coupons`}>
+            {t('Coupons')}
+          </Link>,
+          'coupons',
+          !topMenu && <UilTagAlt />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/team`}>
+            {t('Team')}
+          </Link>,
+          'team',
+          !topMenu && <UilTeam />,
+          null,
+        ),
+        
+        // SECTION 2: TOURS
+        getItem(
+          !topMenu && (
+            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
+              {t('Tours')}
+            </p>
+          ),
+          'tours-title',
+          null,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/tours`}>
+            {t('Tours')}
+          </Link>,
+          'tours',
+          !topMenu && <UilPlaneDeparture />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/cruises`}>
+            {t('Cruises')}
+          </Link>,
+          'cruises',
+          !topMenu && <UilShip />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/custom-tours`}>
+            {t('Custom Tours')}
+          </Link>,
+          'custom-tours',
+          !topMenu && <UilCustomTours />,
+          null,
+        ),
+        
+        // SECTION 3: SUPPORT
+        getItem(
+          !topMenu && (
+            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
+              {t('Support')}
+            </p>
+          ),
+          'support-title',
+          null,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/helpdesk`}>
+            {t('Helpdesk')}
+          </Link>,
+          'helpdesk',
+          !topMenu && <UilHelpdesk />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/queries`}>
+            {t('Queries')}
+          </Link>,
+          'queries',
+          !topMenu && <UilComment />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/support/tickets`}>
+            {t('support')}
+          </Link>,
+          'support',
+          !topMenu && <UilHeadphones />,
+          null,
+        ),
+        
+        // SECTION 4: MEDIA
+        getItem(
+          !topMenu && (
+            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
+              {t('Media')}
+            </p>
+          ),
+          'media-title',
+          null,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/blogs`}>
+            {t('Blogs')}
+          </Link>,
+          'blogs',
+          !topMenu && <UilNewspaper />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/tags`}>
+            {t('Tags')}
+          </Link>,
+          'tags',
+          !topMenu && <UilTag />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/categories`}>
+            {t('Categories')}
+          </Link>,
+          'categories',
+          !topMenu && <UilApps />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/media`}>
+            {t('Media')}
+          </Link>,
+          'media',
+          !topMenu && <UilImageV />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/graphics`}>
+            {t('Graphics')}
+          </Link>,
+          'graphics',
+          !topMenu && <UilPalette />,
+          null,
+        ),
         getItem(t('layouts'), 'layout', !topMenu && <UilWindowSection />, [
           getItem(
             <Link
@@ -262,7 +504,7 @@ function MenuItems() {
             <span className="badge badge-primary menuItem">{versions[0].version}</span>
           </Link>,
           'changelog',
-          !topMenu && <UilArrowGrowth />,
+          !topMenu,
           null,
         ),
         getItem(
@@ -1345,6 +1587,9 @@ function MenuItems() {
           null,
         ),
     ];
+    
+    // Select the appropriate items based on user role
+    const items = isHelpdesk ? helpdeskItems : adminItems;
 
     return (
         <Menu

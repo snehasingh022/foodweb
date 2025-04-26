@@ -17,6 +17,7 @@ import { PageHeaders } from '@/components/page-headers';
 import { Buttons } from '@/components/buttons';
 import { idGenerator } from '@/utility';
 import { ticketReadData, ticketUpdateData, ticketUpdateSearch } from '@/redux/supportTickets/actionCreator';
+import RoleWrapper from '@/components/RoleWrapper';
 
 const OverviewDataList = dynamic(() => import('../overview/OverviewDataList'), {
   loading: () => (
@@ -361,4 +362,10 @@ function SupportTicket() {
   );
 }
 
-export default SupportTicket;
+export default function SupportTicketPage() {
+  return (
+    <RoleWrapper allowedRoles={['admin', 'helpdesk']}>
+      <SupportTicket />
+    </RoleWrapper>
+  );
+}

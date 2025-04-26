@@ -9,7 +9,7 @@ import {
 } from '@iconscout/react-unicons';
 import { useRouter } from 'next/router';
 import Picker from 'emoji-picker-react';
-import Avatar from 'antd/lib/avatar/avatar';
+import { Avatar } from 'antd';
 import { Col, List, Row, Select, Spin } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { PageHeaders } from '@/components/page-headers';
@@ -18,6 +18,7 @@ import { singlePageReade, ticketUpdateData } from '@/redux/supportTickets/action
 import { Buttons } from '@/components/buttons';
 import { idGenerator } from '@/utility';
 import data from '@/demoData/supportData.json';
+import RoleWrapper from '@/components/RoleWrapper';
 
 const PageRoutes = [
   {
@@ -329,4 +330,10 @@ function SupportTicketDetails() {
   );
 }
 
-export default SupportTicketDetails;
+export default function SupportTicketDetailsPage() {
+  return (
+    <RoleWrapper allowedRoles={['admin', 'helpdesk']}>
+      <SupportTicketDetails />
+    </RoleWrapper>
+  );
+}

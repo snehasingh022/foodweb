@@ -1,28 +1,33 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_PUBLIC_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyBmmVS6bpeMW9UyYMPHV7yOczlid7krb00",
+  authDomain: "pruthvi-travels-6d10a.firebaseapp.com",
+  projectId: "pruthvi-travels-6d10a",
+  storageBucket: "pruthvi-travels-6d10a.firebasestorage.app",
+  messagingSenderId: "1066483473483",
+  appId: "1:1066483473483:web:07ec9b6e61fcd1f6c001ce",
+  measurementId: "G-YCEVPRPPZH"
 };
 
 // Initialize Firebase
-let auth:any; 
+let auth:any;
+let analytics:any;
+let db:any;
 
 if (typeof window !== "undefined") {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app); // Initialize auth only on the client side
+  analytics = getAnalytics(app); // Initialize analytics only on the client side
+  db = getFirestore(app); // Initialize Firestore
 }
 
-export { auth };
+export { auth, analytics, db };

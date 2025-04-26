@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic'
 import { Row, Col, Skeleton } from 'antd';
 import { PageHeaders } from '@/components/page-headers';
+import { useAuth } from '@/authentication/AuthContext';
 
 const OverviewDataList = dynamic(() => import('@/dashboard/demo-1/OverviewDataList'), {
   loading: () => (
@@ -46,6 +47,7 @@ const BrowserState = dynamic(() => import('@/dashboard/demo-1/BrowserState'), {
 });
 
 const DemoOne = () => {
+  const { currentUser, isAdmin } = useAuth();
 
   const PageRoutes = [
     {
@@ -64,6 +66,13 @@ const DemoOne = () => {
         title="Dashboard"
         className="flex items-center justify-between px-8 xl:px-[15px] pt-[18px] pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
       />
+      {currentUser && (
+        <div className="flex items-center px-8 mb-4">
+          <div className={`py-2 px-4 rounded-md ${isAdmin ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {isAdmin ? 'Admin Access Verified' : 'Not Authorized as Admin'} - {currentUser.email}
+          </div>
+        </div>
+      )}
       <div className="min-h-[715px] lg:min-h-[580px] flex-1 h-auto px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col xxl={12} xs={24}>
