@@ -92,7 +92,7 @@ function SignIn() {
       <Col xxl={6} xl={8} md={12} sm={18} xs={24}>
         <div className="mt-6 bg-white rounded-md dark:bg-white/10 shadow-regular dark:shadow-none">
           <div className="px-5 py-4 text-center border-b border-gray-200 dark:border-white/10">
-            <h2 className="mb-0 text-xl font-semibold text-dark dark:text-white/[.87]">Sign in HexaDash</h2>
+            <h2 className="mb-0 text-xl font-semibold text-dark dark:text-white/[.87]">Sign in Pruthvi Travels</h2>
           </div>
           <div className="px-10 pt-8 pb-6">
             <Form name="login" form={form} onFinish={handleLogin} layout="vertical">
