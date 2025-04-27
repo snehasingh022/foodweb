@@ -11,9 +11,8 @@ import {
   Typography, 
   Input,
   message,
-  Spin,
+  Spin
 } from 'antd';
-import type { Breakpoint } from 'antd/es/_util/responsiveObserver';
 import { 
   SearchOutlined, 
   EyeOutlined, 
@@ -133,29 +132,25 @@ function Queries() {
       key: 'queryID',
       width: 120,
       render: (text: string) => <Text copyable>{text}</Text>,
-      responsive: ['md', 'lg', 'xl'] as Breakpoint[],
     },
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
       render: (text: string) => <span className="font-medium">{text}</span>,
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'] as Breakpoint[],
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-      responsive: ['lg', 'xl'] as Breakpoint[],
     },
     {
       title: 'Subject',
       dataIndex: 'subject',
       key: 'subject',
       render: (text: string) => (
-        <span className="truncate block max-w-xs sm:max-w-[250px]">{text}</span>
+        <span className="truncate block max-w-[250px]">{text}</span>
       ),
-      responsive: ['sm', 'md', 'lg', 'xl'] as Breakpoint[],
     },
     {
       title: 'Date',
@@ -171,7 +166,6 @@ function Queries() {
             })
           : 'N/A';
       },
-      responsive: ['md', 'lg', 'xl'] as Breakpoint[],
     },
     {
       title: 'Status',
@@ -188,7 +182,6 @@ function Queries() {
         }
         return <Tag color={color}>{status?.toUpperCase() || 'ACTIVE'}</Tag>;
       },
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'] as Breakpoint[],
     },
     {
       title: 'Actions',
@@ -212,40 +205,44 @@ function Queries() {
   return (
     <>
       <PageHeaders
-        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
+        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
         title="Customer Queries"
         routes={PageRoutes}
       />
-      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-4 sm:p-[25px]">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Query Management</h2>
-                    <Input
-                      className="w-full sm:w-64"
-                      placeholder="Search by name, email, ID, or subject"
-                      prefix={<SearchOutlined className="mr-2" />}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      allowClear
-                    />
+                <div className="p-[25px]">
+                  <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                    <Title level={4} className="mb-0 text-dark dark:text-white/[.87]">
+                      All Customer Queries
+                    </Title>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        placeholder="Search queries..." 
+                        prefix={<SearchOutlined />} 
+                        onChange={e => handleSearch(e.target.value)}
+                        className="min-w-[280px]"
+                      />
+                      <Button 
+                        type="primary" 
+                        onClick={fetchQueries}
+                      >
+                        Refresh
+                      </Button>
+                    </div>
                   </div>
                   
-                  <div className="overflow-x-auto">
-                    <Table 
-                      dataSource={filteredQueries} 
-                      columns={columns} 
+                  <div className="table-responsive">
+                    <Table
+                      columns={columns}
+                      dataSource={filteredQueries}
+                      pagination={{ pageSize: 10 }}
                       loading={loading}
-                      pagination={{ 
-                        pageSize: 10,
-                        showSizeChanger: false,
-                        responsive: true,
-                      }}
-                      rowKey="id"
-                      className="responsive-table"
-                      scroll={{ x: 'max-content' }}
+                      bordered={false}
+                      className="[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-regularBG dark:[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-[#323440] [&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:font-medium"
                     />
                   </div>
                 </div>
@@ -255,107 +252,109 @@ function Queries() {
         </Row>
       </main>
 
+      {/* Query Details Modal */}
       <Modal
-        title="Query Details"
+        title={<Title level={4}>Query Details</Title>}
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
-        footer={null}
-        width="95%"
-        style={{ maxWidth: '700px' }}
-        className="responsive-modal"
+        footer={[
+          <Button key="back" onClick={() => setDetailModalVisible(false)}>
+            Close
+          </Button>,
+          currentQuery?.status !== 'resolved' && (
+            <Button 
+              key="resolve" 
+              type="primary" 
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleStatusChange('resolved')}
+              loading={statusUpdateLoading && currentQuery?.status !== 'resolved'}
+            >
+              Mark as Resolved
+            </Button>
+          ),
+          currentQuery?.status !== 'rejected' && (
+            <Button 
+              key="reject" 
+              danger
+              icon={<CloseCircleOutlined />}
+              onClick={() => handleStatusChange('rejected')}
+              loading={statusUpdateLoading && currentQuery?.status !== 'rejected'}
+            >
+              Reject
+            </Button>
+          ),
+        ]}
+        width={700}
       >
-        {currentQuery && (
-          <div className="p-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {currentQuery ? (
+          <div className="py-4">
+            <Spin spinning={statusUpdateLoading}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Text type="secondary">Query ID:</Text>
+                  <div>
+                    <Text copyable strong>{currentQuery.queryID}</Text>
+                  </div>
+                </div>
+                <div>
+                  <Text type="secondary">Status:</Text>
+                  <div>
+                    <Tag color={
+                      currentQuery.status === 'resolved' ? 'green' : 
+                      currentQuery.status === 'rejected' ? 'red' : 
+                      currentQuery.status === 'pending' ? 'orange' : 'blue'
+                    }>
+                      {currentQuery.status?.toUpperCase() || 'ACTIVE'}
+                    </Tag>
+                  </div>
+                </div>
+                <div>
+                  <Text type="secondary">Name:</Text>
+                  <div>
+                    <Text strong>{currentQuery.name}</Text>
+                  </div>
+                </div>
+                <div>
+                  <Text type="secondary">Email:</Text>
+                  <div>
+                    <Text strong>{currentQuery.email}</Text>
+                  </div>
+                </div>
+                <div>
+                  <Text type="secondary">Phone:</Text>
+                  <div>
+                    <Text strong>{currentQuery.phone || 'N/A'}</Text>
+                  </div>
+                </div>
+                <div>
+                  <Text type="secondary">Date:</Text>
+                  <div>
+                    <Text strong>
+                      {currentQuery.createdAt?.toDate ? 
+                        currentQuery.createdAt.toDate().toLocaleString() : 
+                        new Date(currentQuery.createdAt).toLocaleString()}
+                    </Text>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <Text type="secondary">Subject:</Text>
+                <div>
+                  <Text strong>{currentQuery.subject}</Text>
+                </div>
+              </div>
+              
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Query ID</p>
-                <p className="font-medium"><Text copyable>{currentQuery.queryID}</Text></p>
+                <Text type="secondary">Message:</Text>
+                <div className="mt-2 p-4 bg-regularBG dark:bg-[#323440] rounded-md">
+                  <Text>{currentQuery.message}</Text>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Date</p>
-                <p>
-                  {(() => {
-                    const date = currentQuery.createdAt?.toDate 
-                      ? currentQuery.createdAt.toDate() 
-                      : new Date(currentQuery.createdAt);
-                    return date instanceof Date && !isNaN(date.getTime())
-                      ? date.toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
-                      : 'N/A';
-                  })()}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Name</p>
-                <p className="font-medium">{currentQuery.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Email</p>
-                <p>{currentQuery.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Phone</p>
-                <p>{currentQuery.phone || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                <p>
-                  <Tag color={
-                    currentQuery.status === 'resolved' ? 'green' :
-                    currentQuery.status === 'pending' ? 'orange' :
-                    currentQuery.status === 'rejected' ? 'red' : 'blue'
-                  }>
-                    {currentQuery.status?.toUpperCase() || 'ACTIVE'}
-                  </Tag>
-                </p>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Subject</p>
-              <p className="font-medium">{currentQuery.subject}</p>
-            </div>
-            
-            <div className="mb-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Message</p>
-              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                {currentQuery.message}
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap gap-2 justify-end">
-              <Button
-                type="default"
-                onClick={() => setDetailModalVisible(false)}
-              >
-                Close
-              </Button>
-              <Button 
-                type="primary" 
-                icon={<CheckCircleOutlined />}
-                className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
-                onClick={() => handleStatusChange('resolved')}
-                loading={statusUpdateLoading && currentQuery.status !== 'resolved'}
-                disabled={currentQuery.status === 'resolved'}
-              >
-                Mark as Resolved
-              </Button>
-              <Button 
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleStatusChange('rejected')}
-                loading={statusUpdateLoading && currentQuery.status !== 'rejected'}
-                disabled={currentQuery.status === 'rejected'}
-              >
-                Reject
-              </Button>
-            </div>
+            </Spin>
           </div>
+        ) : (
+          <Spin />
         )}
       </Modal>
     </>
