@@ -1,5 +1,4 @@
 import { DateRangePickerOne } from '@/components/datePicker';
-import { UilCalender } from '@iconscout/react-unicons';
 import { Buttons } from '@/components/buttons';
 import PopOver from '@/components/popup';
 
@@ -13,7 +12,6 @@ function CalendarButtonPageHeader() {
         size="small"
         type="white"
       >
-        <UilCalender className="w-[14px] h-[14px] text-primary" />
         Calendar
       </Buttons>
     </PopOver>

@@ -6,7 +6,6 @@ import {
   UilShoppingCart,
   Uil500px,
   UilBagAlt,
-  UilCalendarAlt,
   UilUsersAlt,
   UilAt,
   UilClipboardAlt,
@@ -211,7 +210,6 @@ function TopMenu() {
 
               <li>
                 <Link onClick={addParentActive} href={`${path}/app/calendar/month`}>
-                  <UilCalendarAlt />
                   Calendar
                 </Link>
               </li>

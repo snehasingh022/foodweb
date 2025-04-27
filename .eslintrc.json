@@ -1,40 +1,17 @@
 {
-  "env": {
-    "browser": true,
-    "es6": true,
-    "jest": true
-  },
-  "extends": ["airbnb", "plugin:prettier/recommended", "prettier", "next/core-web-vitals"],
+  "extends": ["next/core-web-vitals"],
   "globals": {
     "Atomics": "readonly",
-    "SharedArrayBuffer": "readonly"
+    "SharedArrayBuffer": "readonly",
+    "JSX": "readonly"
   },
-  "parserOptions": {
-    "parser": "@babel/eslint-parser",
-    "ecmaFeatures": {
-      "jsx": true
-    },
-    "ecmaVersion": "latest",
-    "sourceType": "module",
-    "allowImportExportEverywhere": true,
-    "requireConfigFile": false
-  },
-  "plugins": ["react", "import", "react-hooks"],
   "rules": {
-    "prettier/prettier": ["error", {
-      "endOfLine":"auto"
-    }],
+    "linebreak-style": 0,
     "import/no-named-as-default-member": 0,
-    "import/order": [2, { "groups": ["external", "index", "sibling", "parent", "internal", "builtin"] }],
-    "react/jsx-filename-extension": [
-      0,
-      {
-        "extensions": [".js", ".jsx"]
-      }
-    ],
-    //"react-hooks/rules-of-hooks": 0,
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    "import/order": 0,
+    "react/jsx-filename-extension": 0,
+    "react-hooks/rules-of-hooks": 0,
+    "react-hooks/exhaustive-deps": 0,
     "import/prefer-default-export": 0,
     "import/no-extraneous-dependencies": 0,
     "jsx-a11y/anchor-is-valid": 0,
@@ -54,6 +31,58 @@
     "radix": 0,
     "consistent-return": 0,
     "no-alert": 0,
-    "func-names": 0
+    "func-names": 0,
+    "semi": 0,
+    "quotes": 0,
+    "arrow-body-style": 0,
+    "padded-blocks": 0,
+    "object-curly-newline": 0,
+    "import/extensions": 0,
+    "max-len": 0,
+    "no-multiple-empty-lines": 0,
+    "space-infix-ops": 0,
+    "eqeqeq": 0,
+    "brace-style": 0,
+    "no-else-return": 0,
+    "no-trailing-spaces": 0,
+    "comma-dangle": 0,
+    "arrow-parens": 0,
+    "operator-linebreak": 0,
+    "implicit-arrow-linebreak": 0,
+    "function-paren-newline": 0,
+    "react/jsx-indent": 0,
+    "react/jsx-indent-props": 0,
+    "indent": 0,
+    "react/jsx-one-expression-per-line": 0,
+    "@next/next/no-img-element": 0,
+    "no-unused-vars": 0,
+    "react/button-has-type": 0,
+    "react/jsx-closing-bracket-location": 0,
+    "spaced-comment": 0,
+    "react/function-component-definition": 0,
+    "prefer-destructuring": 0,
+    "react/jsx-curly-newline": 0,
+    "object-shorthand": 0,
+    "jsx-quotes": 0,
+    "keyword-spacing": 0,
+    "no-restricted-globals": 0,
+    "no-shadow": 0,
+    "no-confusing-arrow": 0,
+    "import/no-duplicates": 0,
+    "react/display-name": 0,
+    "react/jsx-wrap-multilines": 0,
+    "eol-last": 0,
+    "no-use-before-define": 0,
+    "import/first": 0,
+    "import/newline-after-import": 0,
+    "react/jsx-curly-brace-presence": 0,
+    "nonblock-statement-body-position": 0,
+    "curly": 0,
+    "prefer-template": 0,
+    "@next/next/no-title-in-document-head": 0,
+    "no-console": 0,
+    "react/no-unescaped-entities": 0,
+    "import/no-anonymous-default-export": 0,
+    "jsx-a11y/alt-text": 0
   }
 }

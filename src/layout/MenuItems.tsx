@@ -7,7 +7,6 @@ import {
   UilBookAlt,
   UilBookOpen,
   UilBookReader,
-  UilCalendarAlt,
   UilChartBar,
   UilChat,
   UilCheckSquare,
@@ -265,7 +264,7 @@ function MenuItems() {
             {t('Bookings')}
           </Link>,
           'bookings',
-          !topMenu && <UilCalendarAlt />,
+          !topMenu,
           null,
         ),
         getItem(
