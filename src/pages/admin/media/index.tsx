@@ -142,22 +142,22 @@ function Media() {
   return (
     <>
       <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
+        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
         title="Media"
         routes={PageRoutes}
       />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex justify-between items-center mb-6">
+                <div className="p-4 sm:p-[25px]">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Media Management</h2>
                     <Upload {...uploadProps}>
                       <Button 
                         icon={<UploadOutlined />} 
-                        className="bg-primary hover:bg-primary-hover text-white"
+                        className="bg-primary hover:bg-primary-hover text-white w-full sm:w-auto"
                         loading={loading}
                       >
                         Upload Media
@@ -171,7 +171,7 @@ function Media() {
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {mediaFiles.map((file) => (
                       <div 
                         key={file.id} 
@@ -196,7 +196,7 @@ function Media() {
                             danger 
                             icon={<DeleteOutlined />} 
                             onClick={() => handleDelete(file.id, file.image)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                           />
                         </div>
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -233,8 +233,11 @@ function Media() {
         title={previewTitle}
         footer={null}
         onCancel={() => setPreviewVisible(false)}
+        width="95%"
+        style={{ maxWidth: '800px' }}
+        className="responsive-modal"
       >
-        <img alt={previewTitle} style={{ width: '100%' }} src={previewImage} />
+        <img alt={previewTitle} style={{ width: '100%', height: 'auto' }} src={previewImage} />
       </Modal>
     </>
   );

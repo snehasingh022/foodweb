@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Input, Table, Button, Modal, Form, Spin, message } from 'antd';
+import { Row, Col, Card, Input, Table, Button, Modal, Form, Spin, message, Space } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { db } from '../../../authentication/firebase';
@@ -40,6 +40,8 @@ function Categories() {
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
+  const [editMode, setEditMode] = useState<boolean>(false);
+  const [submitLoading, setSubmitLoading] = useState<boolean>(false);
 
   // Fetch categories from Firestore
   const fetchCategories = async () => {
@@ -67,7 +69,7 @@ function Categories() {
   // Handle add category
   const handleAddCategory = async (values: CategoryFormValues) => {
     try {
-      setLoading(true);
+      setSubmitLoading(true);
       const slug = values.name.toLowerCase().replace(/ /g, '-');
       await addDoc(collection(db, 'categories'), {
         name: values.name,
@@ -82,7 +84,7 @@ function Categories() {
     } catch (error) {
       console.error('Error adding category:', error);
       message.error('Failed to add category');
-      setLoading(false);
+      setSubmitLoading(false);
     }
   };
 
@@ -90,7 +92,7 @@ function Categories() {
   const handleUpdateCategory = async (values: CategoryFormValues) => {
     if (!selectedCategory) return;
     try {
-      setLoading(true);
+      setSubmitLoading(true);
       const slug = values.name.toLowerCase().replace(/ /g, '-');
       const categoryRef = doc(db, 'categories', selectedCategory.id);
       await updateDoc(categoryRef, {
@@ -106,7 +108,7 @@ function Categories() {
     } catch (error) {
       console.error('Error updating category:', error);
       message.error('Failed to update category');
-      setLoading(false);
+      setSubmitLoading(false);
     }
   };
 
@@ -114,7 +116,7 @@ function Categories() {
   const handleDeleteCategory = async () => {
     if (!selectedCategory) return;
     try {
-      setLoading(true);
+      setSubmitLoading(true);
       await deleteDoc(doc(db, 'categories', selectedCategory.id));
       message.success('Category deleted successfully');
       setDeleteModalVisible(false);
@@ -122,7 +124,7 @@ function Categories() {
     } catch (error) {
       console.error('Error deleting category:', error);
       message.error('Failed to delete category');
-      setLoading(false);
+      setSubmitLoading(false);
     }
   };
 
@@ -179,7 +181,8 @@ function Categories() {
                 name: record.name,
                 description: record.description,
               });
-              setEditModalVisible(true);
+              setEditMode(true);
+              setModalVisible(true);
             }}
           >
             Edit
@@ -200,57 +203,66 @@ function Categories() {
     },
   ];
 
+  const handleModalCancel = () => {
+    setModalVisible(false);
+    setEditMode(false);
+  };
+
+  const handleSubmit = editMode ? handleUpdateCategory : handleAddCategory;
+
   return (
     <>
       <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
+        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
         title="Categories"
         routes={PageRoutes}
       />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-dark dark:text-white/[.87] text-[18px] font-semibold">Categories Management</h2>
-                    <div className="flex items-center gap-4">
+                <div className="p-4 sm:p-[25px]">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Category Management</h2>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                       <Input
                         placeholder="Search categories..."
                         prefix={<SearchOutlined />}
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        className="w-64"
+                        className="w-full sm:w-64"
                       />
-                      <Button 
-                        type="primary" 
-                        icon={<PlusOutlined />}
+                      <Button
+                        type="primary"
                         onClick={() => setModalVisible(true)}
-                        className="bg-primary hover:bg-primary-hover flex items-center"
+                        icon={<PlusOutlined />}
+                        className="w-full sm:w-auto"
                       >
                         Add Category
                       </Button>
                     </div>
                   </div>
-
-                  {loading ? (
-                    <div className="flex justify-center items-center h-60">
-                      <Spin size="large" />
-                    </div>
-                  ) : (
+                  
+                  <div className="overflow-x-auto">
                     <Table
                       dataSource={filteredCategories}
-                      columns={columns}
-                      rowKey="id"
-                      pagination={{
+                      columns={columns.map(col => ({
+                        ...col,
+                        responsive: col.dataIndex === 'name' || col.key === 'action' 
+                          ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
+                          : ['sm', 'md', 'lg', 'xl'] as any,
+                      }))}
+                      loading={loading}
+                      pagination={{ 
                         pageSize: 10,
-                        showSizeChanger: true,
-                        pageSizeOptions: ['10', '25', '50', '100'],
+                        showSizeChanger: false,
+                        responsive: true,
                       }}
-                      className="w-full"
+                      className="responsive-table"
+                      scroll={{ x: 'max-content' }}
                     />
-                  )}
+                  </div>
                 </div>
               </div>
             </Card>
@@ -258,15 +270,22 @@ function Categories() {
         </Row>
       </main>
 
-      {/* Add Category Modal */}
+      {/* Add/Edit Category Modal */}
       <Modal
-        title="Add New Category"
+        title={editMode ? "Edit Category" : "Add New Category"}
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={handleModalCancel}
         footer={null}
-        destroyOnClose
+        width="95%"
+        style={{ maxWidth: '600px' }}
+        className="responsive-modal"
       >
-        <Form form={form} layout="vertical" onFinish={handleAddCategory}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="p-2"
+        >
           <Form.Item
             name="name"
             label="Category Name"
@@ -281,44 +300,20 @@ function Categories() {
           >
             <Input.TextArea rows={4} placeholder="Enter description" />
           </Form.Item>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={() => setModalVisible(false)}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
-              Add Category
-            </Button>
-          </div>
-        </Form>
-      </Modal>
-
-      {/* Edit Category Modal */}
-      <Modal
-        title="Edit Category"
-        open={editModalVisible}
-        onCancel={() => setEditModalVisible(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <Form form={editForm} layout="vertical" onFinish={handleUpdateCategory}>
-          <Form.Item
-            name="name"
-            label="Category Name"
-            rules={[{ required: true, message: 'Please enter category name' }]}
-          >
-            <Input placeholder="Enter category name" />
+          <Form.Item className="mb-0 flex justify-end mt-4">
+            <Space>
+              <Button onClick={handleModalCancel}>
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={submitLoading}
+              >
+                {editMode ? "Update" : "Add"}
+              </Button>
+            </Space>
           </Form.Item>
-          <Form.Item
-            name="description"
-            label="Description"
-            rules={[{ required: true, message: 'Please enter description' }]}
-          >
-            <Input.TextArea rows={4} placeholder="Enter description" />
-          </Form.Item>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={() => setEditModalVisible(false)}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
-              Update Category
-            </Button>
-          </div>
         </Form>
       </Modal>
 
@@ -329,7 +324,7 @@ function Categories() {
         onCancel={() => setDeleteModalVisible(false)}
         onOk={handleDeleteCategory}
         okText="Delete"
-        okButtonProps={{ danger: true, loading: loading }}
+        okButtonProps={{ danger: true, loading: submitLoading }}
       >
         <p>Are you sure you want to delete this category?</p>
         <p className="text-red-500 mt-2">This action cannot be undone.</p>

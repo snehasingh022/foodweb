@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { UilPlus, UilEdit, UilTrash } from '@iconscout/react-unicons';
+import type { Breakpoint } from 'antd/es/_util/responsiveObserver';
 
 // Define user type
 interface UserType {
@@ -322,57 +323,67 @@ function Team() {
       dataIndex: 'name',
       key: 'name',
       sorter: (a: UserType, b: UserType) => a.name.localeCompare(b.name),
-      render: (text: string) => <span className="capitalize">{text}</span>,
+      className: 'whitespace-nowrap',
+      responsive: ['xs', 'sm', 'md', 'lg'] as Breakpoint[],
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      className: 'hidden md:table-cell whitespace-nowrap',
+      responsive: ['md', 'lg'] as Breakpoint[]
     },
     {
       title: 'Roles',
       dataIndex: 'roles',
       key: 'roles',
       render: (roles: string[]) => (
-        <div className="flex flex-wrap gap-1">
-          {roles?.map((role: string) => (
-            <span key={role} className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs capitalize">
+        <Space size={[0, 8]} wrap>
+          {roles?.map(role => (
+            <span 
+              key={role} 
+              className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-500 text-xs px-2 py-1 rounded-full whitespace-nowrap"
+            >
               {role}
             </span>
           ))}
-        </div>
+        </Space>
       ),
+      className: 'hidden sm:table-cell',
+      responsive: ['sm', 'md', 'lg'] as Breakpoint[]
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <span className={`px-2 py-1 rounded text-xs ${
+        <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
           status === 'active' 
-            ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400' 
-            : 'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400'
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-500' 
+            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-500'
         }`}>
-          {status || 'active'}
+          {status}
         </span>
       ),
+      className: 'hidden sm:table-cell',
+      responsive: ['sm', 'md', 'lg'] as Breakpoint[]
     },
     {
-      title: 'Actions',
+      title: 'Action',
       key: 'action',
       render: (_: any, record: UserType) => (
-        <Space size="middle">
+        <Space size="small" className="flex flex-row sm:flex-row items-center">
           <Button 
             type="text" 
-            icon={<UilEdit className="h-4 w-4" />} 
             onClick={() => handleEditUser(record)}
-            className="text-blue-600 dark:text-blue-400"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            icon={<UilEdit size={16} />}
           />
           <Button 
             type="text" 
-            icon={<UilTrash className="h-4 w-4" />} 
+            danger
             onClick={() => handleDeleteUser(record)}
-            className="text-red-600 dark:text-red-400"
+            icon={<UilTrash size={16} />}
           />
         </Space>
       ),
@@ -380,67 +391,44 @@ function Team() {
   ];
 
   return (
-    <>
-      <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        title="Team"
-        routes={PageRoutes}
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
-        <Row gutter={25}>
-          <Col sm={24} xs={24}>
-            <Card className="h-full">
-              <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Team Management</h2>
-                    <Button
-                      type="primary"
-                      className="bg-primary hover:bg-primary-hover"
-                      icon={<UilPlus />}
-                      onClick={() => setAddModalVisible(true)}
-                    >
-                      Add User
-                    </Button>
-                  </div>
-                  
-                  <Table 
-                    dataSource={users} 
-                    columns={columns} 
-                    loading={loading}
-                    pagination={{ 
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '25', '50', '100']
-                    }}
-                    rowKey="id"
-                    className="team-table"
-                  />
-                </div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      </main>
+    <div className="text-theme-gray dark:text-white/60">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Team Members</h2>
+        <Button 
+          type="primary" 
+          onClick={() => setAddModalVisible(true)}
+          icon={<UilPlus />}
+          className="bg-primary hover:bg-primary-hover text-white w-full sm:w-auto"
+        >
+          Add User
+        </Button>
+      </div>
+      <div className="overflow-x-auto">
+        <Table
+          dataSource={users}
+          columns={columns}
+          loading={loading}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 'max-content' }}
+          className="team-table"
+        />
+      </div>
 
-      {/* Edit User Modal */}
+      {/* User Edit Modal */}
       <Modal
         title="Edit User"
         open={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
         footer={null}
-        destroyOnClose
+        width="95%"
+        style={{ maxWidth: '600px' }}
+        className="responsive-modal"
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleUpdateUser}
-          initialValues={{
-            name: selectedUser?.name,
-            email: selectedUser?.email,
-            roles: selectedUser?.roles,
-            status: selectedUser?.status || 'active',
-          }}
+          className="p-2"
         >
           <Form.Item
             name="name"
@@ -506,32 +494,34 @@ function Team() {
             />
           </Form.Item>
 
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => setEditModalVisible(false)}>
-              Cancel
-            </Button>
-            <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
-              Update
-            </Button>
-          </div>
+          <Form.Item className="mb-0 flex justify-end mt-4">
+            <Space>
+              <Button onClick={() => setEditModalVisible(false)}>
+                Cancel
+              </Button>
+              <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
+                Update
+              </Button>
+            </Space>
+          </Form.Item>
         </Form>
       </Modal>
 
       {/* Add User Modal */}
       <Modal
-        title="Add User"
+        title="Add New User"
         open={addModalVisible}
         onCancel={() => setAddModalVisible(false)}
         footer={null}
-        destroyOnClose
+        width="95%"
+        style={{ maxWidth: '600px' }}
+        className="responsive-modal"
       >
         <Form
           form={addForm}
           layout="vertical"
           onFinish={handleAddUser}
-          initialValues={{
-            status: 'active',
-          }}
+          className="p-2"
         >
           <Form.Item
             name="name"
@@ -610,33 +600,39 @@ function Team() {
             />
           </Form.Item>
 
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => setAddModalVisible(false)}>
-              Cancel
-            </Button>
-            <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
-              Add User
-            </Button>
-          </div>
+          <Form.Item className="mb-0 flex justify-end mt-4">
+            <Space>
+              <Button onClick={() => setAddModalVisible(false)}>
+                Cancel
+              </Button>
+              <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
+                Add User
+              </Button>
+            </Space>
+          </Form.Item>
         </Form>
       </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal
-        title="Delete User"
+        title="Confirm Delete"
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
-        onOk={confirmDelete}
-        okText="Delete"
-        okButtonProps={{ 
-          loading: loading,
-          className: "bg-red-600 hover:bg-red-700 border-red-600"
-        }}
+        footer={[
+          <Button key="back" onClick={() => setDeleteModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button key="submit" type="primary" danger loading={loading} onClick={confirmDelete}>
+            Delete
+          </Button>,
+        ]}
+        width="95%"
+        style={{ maxWidth: '500px' }}
+        className="responsive-modal"
       >
         <p>Are you sure you want to delete {selectedUser?.name}?</p>
-        <p className="text-red-500 text-sm mt-2">This action cannot be undone.</p>
       </Modal>
-    </>
+    </div>
   );
 }
 

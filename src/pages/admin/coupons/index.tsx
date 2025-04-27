@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Input, Button, Table, Modal, Form, message, Switch } from 'antd';
+import { Row, Col, Card, Input, Button, Table, Modal, Form, message, Switch, Space } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { SearchOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
-import { collection, getDocs, doc, query, orderBy, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, query, orderBy, setDoc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import { Buttons } from '../../../components/buttons';
 
@@ -36,6 +36,10 @@ function Coupons() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  const [currentCoupon, setCurrentCoupon] = useState<Coupon | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [couponToDelete, setCouponToDelete] = useState<Coupon | null>(null);
 
   const PageRoutes = [
     {
@@ -254,72 +258,96 @@ function Coupons() {
     },
   ];
 
+  const handleSubmit = async (values: CouponFormValues) => {
+    try {
+      setSubmitLoading(true);
+      if (currentCoupon) {
+        await handleEditCoupon(values);
+      } else {
+        await handleAddCoupon(values);
+      }
+      setSubmitLoading(false);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      message.error("Failed to submit form");
+      setSubmitLoading(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setSubmitLoading(true);
+      if (couponToDelete) {
+        const ref = doc(db, "coupons", couponToDelete.id);
+        await deleteDoc(ref);
+        message.success("Coupon deleted successfully");
+        fetchCoupons();
+        setDeleteModalVisible(false);
+      }
+      setSubmitLoading(false);
+    } catch (error) {
+      console.error("Error deleting coupon:", error);
+      message.error("Failed to delete coupon");
+      setSubmitLoading(false);
+    }
+  };
+
   return (
     <>
       <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
+        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
         title="Coupons"
         routes={PageRoutes}
       />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex justify-between items-center flex-wrap gap-4 mb-6">
-                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Coupons Management</h2>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Input 
-                        prefix={<SearchOutlined />} 
-                        placeholder="Search by Coupon ID" 
+                <div className="p-4 sm:p-[25px]">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Coupon Management</h2>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                      <Input
+                        placeholder="Search coupons..."
+                        prefix={<SearchOutlined />}
+                        value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        className="min-w-[200px]"
+                        className="w-full sm:w-64"
                       />
-                      <div className="flex border rounded">
-                        <Button 
-                          type={activeFilter === 'active' ? 'primary' : 'default'} 
-                          onClick={() => setActiveFilter('active')}
-                          className={activeFilter === 'active' ? 'bg-primary border-primary' : ''}
-                        >
-                          Active
-                        </Button>
-                        <Button 
-                          type={activeFilter === 'inactive' ? 'primary' : 'default'} 
-                          onClick={() => setActiveFilter('inactive')}
-                          className={activeFilter === 'inactive' ? 'bg-primary border-primary' : ''}
-                        >
-                          Inactive
-                        </Button>
-                        <Button 
-                          type={activeFilter === 'all' ? 'primary' : 'default'} 
-                          onClick={() => setActiveFilter('all')}
-                          className={activeFilter === 'all' ? 'bg-primary border-primary' : ''}
-                        >
-                          All
-                        </Button>
-                      </div>
-                      <Buttons
-                        type="primary" 
-                        onClick={() => showModal()}
-                        className="bg-primary hover:bg-primary-hbr"
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setCurrentCoupon(null);
+                          setIsModalVisible(true);
+                        }}
+                        icon={<PlusOutlined />}
+                        className="w-full sm:w-auto"
                       >
-                        <PlusOutlined /> Add Coupon
-                      </Buttons>
+                        Add Coupon
+                      </Button>
                     </div>
                   </div>
                   
-                  <Table 
-                    columns={columns} 
-                    dataSource={filteredData}
-                    loading={loading}
-                    pagination={{ 
-                      pageSize: 10, 
-                      showSizeChanger: true, 
-                      pageSizeOptions: ['10', '25', '50', '100'] 
-                    }}
-                    className="ant-pagination-custom-style table-responsive"
-                  />
+                  <div className="overflow-x-auto">
+                    <Table
+                      dataSource={filteredData}
+                      columns={columns.map(col => ({
+                        ...col,
+                        responsive: col.dataIndex === 'id' || col.key === 'actions' 
+                          ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
+                          : ['sm', 'md', 'lg', 'xl'] as any,
+                      }))}
+                      loading={loading}
+                      pagination={{ 
+                        pageSize: 10,
+                        showSizeChanger: false,
+                        responsive: true,
+                      }}
+                      className="responsive-table"
+                      scroll={{ x: 'max-content' }}
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -329,18 +357,27 @@ function Coupons() {
 
       {/* Add/Edit Coupon Modal */}
       <Modal
-        title={isEdit ? "Edit Coupon" : "Add New Coupon"}
+        title={currentCoupon ? "Edit Coupon" : "Add New Coupon"}
         open={isModalVisible}
         onCancel={() => {
           setIsModalVisible(false);
           form.resetFields();
         }}
         footer={null}
+        width="95%"
+        style={{ maxWidth: '600px' }}
+        className="responsive-modal"
       >
         <Form
           form={form}
           layout="vertical"
-          onFinish={isEdit ? handleEditCoupon : handleAddCoupon}
+          onFinish={handleSubmit}
+          initialValues={currentCoupon || {
+            type: 'percentage',
+            status: 'active',
+            usageLimit: 1
+          }}
+          className="p-2"
         >
           {isEdit && (
             <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded">
@@ -382,15 +419,45 @@ function Coupons() {
           >
             <Input placeholder="e.g. 1000" />
           </Form.Item>
-          <Form.Item className="mb-0 text-right">
-            <Button className="mr-2" onClick={() => setIsModalVisible(false)}>
-              Cancel
-            </Button>
-            <Buttons type="primary" htmlType="submit" className="bg-primary">
-              {isEdit ? 'Update' : 'Add'}
-            </Buttons>
+          <Form.Item className="mb-0 flex justify-end mt-4">
+            <Space>
+              <Button onClick={() => {
+                setIsModalVisible(false);
+                form.resetFields();
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={submitLoading}
+              >
+                {currentCoupon ? "Update" : "Add"}
+              </Button>
+            </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Confirm Delete"
+        open={deleteModalVisible}
+        onCancel={() => setDeleteModalVisible(false)}
+        footer={[
+          <Button key="back" onClick={() => setDeleteModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button key="submit" type="primary" danger loading={submitLoading} onClick={confirmDelete}>
+            Delete
+          </Button>,
+        ]}
+        width="95%"
+        style={{ maxWidth: '500px' }}
+        className="responsive-modal"
+      >
+        <p>Are you sure you want to delete the coupon code <strong>{couponToDelete?.id}</strong>?</p>
+        <p>This action cannot be undone.</p>
       </Modal>
     </>
   );

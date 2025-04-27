@@ -564,46 +564,62 @@ function Blogs() {
   return (
     <>
       <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
+        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
         title="Blogs"
         routes={PageRoutes}
       />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px] flex justify-between items-center border-b border-regular dark:border-white/10">
-                  <h2 className="text-dark dark:text-white/[.87] text-[18px] font-semibold mb-0">Blog Management</h2>
-                  <div className="flex gap-4">
-                    <Input
-                      placeholder="Search blogs..."
-                      prefix={<SearchOutlined className="text-light dark:text-white/60" />}
-                      onChange={(e) => setSearchText(e.target.value)}
-                      className="w-64"
-                    />
-                    <Button 
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={handleAdd}
-                      className="bg-primary hover:bg-primary-hbr"
-                    >
-                      Add Blog
-                    </Button>
+                <div className="p-4 sm:p-[25px]">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Blog Management</h2>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                      <Input
+                        placeholder="Search blogs..."
+                        prefix={<SearchOutlined />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        className="w-full sm:w-64"
+                      />
+                      <Button
+                        type="primary"
+                        onClick={handleAdd}
+                        icon={<PlusOutlined />}
+                        className="w-full sm:w-auto"
+                      >
+                        Add Blog
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="p-[25px]">
-                  <Table 
-                    columns={columns} 
-                    dataSource={blogs} 
-                    loading={loading}
-                    pagination={{ 
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '20', '50']
-                    }}
-                    className="dark:text-white/[.87]"
-                  />
+                  
+                  <div className="overflow-x-auto">
+                    <Table
+                      dataSource={blogs.filter(blog => 
+                        blog.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                        blog.slug.toLowerCase().includes(searchText.toLowerCase()) ||
+                        blog.summary?.toLowerCase().includes(searchText.toLowerCase())
+                      )}
+                      columns={columns.map(col => ({
+                        ...col,
+                        responsive: col.dataIndex === 'title' || col.key === 'action' 
+                          ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
+                          : col.dataIndex === 'slug' || col.dataIndex === 'isFeatured'
+                            ? ['sm', 'md', 'lg', 'xl'] as any
+                            : ['md', 'lg', 'xl'] as any,
+                      }))}
+                      loading={loading}
+                      pagination={{ 
+                        pageSize: 10,
+                        showSizeChanger: false,
+                        responsive: true,
+                      }}
+                      className="responsive-table"
+                      scroll={{ x: 'max-content' }}
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -616,7 +632,10 @@ function Blogs() {
         open={modalVisible}
         onCancel={handleModalCancel}
         footer={null}
-        width={900}
+        width="95%"
+        style={{ maxWidth: '1200px' }}
+        className="responsive-modal"
+        destroyOnClose
       >
         <Form
           form={form}
@@ -887,19 +906,10 @@ function Blogs() {
         title="Add New Category"
         open={categoryDialogOpen}
         onCancel={() => setCategoryDialogOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setCategoryDialogOpen(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={handleAddCategory}
-            className="bg-primary hover:bg-primary-hbr"
-          >
-            Add
-          </Button>,
-        ]}
+        footer={null}
+        width="95%"
+        style={{ maxWidth: '500px' }}
+        className="responsive-modal"
       >
         <Form layout="vertical">
           <Form.Item label="Category Name" required>
@@ -932,19 +942,10 @@ function Blogs() {
         title="Add New Tag"
         open={tagDialogOpen}
         onCancel={() => setTagDialogOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setTagDialogOpen(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={handleAddTag}
-            className="bg-primary hover:bg-primary-hbr"
-          >
-            Add
-          </Button>,
-        ]}
+        footer={null}
+        width="95%"
+        style={{ maxWidth: '500px' }}
+        className="responsive-modal"
       >
         <Form layout="vertical">
           <Form.Item label="Tag Name" required>
@@ -974,11 +975,13 @@ function Blogs() {
 
       {/* Image Dialog */}
       <Modal
-        title="Select Image"
+        title="Select from Archive"
         open={imageDialogOpen}
         onCancel={() => setImageDialogOpen(false)}
         footer={null}
-        width={800}
+        width="95%"
+        style={{ maxWidth: '1000px' }}
+        className="responsive-modal"
       >
         <div className="flex justify-center gap-4 mb-4">
           <Upload

@@ -64,6 +64,8 @@ function Tags() {
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [editMode, setEditMode] = useState<boolean>(false);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   // Fetch tags from Firestore
   const fetchTags = async () => {
@@ -218,7 +220,8 @@ function Tags() {
                 slug: record.slug,
                 description: record.description,
               });
-              setEditModalVisible(true);
+              setEditMode(true);
+              setModalVisible(true);
             }}
             className="bg-blue-500 hover:bg-blue-600"
           >
@@ -240,53 +243,74 @@ function Tags() {
     },
   ];
 
+  const handleModalCancel = () => {
+    setModalVisible(false);
+    setEditMode(false);
+    form.resetFields();
+  };
+
+  const handleSubmit = async (values: any) => {
+    if (editMode) {
+      await handleEditTag(values);
+    } else {
+      await handleAddTag(values);
+    }
+    setModalVisible(false);
+  };
+
   return (
     <>
       <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
+        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
         title="Tags"
         routes={PageRoutes}
       />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex flex-wrap justify-between items-center mb-4">
-                    <h2 className="text-dark dark:text-white/[.87] text-[18px] font-semibold">Tags Management</h2>
-                    <div className="flex items-center gap-4">
-                      <Input 
-                        placeholder="Search tags" 
-                        value={searchText}
-                        onChange={e => setSearchText(e.target.value)}
+                <div className="p-4 sm:p-[25px]">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Tag Management</h2>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                      <Input
+                        placeholder="Search tags..."
                         prefix={<SearchOutlined />}
-                        className="w-64"
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        className="w-full sm:w-64"
                       />
-                      <Button 
-                        type="primary" 
-                        icon={<PlusOutlined />} 
-                        onClick={() => setAddModalVisible(true)}
-                        className="bg-primary hover:bg-primary-hover"
+                      <Button
+                        type="primary"
+                        onClick={() => setModalVisible(true)}
+                        icon={<PlusOutlined />}
+                        className="w-full sm:w-auto"
                       >
                         Add Tag
                       </Button>
-                      <Button onClick={fetchTags}>Refresh</Button>
                     </div>
                   </div>
                   
-                  <Table 
-                    columns={columns} 
-                    dataSource={filteredTags} 
-                    loading={loading}
-                    pagination={{ 
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '25', '50', '100']
-                    }}
-                    className="tag-table"
-                    rowClassName="hover:bg-gray-50 dark:hover:bg-white/10"
-                  />
+                  <div className="overflow-x-auto">
+                    <Table
+                      dataSource={filteredTags}
+                      columns={columns.map(col => ({
+                        ...col,
+                        responsive: col.dataIndex === 'name' || col.key === 'action' 
+                          ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
+                          : ['sm', 'md', 'lg', 'xl'] as any,
+                      }))}
+                      loading={loading}
+                      pagination={{ 
+                        pageSize: 10,
+                        showSizeChanger: false,
+                        responsive: true,
+                      }}
+                      className="responsive-table"
+                      scroll={{ x: 'max-content' }}
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -294,18 +318,21 @@ function Tags() {
         </Row>
       </main>
 
-      {/* Add Tag Modal */}
+      {/* Add/Edit Tag Modal */}
       <Modal
-        title="Add New Tag"
-        open={addModalVisible}
-        onCancel={() => setAddModalVisible(false)}
+        title={editMode ? "Edit Tag" : "Add New Tag"}
+        open={modalVisible}
+        onCancel={handleModalCancel}
         footer={null}
+        width="95%"
+        style={{ maxWidth: '600px' }}
+        className="responsive-modal"
       >
-        <Form 
-          form={form} 
-          layout="vertical" 
-          onFinish={handleAddTag}
-          initialValues={{ name: '', slug: '', description: '' }}
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="p-2"
         >
           <Form.Item
             label="Tag Name"
@@ -331,58 +358,17 @@ function Tags() {
             <Input.TextArea rows={4} />
           </Form.Item>
           
-          <Form.Item className="flex justify-end mb-0">
+          <Form.Item className="mb-0 flex justify-end mt-4">
             <Space>
-              <Button onClick={() => setAddModalVisible(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" className="bg-primary">
-                Add Tag
+              <Button onClick={handleModalCancel}>
+                Cancel
               </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Edit Tag Modal */}
-      <Modal
-        title="Edit Tag"
-        open={editModalVisible}
-        onCancel={() => setEditModalVisible(false)}
-        footer={null}
-      >
-        <Form 
-          form={editForm} 
-          layout="vertical" 
-          onFinish={handleEditTag}
-        >
-          <Form.Item
-            label="Tag Name"
-            name="name"
-            rules={[{ required: true, message: 'Please enter tag name!' }]}
-          >
-            <Input onChange={handleEditNameChange} />
-          </Form.Item>
-          
-          <Form.Item
-            label="Slug"
-            name="slug"
-            rules={[{ required: true, message: 'Please enter tag slug!' }]}
-          >
-            <Input />
-          </Form.Item>
-          
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[{ required: true, message: 'Please enter tag description!' }]}
-          >
-            <Input.TextArea rows={4} />
-          </Form.Item>
-          
-          <Form.Item className="flex justify-end mb-0">
-            <Space>
-              <Button onClick={() => setEditModalVisible(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" className="bg-primary">
-                Update Tag
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={loading}
+              >
+                {editMode ? "Update" : "Add"}
               </Button>
             </Space>
           </Form.Item>

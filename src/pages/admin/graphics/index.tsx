@@ -5,9 +5,9 @@ import dynamic from 'next/dynamic';
 export default dynamic(() => Promise.resolve(Graphics), { ssr: false });
 
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Modal, Select, message, Spin } from 'antd';
+import { Row, Col, Card, Button, Modal, Select, message, Spin, Input, Tabs, Space } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
-import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
 
 // Import types for TypeScript but not the actual implementation
 import type { 
@@ -53,6 +53,14 @@ function Graphics() {
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
   const [db, setDb] = useState<any>(null);
   const [storage, setStorage] = useState<any>(null);
+  const [searchText, setSearchText] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [selectedGraphic, setSelectedGraphic] = useState<SliderImage | null>(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [graphicToDelete, setGraphicToDelete] = useState<SliderImage | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const PageRoutes = [
     {
