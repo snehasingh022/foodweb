@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { RcFile } from 'antd/es/upload';
+import Protected from '../../../components/Protected/Protected';
 
 // Define Media file interface
 interface MediaFile {
@@ -243,4 +244,4 @@ function Media() {
   );
 }
 
-export default Media; 
+export default Protected(Media, ["admin"]); 

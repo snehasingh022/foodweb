@@ -35,6 +35,7 @@ import { collection, getDocs, doc, deleteDoc, query, orderBy, addDoc, updateDoc,
 import { db, app } from '../../../authentication/firebase';
 import { getDownloadURL, ref, uploadBytes, getStorage, deleteObject } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
+import Protected from '../../../components/Protected/Protected';
 
 // Initialize Firebase Storage
 let storage: any = null;
@@ -1026,4 +1027,4 @@ function Blogs() {
   );
 }
 
-export default Blogs; 
+export default Protected(Blogs, ["admin"]); 

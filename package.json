@@ -57,6 +57,7 @@
     "react-dom": "18.2.0",
     "react-fontawesome": "^1.7.1",
     "react-google-charts": "^4.0.1",
+    "react-hot-toast": "^2.5.2",
     "react-i18next": "^13.2.0",
     "react-id-swiper": "^4.0.0",
     "react-leaflet": "^4.2.1",

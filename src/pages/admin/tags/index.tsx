@@ -30,6 +30,7 @@ import {
   orderBy 
 } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
+import Protected from '../../../components/Protected/Protected';
 
 // Define Tag interface
 interface Tag {
@@ -390,4 +391,4 @@ function Tags() {
   );
 }
 
-export default Tags; 
+export default Protected(Tags, ["admin"]); 

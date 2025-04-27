@@ -2,6 +2,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic'
 import { Row, Col, Skeleton } from 'antd';
 import { PageHeaders } from '@/components/page-headers';
+import Protected from '../../../../components/Protected/Protected';
 
 const UserCards = dynamic(() => import('./overview/UserCard'), {
   loading: () => (
@@ -94,4 +95,4 @@ function MyProfile() {
 }
 
 
-export default MyProfile;
+export default Protected(MyProfile, ["admin"]);

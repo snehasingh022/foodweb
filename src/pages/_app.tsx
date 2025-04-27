@@ -1,6 +1,7 @@
 import '@/styles/globals.css'
 import { useRouter } from 'next/router';
 import type { AppProps } from 'next/app';
+import { Toaster } from 'react-hot-toast';
 
 import { Provider } from "react-redux";
 import { UserProvider } from '@auth0/nextjs-auth0/client';
@@ -47,6 +48,7 @@ function App({ Component, pageProps }: AppProps) {
       <Provider store={store}>
         {renderLayout()}
       </Provider>
+      <Toaster position="top-right" />
     </>
   )
 }

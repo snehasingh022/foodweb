@@ -36,7 +36,7 @@ export const AuthContextProvider = ({
         // Check user's role in the database
         if (user.email) {
           try {
-            // First check if user is in admins collection
+            // Check if user is in admins collection
             const adminsQuery = query(
               collection(db, "admins"),
               where("email", "==", user.email)
@@ -48,25 +48,23 @@ export const AuthContextProvider = ({
               const adminDoc = adminSnapshot.docs[0];
               const adminData = adminDoc.data();
               
-              // Set user as admin and update role
-              setIsAdmin(true);
-              userData.role = adminData.role || 'admin'; // Default to 'admin' if no specific role
-            } else {
-              // Check if user is in helpdesk collection
-              const helpdeskQuery = query(
-                collection(db, "helpdesk"),
-                where("email", "==", user.email)
-              );
-              const helpdeskSnapshot = await getDocs(helpdeskQuery);
-              
-              if (!helpdeskSnapshot.empty) {
-                // User is in helpdesk role
-                userData.role = 'helpdesk';
+              // Check if the user's role is admin or helpdesk
+              if (adminData.roles && adminData.roles.includes("admin")) {
+                // Set user as admin
+                setIsAdmin(true);
+                userData.role = "admin";
+              } else if (adminData.roles && adminData.roles.includes("helpdesk")) {
+                // User has helpdesk role
+                userData.role = "helpdesk";
                 setIsAdmin(false);
               } else {
-                // User is not admin or helpdesk
+                // Default to whatever role is in the database or 'user'
+                userData.role = adminData.roles?.[0] || "user";
                 setIsAdmin(false);
               }
+            } else {
+              // User is not in admins collection
+              setIsAdmin(false);
             }
           } catch (error) {
             console.error("Error checking user role:", error);
@@ -129,27 +127,27 @@ export const AuthContextProvider = ({
         const adminSnapshot = await getDocs(adminsQuery);
         
         if (!adminSnapshot.empty) {
-          // User is an admin, get their specific role
+          // User is in admins collection, check their role
           const adminDoc = adminSnapshot.docs[0];
           const adminData = adminDoc.data();
-          userRole = adminData.role || 'admin';
-          isUserAdmin = true;
-        } else {
-          // Check if user is in helpdesk collection
-          const helpdeskQuery = query(
-            collection(db, "helpdesk"),
-            where("email", "==", result.user.email)
-          );
-          const helpdeskSnapshot = await getDocs(helpdeskQuery);
           
-          if (!helpdeskSnapshot.empty) {
-            // User is in helpdesk role
-            userRole = 'helpdesk';
+          if (adminData.roles && adminData.roles.includes("admin")) {
+            // User has admin role
+            userRole = "admin";
+            isUserAdmin = true;
+          } else if (adminData.roles && adminData.roles.includes("helpdesk")) {
+            // User has helpdesk role
+            userRole = "helpdesk";
+            isUserAdmin = false;
           } else {
-            // If user is not in admins or helpdesk collections, sign them out
-            await signOut(auth);
-            throw new Error("Unauthorized: You do not have access to this system");
+            // Default to whatever role is in the database
+            userRole = adminData.roles?.[0] || "user";
+            isUserAdmin = false;
           }
+        } else {
+          // If user is not in admins collection, sign them out
+          await signOut(auth);
+          throw new Error("Unauthorized: You do not have access to this system");
         }
         
         setIsAdmin(isUserAdmin);

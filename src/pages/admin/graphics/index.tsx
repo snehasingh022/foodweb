@@ -1,13 +1,9 @@
-import dynamic from 'next/dynamic';
-
-// The entire component is now wrapped in dynamic import with ssr: false
-// This ensures Next.js doesn't try to render it on the server
-export default dynamic(() => Promise.resolve(Graphics), { ssr: false });
-
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Select, message, Spin, Input, Tabs, Space } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
+import dynamic from 'next/dynamic';
+import Protected from '../../../components/Protected/Protected';
 
 // Import types for TypeScript but not the actual implementation
 import type { 
@@ -700,4 +696,8 @@ function Graphics() {
       </Modal>
     </>
   );
-} 
+}
+
+// Wrap the component with dynamic and Protected HOCs
+const DynamicGraphics = dynamic(() => Promise.resolve(Graphics), { ssr: false });
+export default Protected(DynamicGraphics, ["admin"]); 

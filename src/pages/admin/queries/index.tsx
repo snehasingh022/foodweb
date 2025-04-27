@@ -22,6 +22,7 @@ import {
 import { PageHeaders } from '../../../components/page-headers/index';
 import { collection, getDocs, doc, updateDoc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
+import Protected from '../../../components/Protected/Protected';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -361,4 +362,4 @@ function Queries() {
   );
 }
 
-export default Queries; 
+export default Protected(Queries, ["admin"]); 

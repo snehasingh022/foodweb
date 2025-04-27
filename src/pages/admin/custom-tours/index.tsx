@@ -1,6 +1,7 @@
 import React from 'react';
 import { Row, Col, Card } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
+import Protected from '../../../components/Protected/Protected';
 
 function CustomTours() {
   const PageRoutes = [
@@ -39,4 +40,4 @@ function CustomTours() {
   );
 }
 
-export default CustomTours; 
+export default Protected(CustomTours, ["admin"]); 

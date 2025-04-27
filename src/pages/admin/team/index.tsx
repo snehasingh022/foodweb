@@ -21,6 +21,7 @@ import {
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { UilPlus, UilEdit, UilTrash } from '@iconscout/react-unicons';
 import type { Breakpoint } from 'antd/es/_util/responsiveObserver';
+import Protected from '../../../components/Protected/Protected';
 
 // Define user type
 interface UserType {
@@ -645,7 +646,7 @@ interface UserInfo {
 }
 
 // Add role-based access control
-export default function TeamPage() {
+function TeamPage() {
   const router = useRouter();
   const { currentUser, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -673,3 +674,7 @@ export default function TeamPage() {
   // Only render Team component if user has admin access
   return isAdmin ? <Team /> : null;
 } 
+
+
+
+export default Protected(TeamPage, ["admin"]);

@@ -1,7 +1,8 @@
 import dynamic from 'next/dynamic'
-import { Row, Col, Skeleton } from 'antd';
+import { Row, Col, Skeleton, Tag } from 'antd';
 import { PageHeaders } from '@/components/page-headers';
 import { useAuth } from '@/authentication/AuthContext';
+import Protected from '@/components/Protected/Protected';
 
 const OverviewDataList = dynamic(() => import('@/dashboard/demo-1/OverviewDataList'), {
   loading: () => (
@@ -68,8 +69,29 @@ const DemoOne = () => {
       />
       {currentUser && (
         <div className="flex items-center px-8 mb-4">
-          <div className={`py-2 px-4 rounded-md ${isAdmin ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            {isAdmin ? 'Admin Access Verified' : 'Not Authorized as Admin'} - {currentUser.email}
+          <div className="py-2 px-4 rounded-md bg-gray-100 dark:bg-gray-800 text-dark dark:text-white/[.87]">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span>Role: </span>
+              {currentUser.role === 'admin' ? (
+                <Tag color="green">Admin</Tag>
+              ) : currentUser.role === 'helpdesk' ? (
+                <Tag color="blue">Helpdesk</Tag>
+              ) : (
+                <Tag color="default">{currentUser.role}</Tag>
+              )}
+              
+              <span className="mx-2">Access Level: </span>
+              {isAdmin ? (
+                <Tag color="green">Full Admin Access</Tag>
+              ) : currentUser.role === 'helpdesk' ? (
+                <Tag color="blue">Limited (Helpdesk) Access</Tag>
+              ) : (
+                <Tag color="default">Basic Access</Tag>
+              )}
+              
+              <span className="mx-2">User: </span>
+              <span className="font-medium">{currentUser.email}</span>
+            </div>
           </div>
         </div>
       )}
@@ -101,5 +123,5 @@ const DemoOne = () => {
   )
 }
 
-export default DemoOne
+export default Protected(DemoOne, ["admin"]);
 

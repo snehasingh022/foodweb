@@ -24,6 +24,7 @@ import { collection, query, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, 
 import { db } from '../../../authentication/firebase';
 import moment from 'moment';
 import { SearchOutlined, PlusOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import Protected from '../../../components/Protected/Protected';
 
 const { Text } = Typography;
 
@@ -789,4 +790,4 @@ function Helpdesk() {
   );
 }
 
-export default Helpdesk; 
+export default Protected(Helpdesk, ["admin", "helpdesk"]); 

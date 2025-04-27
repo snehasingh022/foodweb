@@ -5,6 +5,7 @@ import { SearchOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { collection, getDocs, doc, query, orderBy, setDoc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import { Buttons } from '../../../components/buttons';
+import Protected from '../../../components/Protected/Protected';
 
 // Define Coupon interface
 interface Coupon {
@@ -463,4 +464,4 @@ function Coupons() {
   );
 }
 
-export default Coupons; 
+export default Protected(Coupons, ["admin"]); 

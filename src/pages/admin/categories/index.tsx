@@ -4,6 +4,7 @@ import { PageHeaders } from '../../../components/page-headers/index';
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { db } from '../../../authentication/firebase';
 import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import Protected from '../../../components/Protected/Protected';
 
 interface CategoryType {
   id: string;
@@ -333,4 +334,4 @@ function Categories() {
   );
 }
 
-export default Categories; 
+export default Protected(Categories, ["admin"]); 

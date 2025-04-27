@@ -62,9 +62,38 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       router.push('/');
     }
     
-    // If the user is logged in but not an admin, redirect to login page
-    if (isLoggedIn && currentUser && !isAdmin) {
+    // If the user is logged in but has no recognized role (neither admin nor helpdesk), redirect to login page
+    if (isLoggedIn && currentUser && !isAdmin && currentUser.role !== 'helpdesk') {
       router.push('/');
+    }
+    
+    // If user is helpdesk but trying to access admin-only pages, redirect to helpdesk area
+    if (isLoggedIn && currentUser && currentUser.role === 'helpdesk') {
+      // List of paths that are admin-only (not including /admin/helpdesk, /admin/support, etc.)
+      const adminOnlyPaths = [
+        '/admin/users', 
+        '/admin/bookings', 
+        '/admin/payments', 
+        '/admin/coupons',
+        '/admin/team',
+        '/admin/tours',
+        '/admin/cruises',
+        '/admin/custom-tours',
+        '/admin/blogs',
+        '/admin/tags',
+        '/admin/categories',
+        '/admin/media',
+        '/admin/graphics'
+      ];
+      
+      // Check if current path starts with any admin-only path
+      const isAdminOnlyPath = adminOnlyPaths.some(path => 
+        router.pathname === path || router.pathname.startsWith(`${path}/`)
+      );
+      
+      if (isAdminOnlyPath) {
+        router.push('/admin/support/tickets');
+      }
     }
   }, [router, isLoggedIn, currentUser, isAdmin]);
   
