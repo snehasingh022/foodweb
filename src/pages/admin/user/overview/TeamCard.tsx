@@ -41,7 +41,7 @@ function TeamCard({ user, actions }:TeamCardProps) {
                 {name}
               </Link>
             </h6>
-            <span className="text-[13px] mb-[25px] text-light dark:text-white/60">{designation}</span>
+            <span className="text-[14px] mb-[25px] text-light dark:text-white/60">{designation}</span>
             <div className="flex flex-wrap items-center justify-center mt-[16px] gap-[10px]">
               {socialMediaLinks.map((link) => (
                 <Link
