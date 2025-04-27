@@ -383,18 +383,22 @@ function Helpdesk() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (date: Date) => (
-        <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">
-          {date.toLocaleDateString('en-US', {
-            year: 'numeric', 
-            month: 'numeric', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          })}
-        </span>
-      ),
+      render: (date: any) => {
+        if (!date) return <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">N/A</span>;
+        const jsDate = date.toDate ? date.toDate() : new Date(date);
+        return (
+          <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">
+            {jsDate.toLocaleDateString('en-US', {
+              year: 'numeric', 
+              month: 'numeric', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            })}
+          </span>
+        );
+      },
     },
     {
       title: 'Actions',
