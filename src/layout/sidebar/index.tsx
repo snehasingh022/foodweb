@@ -27,9 +27,23 @@ const Sidebar = () => {
         <Sider
           width={collapsed ? 80 : 280}
           collapsed={collapsed}
-          className={`fixed h-[100vh] scrollbar bg-white dark:bg-[#1b1d2a] py-5 pb-[74px] z-998 overflow-y-auto shadow-[0_0_20px_rgba(160,160,160,0.02)] [&.ant-layout-sider-collapsed]:xl:-ms-20 duration-[300ms]`}
+          className="fixed h-screen bg-white dark:bg-[#1b1d2a] py-5 z-998 shadow-[0_0_20px_rgba(160,160,160,0.02)] [&.ant-layout-sider-collapsed]:xl:-ms-20 duration-[300ms]"
+          style={{ 
+            position: 'fixed',
+            height: '100vh',
+            overflowY: 'hidden'
+          }}
         >
-          <MenuItems />
+          <div 
+            className="h-full" 
+            style={{ 
+              overflowY: 'auto', 
+              height: 'calc(100vh - 40px)',
+              paddingBottom: '60px'
+            }}
+          >
+            <MenuItems />
+          </div>
         </Sider>
       ) : null }
     </>
