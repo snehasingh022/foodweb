@@ -35,7 +35,7 @@ const Protected = (WrappedComponent: React.ComponentType<any>, requiredRoles: st
         
         // Redirect based on role
         if (userRole === "helpdesk" && !router.pathname.includes("/support")) {
-          router.push("/admin/support/tickets");
+          router.push("/admin/helpdesk");
         } else {
           router.push("/admin");
         }

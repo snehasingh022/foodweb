@@ -362,4 +362,4 @@ function Queries() {
   );
 }
 
-export default Protected(Queries, ["admin"]); 
+export default Protected(Queries, ["admin", "helpdesk"]); 

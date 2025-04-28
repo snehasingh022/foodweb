@@ -30,7 +30,7 @@ const RoleWrapper: React.FC<RoleWrapperProps> = ({
     if (!allowedRoles.includes(userRole)) {
       // If user is helpdesk, redirect to support tickets
       if (userRole === 'helpdesk' && !router.pathname.includes('/support')) {
-        router.push('/admin/support/tickets');
+        router.push('/admin/helpdesk');
       } 
       // If user has any other unauthorized role, redirect to dashboard
       else if (userRole !== 'helpdesk' && !allowedRoles.includes(userRole)) {

@@ -220,14 +220,6 @@ function MenuItems() {
           !topMenu && <UilComment />,
           null,
         ),
-        getItem(
-          <Link href={`${path}/support/tickets`}>
-            {t('support')}
-          </Link>,
-          'support',
-          !topMenu && <UilHeadphones />,
-          null,
-        ),
     ];
 
     // The full menu items for admin and other roles

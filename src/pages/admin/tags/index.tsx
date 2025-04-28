@@ -321,58 +321,92 @@ function Tags() {
 
       {/* Add/Edit Tag Modal */}
       <Modal
-        title={editMode ? "Edit Tag" : "Add New Tag"}
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              {editMode ? "Edit Tag" : "Add New Tag"}
+            </span>
+          </div>
+        }
         open={modalVisible}
         onCancel={handleModalCancel}
         footer={null}
         width="95%"
         style={{ maxWidth: '600px' }}
         className="responsive-modal"
+        bodyStyle={{ padding: '24px' }}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          className="p-2"
+          className="px-6 pt-4"
         >
-          <Form.Item
-            label="Tag Name"
-            name="name"
-            rules={[{ required: true, message: 'Please enter tag name!' }]}
-          >
-            <Input onChange={handleNameChange} />
-          </Form.Item>
+          <div className="mb-6">
+            <h3 className="text-base text-gray-500 dark:text-gray-400 mb-4">Tag Information</h3>
+            
+            <Form.Item
+              label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
+              name="name"
+              rules={[{ required: true, message: 'Please enter tag name!' }]}
+            >
+              <Input 
+                prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
+                  <path d="M3.5 2a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-5a.5.5 0 0 0-.5-.5h-5zm1 .5H8v4H4.5v-4zM11 1a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h10zm-1 2H2v9h8v-9z"/>
+                </svg>}
+                placeholder="Enter tag name" 
+                onChange={handleNameChange}
+                className="py-2" 
+              />
+            </Form.Item>
+            
+            <Form.Item
+              label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
+              name="slug"
+              rules={[{ required: true, message: 'Please enter tag slug!' }]}
+              tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens."
+            >
+              <Input 
+                prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
+                  <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/>
+                  <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z"/>
+                </svg>}
+                placeholder="tag-slug" 
+                className="py-2"
+              />
+            </Form.Item>
+            
+            <Form.Item
+              label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+              name="description"
+              rules={[{ required: true, message: 'Please enter tag description!' }]}
+            >
+              <Input.TextArea 
+                placeholder="Enter a description for this tag" 
+                rows={4} 
+                className="text-base"
+              />
+            </Form.Item>
+          </div>
           
-          <Form.Item
-            label="Slug"
-            name="slug"
-            rules={[{ required: true, message: 'Please enter tag slug!' }]}
-          >
-            <Input />
-          </Form.Item>
-          
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[{ required: true, message: 'Please enter tag description!' }]}
-          >
-            <Input.TextArea rows={4} />
-          </Form.Item>
-          
-          <Form.Item className="mb-0 flex justify-end mt-4">
-            <Space>
-              <Button onClick={handleModalCancel}>
+          <div className="flex justify-end mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <Space size="middle">
+              <Button 
+                onClick={handleModalCancel}
+                className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
+              >
                 Cancel
               </Button>
               <Button 
                 type="primary" 
                 htmlType="submit" 
                 loading={loading}
+                className="px-5 h-10 shadow-none"
               >
-                {editMode ? "Update" : "Add"}
+                {editMode ? "Update Tag" : "Add Tag"}
               </Button>
             </Space>
-          </Form.Item>
+          </div>
         </Form>
       </Modal>
 

@@ -629,275 +629,299 @@ function Blogs() {
       </main>
 
       <Modal
-        title={editMode ? "Edit Blog" : "Add New Blog"}
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              {editMode ? "Edit Blog" : "Add New Blog"}
+            </span>
+          </div>
+        }
         open={modalVisible}
         onCancel={handleModalCancel}
         footer={null}
         width="95%"
         style={{ maxWidth: '1200px' }}
         className="responsive-modal"
+        bodyStyle={{ padding: '24px' }}
         destroyOnClose
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          className="mt-4"
+          className="px-6"
         >
-          <Divider orientation="left">Basic Information</Divider>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Title"
-                name="title"
-                rules={[{ required: true, message: 'Please enter blog title' }]}
-              >
-                <Input placeholder="Blog title" onChange={handleSlugGeneration} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Slug"
-                name="slug"
-                rules={[{ required: true, message: 'Please enter blog slug' }]}
-              >
-                <Input placeholder="blog-post-slug" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">Category</span>
-                <Button 
-                  type="link" 
-                  icon={<PlusOutlined />} 
-                  onClick={() => setCategoryDialogOpen(true)}
-                  size="small"
+          <div className="mb-8">
+            <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+              </svg>
+              Basic Information
+            </h3>
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="text-dark dark:text-white/[.87] font-medium">Title</span>}
+                  name="title"
+                  rules={[{ required: true, message: 'Please enter blog title' }]}
                 >
-                  Add New
-                </Button>
-              </div>
-              <Form.Item
-                name="category"
-              >
-                <Select placeholder="Select category">
-                  {categories.map((cat) => (
-                    <Select.Option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Featured"
-                name="isFeatured"
-                initialValue="No"
-              >
-                <Select>
-                  <Select.Option value="Yes">Yes</Select.Option>
-                  <Select.Option value="No">No</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            label="Summary"
-            name="summary"
-          >
-            <Input.TextArea rows={3} placeholder="Brief summary of the blog" />
-          </Form.Item>
-
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-medium">Tags</span>
-            <Button 
-              type="link" 
-              icon={<PlusOutlined />} 
-              onClick={() => setTagDialogOpen(true)}
-              size="small"
-            >
-              Add New
-            </Button>
-          </div>
-          <Form.Item>
-            <Select
-              mode="multiple"
-              placeholder="Select tags"
-              value={selectedTags}
-              onChange={setSelectedTags}
-              style={{ width: '100%' }}
-              optionLabelProp="label"
-            >
-              {tags.map((tag) => (
-                <Select.Option key={tag.id} value={tag.name} label={tag.name}>
-                  {tag.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Featured Image">
-                <div 
-                  className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary"
-                  onClick={() => handleOpenImageDialog('main')}
-                >
-                  {imageUrl ? (
-                    <div style={{ position: 'relative', display: 'inline-block' }}>
-                      <img 
-                        src={imageUrl} 
-                        alt="blog" 
-                        className="mx-auto h-32 object-contain" 
-                        style={{ transition: 'opacity 0.3s ease' }}
-                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.5'} 
-                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                      />
-                      <div style={{ 
-                        position: 'absolute', 
-                        top: 0, 
-                        left: 0, 
-                        width: '100%', 
-                        height: '100%', 
-                        backgroundColor: 'hsla(346, 100%, 92%, 0.425)', 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        alignItems: 'center',
-                        transition: 'opacity 0.7s ease',
-                        opacity: 0,
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.opacity = '1'} 
-                      onMouseOut={(e) => e.currentTarget.style.opacity = '0'}>
-                        <div style={{ fontSize: '20px' }}>Edit</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col justify-center items-center h-32">
-                      <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
-                      <p className="mt-2">Upload Image</p>
-                    </div>
-                  )}
-                </div>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            label="Content"
-          >
-            <Editor
-              apiKey="cluzl6f3pdaveewms6exdzpvcygpa23rgrx0whym6svjop94"
-              value={editorContent}
-              init={{
-                height: 400,
-                menubar: true,
-                plugins: [
-                  'advlist autolink lists link image charmap print preview anchor',
-                  'searchreplace visualblocks code fullscreen',
-                  'insertdatetime media table paste code help wordcount'
-                ],
-                toolbar:
-                  'undo redo | formatselect | bold italic backcolor | \
-                  alignleft aligncenter alignright alignjustify | \
-                  bullist numlist outdent indent | removeformat | help'
-              }}
-              onEditorChange={(content) => setEditorContent(content)}
-            />
-          </Form.Item>
-
-          <Divider orientation="left">SEO Information</Divider>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="SEO Title"
-                name="seoTitle"
-              >
-                <Input placeholder="SEO title (leave empty to use main title)" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="SEO Description"
-                name="seoDescription"
-              >
-                <Input.TextArea rows={2} placeholder="SEO description" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="SEO Keywords">
-            <Input
-              placeholder="Type keyword and press Enter"
-              value={keywordInput}
-              onChange={(e) => setKeywordInput(e.target.value)}
-              onKeyPress={handleKeywordInputKeyPress}
-            />
-            <div className="flex flex-wrap gap-1 mt-2">
-              {seoKeywords.map((keyword, index) => (
-                <Tag
-                  key={index}
-                  closable
-                  onClose={() => handleDeleteKeyword(keyword)}
-                  className="m-1"
-                >
-                  {keyword}
-                </Tag>
-              ))}
-            </div>
-          </Form.Item>
-
-          <Form.Item label="SEO Image">
-            <div 
-              className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary"
-              onClick={() => handleOpenImageDialog('seo')}
-            >
-              {seoImageUrl ? (
-                <div style={{ position: 'relative', display: 'inline-block' }}>
-                  <img 
-                    src={seoImageUrl} 
-                    alt="seo" 
-                    className="mx-auto h-32 object-contain" 
-                    style={{ transition: 'opacity 0.3s ease' }}
-                    onMouseOver={(e) => e.currentTarget.style.opacity = '0.5'} 
-                    onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                  <Input 
+                    placeholder="Enter blog title" 
+                    onChange={handleSlugGeneration}
+                    className="py-2" 
                   />
-                  <div style={{ 
-                    position: 'absolute', 
-                    top: 0, 
-                    left: 0, 
-                    width: '100%', 
-                    height: '100%', 
-                    backgroundColor: 'hsla(346, 100%, 92%, 0.425)', 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
-                    transition: 'opacity 0.7s ease',
-                    opacity: 0,
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = '1'} 
-                  onMouseOut={(e) => e.currentTarget.style.opacity = '0'}>
-                    <div style={{ fontSize: '20px' }}>Edit</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col justify-center items-center h-32">
-                  <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
-                  <p className="mt-2">Upload SEO Image</p>
-                </div>
-              )}
-            </div>
-          </Form.Item>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
+                  name="slug"
+                  rules={[{ required: true, message: 'Please enter blog slug' }]}
+                >
+                  <Input 
+                    placeholder="blog-post-slug" 
+                    className="py-2"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <div className="flex justify-end mt-4">
-            <Button className="mr-2" onClick={handleModalCancel}>Cancel</Button>
-            <Button type="primary" htmlType="submit" className="bg-primary hover:bg-primary-hbr">
-              {editMode ? 'Update' : 'Create'} Blog
-            </Button>
+            <Row gutter={24}>
+              <Col span={12}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
+                  <Button 
+                    type="link" 
+                    icon={<PlusOutlined />} 
+                    onClick={() => setCategoryDialogOpen(true)}
+                    size="small"
+                    className="text-primary"
+                  >
+                    Add New
+                  </Button>
+                </div>
+                <Form.Item
+                  name="category"
+                >
+                  <Select 
+                    placeholder="Select category"
+                    className="w-full"
+                    dropdownStyle={{ borderRadius: '6px' }}
+                  >
+                    {categories.map((cat) => (
+                      <Select.Option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="text-dark dark:text-white/[.87] font-medium">Featured</span>}
+                  name="isFeatured"
+                  initialValue="No"
+                >
+                  <Select
+                    className="w-full"
+                    dropdownStyle={{ borderRadius: '6px' }}
+                  >
+                    <Select.Option value="Yes">Yes</Select.Option>
+                    <Select.Option value="No">No</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              label={<span className="text-dark dark:text-white/[.87] font-medium">Summary</span>}
+              name="summary"
+            >
+              <Input.TextArea rows={3} placeholder="Write a brief summary of the blog" className="text-base" />
+            </Form.Item>
+
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-dark dark:text-white/[.87] font-medium">Tags</span>
+              <Button 
+                type="link" 
+                icon={<PlusOutlined />} 
+                onClick={() => setTagDialogOpen(true)}
+                size="small"
+                className="text-primary"
+              >
+                Add New
+              </Button>
+            </div>
+            <Form.Item>
+              <Select
+                mode="multiple"
+                placeholder="Select tags"
+                value={selectedTags}
+                onChange={setSelectedTags}
+                style={{ width: '100%' }}
+                optionLabelProp="label"
+                className="w-full"
+                dropdownStyle={{ borderRadius: '6px' }}
+              >
+                {tags.map((tag) => (
+                  <Select.Option key={tag.id} value={tag.name} label={tag.name}>
+                    {tag.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
+                  <div 
+                    className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors duration-300"
+                    onClick={() => handleOpenImageDialog('main')}
+                  >
+                    {imageUrl ? (
+                      <div className="relative inline-block group">
+                        <img 
+                          src={imageUrl} 
+                          alt="blog" 
+                          className="mx-auto h-32 object-contain transition-opacity duration-300" 
+                        />
+                        <div className="absolute inset-0 bg-black/20 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded">
+                          <span className="text-white font-medium">Change Image</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col justify-center items-center h-32">
+                        <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
+                        <p className="mt-2 text-gray-500">Upload Featured Image</p>
+                      </div>
+                    )}
+                  </div>
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"/>
+                <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z"/>
+              </svg>
+              Content
+            </h3>
+            <Form.Item>
+              <Editor
+                apiKey="cluzl6f3pdaveewms6exdzpvcygpa23rgrx0whym6svjop94"
+                value={editorContent}
+                init={{
+                  height: 400,
+                  menubar: true,
+                  plugins: [
+                    'advlist autolink lists link image charmap print preview anchor',
+                    'searchreplace visualblocks code fullscreen',
+                    'insertdatetime media table paste code help wordcount'
+                  ],
+                  toolbar:
+                    'undo redo | formatselect | bold italic backcolor | \
+                    alignleft aligncenter alignright alignjustify | \
+                    bullist numlist outdent indent | removeformat | help'
+                }}
+                onEditorChange={(content) => setEditorContent(content)}
+              />
+            </Form.Item>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+              </svg>
+              SEO Information
+            </h3>
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Title</span>}
+                  name="seoTitle"
+                >
+                  <Input placeholder="SEO title (leave empty to use main title)" className="py-2" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Description</span>}
+                  name="seoDescription"
+                >
+                  <Input.TextArea rows={2} placeholder="SEO description" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Keywords</span>}>
+              <Input
+                placeholder="Type keyword and press Enter"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                onKeyPress={handleKeywordInputKeyPress}
+                className="py-2"
+              />
+              <div className="flex flex-wrap gap-1 mt-2">
+                {seoKeywords.map((keyword, index) => (
+                  <Tag
+                    key={index}
+                    closable
+                    onClose={() => handleDeleteKeyword(keyword)}
+                    className="m-1 py-1 px-3"
+                  >
+                    {keyword}
+                  </Tag>
+                ))}
+              </div>
+            </Form.Item>
+
+            <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Image</span>}>
+              <div 
+                className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors duration-300"
+                onClick={() => handleOpenImageDialog('seo')}
+              >
+                {seoImageUrl ? (
+                  <div className="relative inline-block group">
+                    <img 
+                      src={seoImageUrl} 
+                      alt="seo" 
+                      className="mx-auto h-32 object-contain transition-opacity duration-300" 
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded">
+                      <span className="text-white font-medium">Change Image</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col justify-center items-center h-32">
+                    <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
+                    <p className="mt-2 text-gray-500">Upload SEO Image</p>
+                  </div>
+                )}
+              </div>
+            </Form.Item>
+          </div>
+
+          <div className="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <Space size="middle">
+              <Button 
+                className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10" 
+                onClick={handleModalCancel}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                className="px-5 h-10 shadow-none bg-primary hover:bg-primary-hbr"
+              >
+                {editMode ? 'Update' : 'Create'} Blog
+              </Button>
+            </Space>
           </div>
         </Form>
       </Modal>

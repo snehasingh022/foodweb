@@ -590,7 +590,13 @@ function Helpdesk() {
 
       {/* Create/Edit Ticket Modal */}
       <Modal
-        title={editMode ? "Edit Ticket" : "Create New Ticket"}
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              {editMode ? "Edit Ticket" : "Create New Ticket"}
+            </span>
+          </div>
+        }
         open={addModalVisible}
         onCancel={() => {
           setAddModalVisible(false);
@@ -601,51 +607,81 @@ function Helpdesk() {
         width="95%"
         style={{ maxWidth: '700px' }}
         className="responsive-modal"
+        bodyStyle={{ padding: '24px' }}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          className="p-2"
+          className="px-6 pt-4"
         >
-          <Form.Item
-            name="category"
-            label={<span className="text-dark dark:text-white/[.87]">Category</span>}
-            rules={[{ required: true, message: 'Please select category' }]}
-          >
-            <Select placeholder="Select a category">
-              <Select.Option value="booking_issue">Booking Issue</Select.Option>
-              <Select.Option value="payment_issue">Payment Issue</Select.Option>
-              <Select.Option value="technical_support">Technical Support</Select.Option>
-              <Select.Option value="feedback">Feedback</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="customerName"
-            label={<span className="text-dark dark:text-white/[.87]">Customer Name</span>}
-            rules={[{ required: true, message: 'Please enter customer name' }]}
-          >
-            <Input placeholder="Enter customer name" />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label={<span className="text-dark dark:text-white/[.87]">Email</span>}
-            rules={[
-              { required: true, message: 'Please enter email' },
-              { type: 'email', message: 'Please enter a valid email' }
-            ]}
-          >
-            <Input placeholder="Enter email" />
-          </Form.Item>
-          <Form.Item
-            name="openMessage"
-            label={<span className="text-dark dark:text-white/[.87]">Message</span>}
-            rules={[{ required: true, message: 'Please enter message' }]}
-          >
-            <Input.TextArea rows={4} placeholder="Enter message" />
-          </Form.Item>
-          <Form.Item className="mb-0 flex justify-end mt-4">
+          <div className="mb-6">
+            <h3 className="text-base text-gray-500 dark:text-gray-400 mb-4">Ticket Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Form.Item
+                name="customerName"
+                label={<span className="text-dark dark:text-white/[.87] font-medium">Customer Name</span>}
+                rules={[{ required: true, message: 'Please enter customer name' }]}
+              >
+                <Input 
+                  prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
+                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+                  </svg>}
+                  placeholder="Enter customer name" 
+                  className="py-2"
+                />
+              </Form.Item>
+              
+              <Form.Item
+                name="email"
+                label={<span className="text-dark dark:text-white/[.87] font-medium">Email</span>}
+                rules={[
+                  { required: true, message: 'Please enter email' },
+                  { type: 'email', message: 'Please enter a valid email' }
+                ]}
+              >
+                <Input 
+                  prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
+                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+                  </svg>}
+                  placeholder="Enter email address" 
+                  className="py-2"
+                />
+              </Form.Item>
+            </div>
+            
+            <Form.Item
+              name="category"
+              label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
+              rules={[{ required: true, message: 'Please select category' }]}
+            >
+              <Select 
+                placeholder="Select a category"
+                className="w-full"
+                dropdownStyle={{ borderRadius: '6px' }}
+              >
+                <Select.Option value="booking_issue">Booking Issue</Select.Option>
+                <Select.Option value="payment_issue">Payment Issue</Select.Option>
+                <Select.Option value="technical_support">Technical Support</Select.Option>
+                <Select.Option value="feedback">Feedback</Select.Option>
+                <Select.Option value="other">Other</Select.Option>
+              </Select>
+            </Form.Item>
+            
+            <Form.Item
+              name="openMessage"
+              label={<span className="text-dark dark:text-white/[.87] font-medium">Message</span>}
+              rules={[{ required: true, message: 'Please enter message' }]}
+            >
+              <Input.TextArea 
+                rows={4} 
+                placeholder="Describe the issue or request in detail..." 
+                className="text-base"
+              />
+            </Form.Item>
+          </div>
+          
+          <div className="flex justify-end mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <Space>
               <Button 
                 onClick={() => {
@@ -653,6 +689,7 @@ function Helpdesk() {
                   setEditMode(false);
                   form.resetFields();
                 }}
+                className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
               >
                 Cancel
               </Button>
@@ -660,11 +697,12 @@ function Helpdesk() {
                 type="primary" 
                 htmlType="submit" 
                 loading={submitLoading}
+                className="px-5 h-10 shadow-none"
               >
-                {editMode ? "Update" : "Create"}
+                {editMode ? "Update Ticket" : "Create Ticket"}
               </Button>
             </Space>
-          </Form.Item>
+          </div>
         </Form>
       </Modal>
 
