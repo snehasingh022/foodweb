@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Button, Upload, message, Spin, Modal } from 'antd';
 import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
-import { db, analytics } from '../../../authentication/firebase';
+import { mediaDb, mediaAnalytics, mediaStorage } from '../../../authentication/firebase-media';
+import { db } from '../../../authentication/firebase'; // Import the main db from firebase.tsx
 import { 
   collection, 
   query, 
@@ -13,7 +14,7 @@ import {
   doc, 
   serverTimestamp 
 } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { RcFile } from 'antd/es/upload';
 import Protected from '../../../components/Protected/Protected';
 
@@ -46,6 +47,7 @@ function Media() {
   const fetchMediaFiles = async () => {
     setLoading(true);
     try {
+      // Query the main Firebase db's media collection instead
       const mediaRef = query(
         collection(db, "media"),
         orderBy("createdAt", "desc")
@@ -68,14 +70,12 @@ function Media() {
     fetchMediaFiles();
   }, []);
 
-  const storage = getStorage();
-
   const handleUpload = async (file: RcFile) => {
     setLoading(true);
     try {
       // Create a unique filename
       const fileName = `MID${Date.now()}`;
-      const storageRef = ref(storage, `media/${fileName}`);
+      const storageRef = ref(mediaStorage, `media/${fileName}`);
       
       // Upload file to Firebase Storage
       await uploadBytes(storageRef, file);
@@ -83,7 +83,7 @@ function Media() {
       // Get the download URL
       const downloadURL = await getDownloadURL(storageRef);
       
-      // Add document to Firestore
+      // Add document to the main Firestore database's media collection
       await addDoc(collection(db, "media"), {
         name: file.name,
         image: downloadURL,
@@ -102,11 +102,11 @@ function Media() {
 
   const handleDelete = async (id: string, imageUrl: string) => {
     try {
-      // Delete from Firestore
+      // Delete from the main Firestore
       await deleteDoc(doc(db, "media", id));
       
       // Extract the file path from the URL to delete from Storage
-      const fileRef = ref(storage, imageUrl);
+      const fileRef = ref(mediaStorage, imageUrl);
       try {
         await deleteObject(fileRef);
       } catch (storageError) {

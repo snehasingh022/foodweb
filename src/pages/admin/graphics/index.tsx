@@ -4,6 +4,10 @@ import { PageHeaders } from '../../../components/page-headers/index';
 import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import Protected from '../../../components/Protected/Protected';
+// Import the graphics-specific Firebase configuration
+import { graphicsDb, graphicsStorage, graphicsAnalytics } from '../../../authentication/firebase-graphics';
+// Import the main Firebase database
+import { db } from '../../../authentication/firebase';
 
 // Import types for TypeScript but not the actual implementation
 import type { 
@@ -22,7 +26,6 @@ interface ArchiveImage {
 
 interface SliderImage {
   imageUrl: string;
-  carouselName: string;
   screenName: string;
   createdAt?: any;
 }
@@ -34,7 +37,6 @@ type ScreenOptions = {
 function Graphics() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<SliderImage[]>([]);
-  const [currentCarousel, setCurrentCarousel] = useState('userCarousel');
   const [addImageModalOpen, setAddImageModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
@@ -46,9 +48,7 @@ function Graphics() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [firebaseInitialized, setFirebaseInitialized] = useState(false);
-  const [db, setDb] = useState<any>(null);
-  const [storage, setStorage] = useState<any>(null);
+  const [firebaseInitialized, setFirebaseInitialized] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -69,13 +69,11 @@ function Graphics() {
     },
   ];
 
-  const carousels = [
-    { key: 'userCarousel', label: 'User Carousel' },
-    { key: 'partnerCarousel', label: 'Partner Carousel' },
-    { key: 'offerCarousel', label: 'Offer Carousel' }
-  ];
+  // Single homeCarousel constant
+  const carouselName = 'homeCarousel';
 
-  const userScreenOptions: ScreenOptions = {
+  // Combined screen options
+  const screenOptions: ScreenOptions = {
     HomeScreenNavigator: 'Home Screen Navigator',
     makeupSuggestor: 'Makeup Suggestor',
     myBooking: 'My Booking',
@@ -83,71 +81,32 @@ function Graphics() {
     helpDeskScreen: 'Help Desk Screen',
     edit: 'Edit',
     savedLocation: 'Saved Location',
-  };
-
-  const partnerScreenOptions: ScreenOptions = {
-    accounts: 'Accounts',
-    helpDesk: 'Help Desk',
+    payment: 'Payment',
     notification: 'Notification',
     homeTab: 'Home Tab',
-    myBooking: 'My Booking',
-    payment: 'Payment',
-    account: 'Account',
   };
-
-  const currentScreenOptions = currentCarousel === 'partnerCarousel' 
-    ? partnerScreenOptions 
-    : userScreenOptions;
-
-  // Initialize Firebase on client-side only
-  useEffect(() => {
-    const initializeFirebase = async () => {
-      try {
-        // Dynamically import Firebase modules
-        const firebaseAuth = await import('../../../authentication/firebase');
-        const fireStorage = await import('firebase/storage');
-        
-        if (firebaseAuth.db) {
-          setDb(firebaseAuth.db);
-          setStorage(fireStorage.getStorage());
-          setFirebaseInitialized(true);
-        }
-      } catch (error) {
-        console.error('Failed to initialize Firebase:', error);
-        message.error('Failed to connect to database');
-      }
-    };
-
-    initializeFirebase();
-  }, []);
 
   useEffect(() => {
     if (firebaseInitialized) {
       fetchSliderImages();
       fetchArchiveImages();
     }
-  }, [firebaseInitialized, currentCarousel]);
+  }, [firebaseInitialized]);
 
   const fetchSliderImages = async () => {
     if (!firebaseInitialized) return;
     
     setLoading(true);
     try {
-      if (!db) {
-        console.error('Firestore is not initialized');
-        message.error('Database connection error');
-        setLoading(false);
-        return;
-      }
-
       // Dynamic import of Firestore functions
       const { doc, getDoc } = await import('firebase/firestore');
-      const docRef = doc(db, 'sliderImages', currentCarousel);
+      // Use the main Firebase database with homeCarousel
+      const docRef = doc(db, 'sliderImages', carouselName);
       const docSnapshot = await getDoc(docRef);
 
       if (docSnapshot.exists()) {
         const carouselData = docSnapshot.data();
-        setData(carouselData[currentCarousel] || []);
+        setData(carouselData.images || []);
       } else {
         setData([]);
       }
@@ -163,13 +122,9 @@ function Graphics() {
     if (!firebaseInitialized) return;
     
     try {
-      if (!db) {
-        console.error('Firestore is not initialized');
-        return;
-      }
-
       // Dynamic import of Firestore functions
       const { collection, getDocs } = await import('firebase/firestore');
+      // Use the main Firebase database
       const archiveRef = collection(db, 'archive');
       const querySnapshot = await getDocs(archiveRef);
       const archiveData = querySnapshot.docs.map(doc => ({
@@ -182,15 +137,12 @@ function Graphics() {
     }
   };
 
-  const handleImageUpload = async (file: File, collectionId: string): Promise<string> => {
+  const handleImageUpload = async (file: File): Promise<string> => {
     try {
-      if (!storage) {
-        throw new Error('Firebase storage is not initialized');
-      }
-
       // Dynamic import of Storage functions
       const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-      const storageRef = ref(storage, `/adminPanel/sliderImages/${collectionId}/${file.name}`);
+      // Continue using graphicsStorage for upload
+      const storageRef = ref(graphicsStorage, `/adminPanel/sliderImages/${carouselName}/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       return downloadURL;
@@ -202,19 +154,16 @@ function Graphics() {
 
   const handleImageUploadToArchive = async (file: File): Promise<string> => {
     try {
-      if (!db || !storage) {
-        throw new Error('Firebase is not fully initialized');
-      }
-
       // Dynamic import of functions
       const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
       
-      const storageRef = ref(storage, `adminPanel/archive/images/${file.name}`);
+      // Continue using graphicsStorage for upload
+      const storageRef = ref(graphicsStorage, `adminPanel/archive/images/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
 
-      // Add to archive collection
+      // Add to archive collection in the main database
       const archiveRef = collection(db, 'archive');
       await addDoc(archiveRef, {
         ImageUrl: downloadURL,
@@ -243,16 +192,10 @@ function Graphics() {
     try {
       setLoading(true);
       
-      if (!db) {
-        throw new Error('Firestore is not initialized');
-      }
-      
-      const sliderImageId = currentCarousel;
-      
       let imageURL = '';
       if (selectedImage) {
-        // Upload to storage and get URL
-        imageURL = await handleImageUpload(selectedImage, sliderImageId);
+        // Upload to storage and get URL using graphicsStorage
+        imageURL = await handleImageUpload(selectedImage);
         
         // Also add to archive for future use
         await handleImageUploadToArchive(selectedImage);
@@ -270,24 +213,23 @@ function Graphics() {
       
       const newImageData = {
         imageUrl: imageURL,
-        carouselName: currentCarousel,
         screenName: selectedDestination,
-        createdAt: serverTimestamp(),
       };
 
-      const docRef = doc(db, 'sliderImages', sliderImageId);
+      // Store data in the main Firebase database for homeCarousel
+      const docRef = doc(db, 'sliderImages', carouselName);
       const docSnapshot = await getDoc(docRef);
 
       if (docSnapshot.exists()) {
         const currentData = docSnapshot.data();
-        const updatedArray = [...(currentData[currentCarousel] || []), newImageData];
+        const updatedArray = [...(currentData.images || []), newImageData];
 
         await updateDoc(docRef, {
-          [currentCarousel]: updatedArray,
+          images: updatedArray,
         });
       } else {
         await setDoc(docRef, {
-          [currentCarousel]: [newImageData],
+          images: [newImageData],
         });
       }
 
@@ -314,24 +256,21 @@ function Graphics() {
     try {
       setLoading(true);
       
-      if (!db) {
-        throw new Error('Firestore is not initialized');
-      }
-      
       // Dynamic import of Firestore functions
       const { doc, getDoc, updateDoc } = await import('firebase/firestore');
       
-      const docRef = doc(db, 'sliderImages', currentCarousel);
+      // Use the main Firebase database with homeCarousel
+      const docRef = doc(db, 'sliderImages', carouselName);
       const docSnapshot = await getDoc(docRef);
 
       if (docSnapshot.exists()) {
         const currentData = docSnapshot.data();
-        const updatedArray = currentData[currentCarousel].filter(
+        const updatedArray = currentData.images.filter(
           (_: SliderImage, i: number) => i !== index
         );
 
         await updateDoc(docRef, {
-          [currentCarousel]: updatedArray,
+          images: updatedArray,
         });
 
         message.success('Image deleted successfully');
@@ -388,7 +327,7 @@ function Graphics() {
     <>
       <PageHeaders
         className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        title="Graphics"
+        title="Home Carousel Graphics"
         routes={PageRoutes}
       />
       
@@ -397,7 +336,7 @@ function Graphics() {
           <Col xs={24}>
             <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
               <div className="flex-1">
-                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Slider Images</h1>
+                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Home Carousel Images</h1>
               </div>
               <div className="flex items-center gap-2">
                 <Button 
@@ -410,27 +349,6 @@ function Graphics() {
                 </Button>
                 {loading && <Spin />}
               </div>
-            </div>
-          </Col>
-        </Row>
-
-        {/* Carousel selector buttons */}
-        <Row className="mb-6">
-          <Col span={24}>
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {carousels.map((carousel, i) => (
-                <Button
-                  key={i}
-                  onClick={() => setCurrentCarousel(carousel.key)}
-                  className={`px-4 py-2 min-w-[150px] border ${
-                    currentCarousel === carousel.key 
-                      ? 'bg-primary/10 border-primary text-primary' 
-                      : 'border-gray-300 text-gray-700 dark:border-white/10 dark:text-white/60'
-                  }`}
-                >
-                  {carousel.label}
-                </Button>
-              ))}
             </div>
           </Col>
         </Row>
@@ -575,9 +493,9 @@ function Graphics() {
               value={selectedDestination}
               className="w-full"
             >
-              {Object.keys(currentScreenOptions).map((key) => (
+              {Object.keys(screenOptions).map((key) => (
                 <Option key={key} value={key}>
-                  {currentScreenOptions[key]}
+                  {screenOptions[key]}
                 </Option>
               ))}
             </Select>
