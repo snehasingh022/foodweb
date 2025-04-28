@@ -20,7 +20,7 @@ import {
 import { PageHeaders } from '../../../components/page-headers/index';
 import { Buttons } from '../../../components/buttons';
 import { UilPlus, UilEdit, UilTrash, UilSearch,UilEye } from '@iconscout/react-unicons';
-import { collection, query, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, limit, orderBy, startAfter, endBefore, limitToLast, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, limit, orderBy, startAfter, endBefore, limitToLast, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import moment from 'moment';
 import { SearchOutlined, PlusOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
@@ -86,10 +86,12 @@ function Helpdesk() {
     fetchTickets();
   }, [statusFilter]);
 
-  // Generate ticket ID with "HID" + timestamp
+  // Generate ticket ID with "HID" + timestamp (8 digits)
   const generateTicketId = () => {
-    const timestamp = Date.now();
-    return `HID${timestamp}`;
+    const timestamp = Date.now().toString();
+    // Take the last 8 digits of the timestamp
+    const shortTimestamp = timestamp.slice(-8);
+    return `HID${shortTimestamp}`;
   };
 
   // Fetch tickets from Firebase
@@ -262,10 +264,16 @@ function Helpdesk() {
         updatedAt: serverTimestamp(),
         customerName: values.customerName,
         email: values.email,
-        openMessage: values.openMessage
+        openMessage: values.openMessage,
+        ticketId: ticketID
       };
       
-      await addDoc(collection(db, 'helpdesk'), newTicket);
+      // Create a document reference with the custom ID
+      const ticketRef = doc(db, 'helpdesk', ticketID);
+      
+      // Set the document with the custom ID
+      await setDoc(ticketRef, newTicket);
+      
       message.success("Ticket created successfully");
       setVisible(false);
       form.resetFields();
