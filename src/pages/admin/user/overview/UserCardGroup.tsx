@@ -22,7 +22,7 @@ function UserCardGroup({ user }:UserCardGroupProps) {
         <div className="bg-white dark:bg-white/10 p-[25px] rounded-[10px]">
           <div className="card__top">
             <div className="user-card__img">
-              <img src={`/hexadash-nextjs/${icon}`} alt="" />
+              <img src={`/${icon}`} alt="" />
             </div>
             <div className="user-card__info">
               <Heading className="card__name" as="h6">
@@ -51,7 +51,7 @@ function UserCardGroup({ user }:UserCardGroupProps) {
             <p>{content}</p>
             <div className="image-group">
               {img.map((item:string, key:number) => {
-                return <img key={key + 1} src={`/hexadash-nextjs/${item}`} alt="" />;
+                return <img key={key + 1} src={`/${item}`} alt="" />;
               })}
             </div>
           </div>

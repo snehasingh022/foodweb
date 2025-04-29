@@ -70,7 +70,7 @@ function ProjectTaskList() {
                     <img
                         className="block mx-[10px] leading-none"
                         style={{ width: '30px' }}
-                        src="/hexadash-nextjs/img/users/1.png"
+                        src="/img/users/1.png"
                         alt=""
                     />
                     <span className="block mx-[10px] leading-none">
@@ -101,7 +101,7 @@ function ProjectTaskList() {
                     <img
                         className="block mx-[10px] leading-none"
                         style={{ width: '30px' }}
-                        src="/hexadash-nextjs/img/users/1.png"
+                        src="/img/users/1.png"
                         alt=""
                     />
                     <span className="block mx-[10px] leading-none">
@@ -134,7 +134,7 @@ function ProjectTaskList() {
                     <img
                         className="block mx-[10px] leading-none"
                         style={{ width: '30px' }}
-                        src="/hexadash-nextjs/img/users/1.png"
+                        src="/img/users/1.png"
                         alt=""
                     />
                     <span className="block mx-[10px] leading-none">
@@ -165,7 +165,7 @@ function ProjectTaskList() {
                     <img
                         className="block mx-[10px] leading-none"
                         style={{ width: '30px' }}
-                        src="/hexadash-nextjs/img/users/1.png"
+                        src="/img/users/1.png"
                         alt=""
                     />
                     <span className="block mx-[10px] leading-none">
@@ -196,7 +196,7 @@ function ProjectTaskList() {
                     <img
                         className="block mx-[10px] leading-none"
                         style={{ width: '30px' }}
-                        src="/hexadash-nextjs/img/users/1.png"
+                        src="/img/users/1.png"
                         alt=""
                     />
                     <span className="block mx-[10px] leading-none">
@@ -227,7 +227,7 @@ function ProjectTaskList() {
                     <img
                         className="block mx-[10px] leading-none"
                         style={{ width: '30px' }}
-                        src="/hexadash-nextjs/img/users/1.png"
+                        src="/img/users/1.png"
                         alt=""
                     />
                     <span className="block mx-[10px] leading-none">

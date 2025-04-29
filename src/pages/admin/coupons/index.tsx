@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Row, Col, Card, Input, Button, Table, Modal, Form, message, Switch, Space, Tabs, Tooltip, Divider, Badge, Dropdown, MenuProps } from 'antd';
+import { Row, Col, Card, Input, Button, Table, Modal, Form, message, Switch, Space, Tabs, Tooltip, Divider, Badge, Dropdown, MenuProps, Typography, Radio, Select } from 'antd';
 import type { InputRef } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { 
@@ -10,7 +10,9 @@ import {
   ExclamationCircleOutlined,
   MoreOutlined,
   FilterOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import { collection, getDocs, doc, query, orderBy, setDoc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
@@ -18,10 +20,13 @@ import { Buttons } from '../../../components/buttons';
 import Protected from '../../../components/Protected/Protected';
 import { useMediaQuery } from 'react-responsive';
 
+const { Title } = Typography;
+
 // Define Coupon interface
 interface Coupon {
   id: string;
   key: string;
+  name: string;
   minimumPrice: string | number;
   percentageDiscount: string | number;
   status: 'active' | 'inactive';
@@ -35,8 +40,10 @@ interface Coupon {
 
 // Form values interface
 interface CouponFormValues {
+  name: string;
   minimumPrice: string;
   percentageDiscount: string;
+  status?: 'active' | 'inactive';
 }
 
 function Coupons() {
@@ -99,6 +106,7 @@ function Coupons() {
         return {
           id: doc.id,
           key: doc.id,
+          name: docData.name || '',
           minimumPrice: docData.minimumPrice || 0,
           percentageDiscount: docData.percentageDiscount || 0,
           status: (docData.status as 'active' | 'inactive') || 'active',
@@ -125,7 +133,9 @@ function Coupons() {
   // Filter data based on active status and search text
   const filteredData = coupons.filter((coupon) => {
     const matchesStatus = activeFilter === 'all' || coupon.status === activeFilter;
-    const matchesSearch = coupon.id.toLowerCase().includes(searchText.toLowerCase());
+    const matchesSearch = 
+      coupon.id.toLowerCase().includes(searchText.toLowerCase()) || 
+      coupon.name.toLowerCase().includes(searchText.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -142,11 +152,12 @@ function Coupons() {
       console.log("Creating coupon with ID:", couponId);
       
       await setDoc(doc(db, "coupons", couponId), {
+        name: values.name,
         minimumPrice: values.minimumPrice,
         percentageDiscount: values.percentageDiscount,
         updatedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
-        status: "active",
+        status: values.status || "active",
       });
 
       message.success("Coupon added successfully");
@@ -162,10 +173,14 @@ function Coupons() {
   // Update existing coupon
   const handleEditCoupon = async (values: CouponFormValues) => {
     try {
+      console.log("Updating coupon with ID:", editId, "Values:", values);
+      
       const ref = doc(db, "coupons", editId);
       await updateDoc(ref, {
+        name: values.name,
         minimumPrice: values.minimumPrice,
         percentageDiscount: values.percentageDiscount,
+        status: values.status || 'active',
         updatedAt: serverTimestamp(),
       });
 
@@ -174,6 +189,8 @@ function Coupons() {
       form.resetFields();
       setIsModalVisible(false);
       setIsEdit(false);
+      setEditId('');
+      setCurrentCoupon(null);
     } catch (error) {
       console.error("Error updating coupon:", error);
       message.error("Failed to update coupon");
@@ -203,12 +220,16 @@ function Coupons() {
     if (record) {
       setIsEdit(true);
       setEditId(record.id);
+      setCurrentCoupon(record);
       form.setFieldsValue({
+        name: record.name,
         minimumPrice: record.minimumPrice,
         percentageDiscount: record.percentageDiscount,
+        status: record.status,
       });
     } else {
       setIsEdit(false);
+      setCurrentCoupon(null);
       form.resetFields();
     }
     setIsModalVisible(true);
@@ -232,12 +253,6 @@ function Coupons() {
         },
         {
           key: '2',
-          label: record.status === 'active' ? 'Deactivate' : 'Activate',
-          icon: <Badge status={record.status === 'active' ? 'success' : 'error'} />,
-          onClick: () => handleToggleStatus(record),
-        },
-        {
-          key: '3',
           label: 'Delete',
           icon: <DeleteOutlined />,
           danger: true,
@@ -255,6 +270,11 @@ function Coupons() {
         dataIndex: 'id',
         key: 'id',
         render: (text: string) => <span className="font-medium">{text}</span>,
+      },
+      {
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'name',
       },
       {
         title: 'Discount (%)',
@@ -317,13 +337,6 @@ function Coupons() {
                 className="bg-primary hover:bg-primary-hbr"
               />
             </Tooltip>
-            <Tooltip title={record.status === 'active' ? 'Deactivate' : 'Activate'}>
-              <Switch
-                checked={record.status === 'active'}
-                onChange={() => handleToggleStatus(record)}
-                className={record.status === 'active' ? 'bg-success' : 'bg-danger'}
-              />
-            </Tooltip>
             <Tooltip title="Delete">
               <Button 
                 type="primary" 
@@ -344,7 +357,7 @@ function Coupons() {
   const handleSubmit = async (values: CouponFormValues) => {
     try {
       setSubmitLoading(true);
-      if (currentCoupon) {
+      if (isEdit) {
         await handleEditCoupon(values);
       } else {
         await handleAddCoupon(values);
@@ -394,91 +407,40 @@ function Coupons() {
   return (
     <>
       <PageHeaders
-        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
-        title="Coupons"
-        routes={PageRoutes}
+        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
       />
-      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
-            <Card className="h-full" bodyStyle={{ padding: isMobile ? '12px' : '24px' }}>
+            <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className={`${isMobile ? 'p-2 sm:p-4' : 'p-4 sm:p-[25px]'}`}>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold mb-1 sm:mb-0">
+                <div className="p-[25px]">
+                  <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                    <Title level={4} className="mb-0 text-dark dark:text-white/[.87]">
                       {isMobile ? 'Coupons' : 'Coupon Management'}
-                    </h2>
+                    </Title>
                     
-                    {isMobile ? (
-                      <div className="flex items-center justify-between w-full">
-                        <Button 
-                          icon={<FilterOutlined />} 
-                          onClick={() => {
-                            const tabsElement = document.querySelector('.ant-tabs-nav');
-                            if (tabsElement) {
-                              tabsElement.scrollIntoView({ behavior: 'smooth' });
-                            }
-                          }}
-                        >
-                          Filter
-                        </Button>
-                        <Space>
-                          <Button 
-                            icon={<SearchOutlined />} 
-                            onClick={() => searchInputRef.current?.focus()}
-                          />
-                          <Button 
-                            icon={<ReloadOutlined />} 
-                            onClick={fetchCoupons}
-                            loading={loading}
-                          />
-                          <Button
-                            type="primary"
-                            onClick={() => {
-                              setCurrentCoupon(null);
-                              setIsModalVisible(true);
-                            }}
-                            icon={<PlusOutlined />}
-                          />
-                        </Space>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <Input
-                          placeholder="Search coupons..."
-                          prefix={<SearchOutlined />}
-                          value={searchText}
-                          onChange={(e) => setSearchText(e.target.value)}
-                          className="w-full sm:w-64"
-                          ref={searchInputRef}
-                        />
-                        <Button
-                          type="primary"
-                          onClick={() => {
-                            setCurrentCoupon(null);
-                            setIsModalVisible(true);
-                          }}
-                          icon={<PlusOutlined />}
-                          className="w-full sm:w-auto"
-                        >
-                          Add Coupon
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {isMobile && (
-                    <div className="mb-4">
-                      <Input
-                        placeholder="Search coupons..."
-                        prefix={<SearchOutlined />}
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        placeholder="Search coupons..." 
+                        prefix={<SearchOutlined />} 
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        className="w-full"
+                        className="min-w-[280px]"
                         ref={searchInputRef}
                       />
+                      <Button 
+                        type="primary" 
+                        onClick={() => {
+                          setCurrentCoupon(null);
+                          setIsModalVisible(true);
+                        }}
+                        icon={<PlusOutlined />}
+                      >
+                        {!isMobile && "Add Coupon"}
+                      </Button>
                     </div>
-                  )}
+                  </div>
                   
                   <Tabs
                     activeKey={activeFilter}
@@ -489,7 +451,7 @@ function Coupons() {
                     centered={isMobile}
                   />
                   
-                  <div className="overflow-x-auto">
+                  <div className="table-responsive">
                     <Table
                       dataSource={filteredData}
                       columns={getColumns()}
@@ -500,7 +462,7 @@ function Coupons() {
                         responsive: true,
                         size: isMobile ? 'small' : 'default',
                       }}
-                      className="responsive-table"
+                      className="[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-regularBG dark:[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-[#323440] [&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:font-medium"
                       scroll={{ x: 'max-content' }}
                       size={isMobile ? 'small' : 'middle'}
                       rowKey="id"
@@ -546,8 +508,10 @@ function Coupons() {
           layout="vertical"
           onFinish={handleSubmit}
           initialValues={currentCoupon || {
+            name: '',
             percentageDiscount: '',
-            minimumPrice: ''
+            minimumPrice: '',
+            status: 'active'
           }}
           className="p-2"
         >
@@ -562,6 +526,26 @@ function Coupons() {
           )}
 
           <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                name="name"
+                label={
+                  <span className="font-medium text-dark dark:text-white/[.87]">
+                    Coupon Name
+                  </span>
+                }
+                rules={[
+                  { required: true, message: 'Please input the coupon name' },
+                ]}
+              >
+                <Input 
+                  placeholder="e.g. Summer Discount" 
+                  size={isMobile ? 'middle' : 'large'}
+                  className="rounded-md"
+                />
+              </Form.Item>
+            </Col>
+            
             <Col span={24}>
               <Form.Item
                 name="percentageDiscount"
@@ -617,6 +601,45 @@ function Coupons() {
                   size={isMobile ? 'middle' : 'large'}
                   className="rounded-md"
                   addonBefore="₹"
+                />
+              </Form.Item>
+            </Col>
+
+            <Col span={24}>
+              <Form.Item
+                name="status"
+                label={
+                  <span className="font-medium text-dark dark:text-white/[.87]">
+                    Status
+                  </span>
+                }
+                initialValue="active"
+              >
+                <Select
+                  placeholder="Select status"
+                  size={isMobile ? 'middle' : 'large'}
+                  className="rounded-md w-full"
+                  dropdownStyle={{ padding: '8px' }}
+                  options={[
+                    { 
+                      value: 'active', 
+                      label: (
+                        <div className="flex items-center gap-2">
+                          <Badge status="success" />
+                          <span>Active</span>
+                        </div>
+                      )
+                    },
+                    { 
+                      value: 'inactive', 
+                      label: (
+                        <div className="flex items-center gap-2">
+                          <Badge status="error" />
+                          <span>Inactive</span>
+                        </div>
+                      )
+                    }
+                  ]}
                 />
               </Form.Item>
             </Col>

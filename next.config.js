@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '/hexadash-nextjs',
   async redirects() {
       return [
           {
               source: '/',
-              destination: '/hexadash-nextjs',
+              destination: '/admin',
               basePath: false,
               permanent: false
           }

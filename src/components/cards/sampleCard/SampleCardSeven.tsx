@@ -63,7 +63,7 @@ function SampleCardSeven({ item }: SampleCardProps) {
             <h4 className="text-[18px] font-medium mb-[18px] text-dark dark:text-white/[.87] pt-[25px] px-[25px] flex items-center gap-[20px]">
                 <img
                     className="max-w-[50px]"
-                    src={`/hexadash-nextjs/${img}`}
+                    src={`/${img}`}
                     alt=""
                 />
                 <span className="text-dark dark:text-white/[.87]">{title}</span>

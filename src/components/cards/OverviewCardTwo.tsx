@@ -94,7 +94,7 @@ function OverviewCardTwo( data:any, contentFirst?:boolean, bottomStatus?:boolean
               >
                 <ReactSVG
                   className={`fill-${type} [&>div>svg]:w-[35px] [&>div>svg]:h-[35px] md:[&>div>svg]:w-[25px] md:[&>div>svg]:h-[25px]`}
-                  src={`/hexadash-nextjs/img/icon/${icon}`}
+                  src={`/img/icon/${icon}`}
                 />
               </div>
             </div>

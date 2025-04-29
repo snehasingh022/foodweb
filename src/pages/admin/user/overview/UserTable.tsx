@@ -48,7 +48,7 @@ function UserListTable() {
       user: (
         <div className="flex items-center">
           <figure className="mx-2 mb-0">
-            <img style={{ width: '40px' }} src={`/hexadash-nextjs/${img}`} alt="" />
+            <img style={{ width: '40px' }} src={`/${img}`} alt="" />
           </figure>
           <figcaption>
             <Heading className="mb-1 text-sm font-medium text-dark dark:text-white/[.87]" as="h6">

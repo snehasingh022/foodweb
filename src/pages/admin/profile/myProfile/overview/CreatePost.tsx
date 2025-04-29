@@ -42,8 +42,8 @@ function Post() {
             postId: max + 1,
             from: 'David Warner',
             time: new Date().getTime(),
-            img: ['/hexadash-nextjs/img/profile/post/postImage.png'],
-            author: '/hexadash-nextjs/img/chat-author/t4.jpg',
+            img: ['/img/profile/post/postImage.png'],
+            author: '/img/chat-author/t4.jpg',
             content: textValue,
             like: 0,
             comment: [],
@@ -80,7 +80,7 @@ function Post() {
           <div onClick={() => setDrawer(true)} className="relative flex postBody">
             <img
               className="max-w-[46px] max-h-[46px] min-w-[46px] h-[46px] rounded-full absolute top-[5px] z-[22] ltr:left-0 rtl:right-0 object-cover"
-              src={'/hexadash-nextjs/img/chat-author/t4.jpg'}
+              src={'/img/chat-author/t4.jpg'}
               alt=""
             />
             <Input.TextArea
@@ -96,7 +96,7 @@ function Post() {
           >
             <div className="flex items-center gap-[16px]">
               <Buttons className="flex items-center h-[30px] px-[14.5px] text-[12px] rounded-[16px] font-medium text-theme-gray dark:text-white/60 bg-normalBG dark:bg-normalBGdark border-none outline-none gap-[6px] leading-[18px] focus:border-primary">
-                <img className="w-[14] h-[14px]" src={'/hexadash-nextjs/img/icon/image.png'} alt="" />
+                <img className="w-[14] h-[14px]" src={'/img/icon/image.png'} alt="" />
                 Photo/Video
               </Buttons>
               <Buttons

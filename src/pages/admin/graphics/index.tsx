@@ -327,8 +327,7 @@ function Graphics() {
     <>
       <PageHeaders
         className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        title="Home Carousel Graphics"
-        routes={PageRoutes}
+        
       />
       
       <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
@@ -453,7 +452,7 @@ function Graphics() {
 
       {/* Add Image Modal */}
       <Modal
-        title="Add Image"
+        title={<h3 className="text-lg font-semibold px-1">Add Image to Carousel</h3>}
         open={addImageModalOpen}
         onCancel={() => {
           setAddImageModalOpen(false);
@@ -461,6 +460,8 @@ function Graphics() {
           setSelectedImage(null);
           setImagePreview(null);
         }}
+        width={650}
+        bodyStyle={{ padding: '24px 28px' }}
         footer={[
           <Button 
             key="cancel" 
@@ -470,6 +471,7 @@ function Graphics() {
               setSelectedImage(null);
               setImagePreview(null);
             }}
+            className="border border-gray-200 dark:border-white/10 mx-2"
           >
             Cancel
           </Button>,
@@ -478,20 +480,24 @@ function Graphics() {
             type="primary"
             loading={loading}
             onClick={handleAddImage}
-            className="bg-primary hover:bg-primary-hbr"
+            className="bg-primary hover:bg-primary-hbr mx-2"
+            disabled={!selectedDestination || (!imagePreview && !selectedImage)}
           >
-            Add
+            Add to Carousel
           </Button>
         ]}
       >
-        <div className="mt-4">
-          <div className="mb-4">
-            <label className="block text-dark dark:text-white/[.87] mb-2">Destination</label>
+        <div className="mt-4 px-2">
+          <div className="mb-8">
+            <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Select Destination Screen *</label>
             <Select
-              placeholder="Select destination"
+              placeholder="Select screen where image will be displayed"
               onChange={(value) => setSelectedDestination(value)}
               value={selectedDestination}
               className="w-full"
+              size="large"
+              showSearch
+              optionFilterProp="children"
             >
               {Object.keys(screenOptions).map((key) => (
                 <Option key={key} value={key}>
@@ -501,102 +507,166 @@ function Graphics() {
             </Select>
           </div>
           
-          <div 
-            className="w-full bg-gray-50 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-md flex flex-col items-center justify-center p-4 cursor-pointer" 
-            onClick={() => setUploadDialogOpen(true)}
-          >
-            {imagePreview ? (
+          <div className="mb-3">
+            <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Choose Image *</label>
+          </div>
+          
+          {imagePreview ? (
+            <div className="relative mb-6 border border-gray-200 dark:border-white/10 rounded-lg p-6">
               <img 
                 src={imagePreview} 
                 alt="Preview" 
-                className="w-full max-h-40 object-contain" 
+                className="w-full max-h-56 object-contain mx-auto" 
               />
-            ) : (
-              <>
-                <FileImageOutlined className="text-4xl mb-2 text-gray-400" />
-                <p className="text-gray-500 dark:text-white/60">Click to upload image</p>
-              </>
-            )}
-          </div>
+              <Button
+                icon={<DeleteOutlined />}
+                danger
+                className="absolute top-3 right-3"
+                onClick={() => {
+                  setImagePreview(null);
+                  setSelectedImage(null);
+                }}
+                shape="circle"
+              />
+            </div>
+          ) : (
+            <div 
+              className="w-full bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg flex flex-col items-center justify-center p-10 cursor-pointer transition-colors duration-300 mb-6" 
+              onClick={() => setUploadDialogOpen(true)}
+            >
+              <FileImageOutlined className="text-5xl mb-4 text-gray-400" />
+              <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to select an image</p>
+              <p className="text-sm text-gray-500 dark:text-white/60">Upload a new image or choose from archive</p>
+            </div>
+          )}
+          
+          {!imagePreview && (
+            <div className="text-center mb-2">
+              <Button 
+                type="primary" 
+                ghost
+                onClick={() => setUploadDialogOpen(true)}
+                className="mt-3"
+                icon={<CloudUploadOutlined />}
+              >
+                Browse Images
+              </Button>
+            </div>
+          )}
         </div>
       </Modal>
 
       {/* Image Upload/Archive Dialog */}
       <Modal
-        title="Select Image"
+        title={<h3 className="text-lg font-semibold px-1">Select Image Source</h3>}
         open={uploadDialogOpen}
         onCancel={() => setUploadDialogOpen(false)}
         footer={null}
-        width={700}
+        width={720}
+        bodyStyle={{ padding: '16px 24px 24px' }}
       >
-        <div className="mb-4 flex gap-2">
-          <Button
-            type={archiveOrUpload === 'upload' ? 'primary' : 'default'}
-            onClick={() => setArchiveOrUpload('upload')}
-            className={archiveOrUpload === 'upload' ? 'bg-primary hover:bg-primary-hbr' : ''}
-          >
-            Upload New
-          </Button>
-          <Button
-            type={archiveOrUpload === 'archive' ? 'primary' : 'default'}
-            onClick={() => setArchiveOrUpload('archive')}
-            className={archiveOrUpload === 'archive' ? 'bg-primary hover:bg-primary-hbr' : ''}
-          >
-            From Archive
-          </Button>
-        </div>
-
-        {archiveOrUpload === 'upload' ? (
-          <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/10 rounded-lg p-8">
-            <label htmlFor="image-upload" className="cursor-pointer text-center">
-              <CloudUploadOutlined className="text-5xl mb-2 text-gray-400" />
-              <p className="text-gray-500 dark:text-white/60 mb-2">Click to upload</p>
-              <input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    setSelectedImage(e.target.files[0]);
-                    setImagePreview(URL.createObjectURL(e.target.files[0]));
-                    setUploadDialogOpen(false);
-                  }
-                }}
-              />
-            </label>
-          </div>
-        ) : (
-          <div className="grid grid-cols-4 gap-4 max-h-96 overflow-y-auto p-2">
-            <label htmlFor="archive-upload" className="cursor-pointer border border-gray-200 dark:border-white/10 rounded-md p-2 flex items-center justify-center h-24">
-              <div className="text-center">
-                <PlusOutlined className="text-xl mb-1 text-gray-500" />
-                <p className="text-xs text-gray-500 dark:text-white/60">Add to archive</p>
-                <input
-                  id="archive-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageArchiveChange}
-                />
-              </div>
-            </label>
-            
-            {imageArchives.map((item, index) => (
-              <div 
-                key={index}
-                className="cursor-pointer border border-gray-200 dark:border-white/10 rounded-md p-2 h-24 flex items-center justify-center hover:border-primary"
-                onClick={() => handleSetArchiveImage(item.ImageUrl)}
-              >
-                <img 
-                  src={item.ImageUrl} 
-                  alt="Archive"
-                  className="max-w-full max-h-20 object-contain" 
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <Tabs 
+          defaultActiveKey={archiveOrUpload}
+          onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
+          className="mt-2"
+          items={[
+            {
+              key: 'upload',
+              label: (
+                <span className="flex items-center">
+                  <CloudUploadOutlined className="mr-2" />
+                  Upload New Image
+                </span>
+              ),
+              children: (
+                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
+                  <label htmlFor="image-upload" className="cursor-pointer text-center">
+                    <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
+                    <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
+                    <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
+                    <Button type="primary" icon={<CloudUploadOutlined />} className="bg-primary hover:bg-primary-hbr">
+                      Select File
+                    </Button>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setSelectedImage(e.target.files[0]);
+                          setImagePreview(URL.createObjectURL(e.target.files[0]));
+                          setUploadDialogOpen(false);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              )
+            },
+            {
+              key: 'archive',
+              label: (
+                <span className="flex items-center">
+                  <FileImageOutlined className="mr-2" />
+                  Choose from Archive
+                </span>
+              ),
+              children: (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-5 px-1">
+                    <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
+                    <label htmlFor="archive-upload" className="cursor-pointer">
+                      <Button 
+                        type="primary" 
+                        ghost 
+                        icon={<PlusOutlined />}
+                        className="flex items-center"
+                      >
+                        Add to Archive
+                      </Button>
+                      <input
+                        id="archive-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageArchiveChange}
+                      />
+                    </label>
+                  </div>
+                  <div className="border border-gray-200 dark:border-white/10 rounded-md">
+                    <Input
+                      placeholder="Search images..."
+                      prefix={<SearchOutlined className="ml-1" />}
+                      className="border-0 border-b border-gray-200 dark:border-white/10 py-2 px-3"
+                    />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
+                      {imageArchives.length > 0 ? (
+                        imageArchives.map((item, index) => (
+                          <div 
+                            key={index}
+                            className="cursor-pointer border border-gray-200 dark:border-white/10 rounded-md p-3 h-24 flex items-center justify-center hover:border-primary transition-colors duration-200"
+                            onClick={() => handleSetArchiveImage(item.ImageUrl)}
+                          >
+                            <img 
+                              src={item.ImageUrl} 
+                              alt="Archive"
+                              className="max-w-full max-h-20 object-contain" 
+                            />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-4 py-10 text-center text-gray-500 dark:text-white/60">
+                          No images in archive. Upload your first image.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+          ]}
+        />
       </Modal>
 
       {/* Image Preview Modal */}

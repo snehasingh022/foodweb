@@ -263,8 +263,7 @@ function Tags() {
     <>
       <PageHeaders
         className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
-        title="Tags"
-        routes={PageRoutes}
+        
       />
       <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
@@ -272,21 +271,21 @@ function Tags() {
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-4 sm:p-[25px]">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                  <div className="flex flex-row sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Tag Management</h2>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-3">
                       <Input
                         placeholder="Search tags..."
                         prefix={<SearchOutlined />}
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        className="w-full sm:w-64"
+                        className="w-64"
                       />
                       <Button
                         type="primary"
                         onClick={() => setModalVisible(true)}
                         icon={<PlusOutlined />}
-                        className="w-full sm:w-auto"
+                        className="bg-purple-600 hover:bg-purple-700"
                       >
                         Add Tag
                       </Button>

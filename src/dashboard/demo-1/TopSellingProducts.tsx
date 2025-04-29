@@ -87,7 +87,7 @@ const TopSellingProduct = React.memo(() => {
         name: (
           <div className="flex items-center">
             <div className="ltr:mr-2.5 rtl:ml-2.5 w-[34px] h-[34px]">
-            <Image className="w-[34px] h-[34px] rounded-4" src={`/hexadash-nextjs/img/products/electronics/${img}`} width="32" height="32" alt={name} />
+            <Image className="w-[34px] h-[34px] rounded-4" src={`/img/products/electronics/${img}`} width="32" height="32" alt={name} />
             </div>
             <span className="font-medium capitalize text-dark dark:text-white/[.87] text-15">{name}</span>
           </div>

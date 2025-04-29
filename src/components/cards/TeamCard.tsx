@@ -67,7 +67,7 @@ function TeamCard({ user }: User) {
                 <figure className="mb-0">
                     <img
                         className="mb-[20px] w-full rounded-full max-w-[150px] inline-block"
-                        src={`/hexadash-nextjs/${img}`}
+                        src={`/${img}`}
                         alt=""
                     />
                     <figcaption>

@@ -27,7 +27,7 @@ const UserCards: React.FC<UserCardsProps> = ({ user }) => {
         <figure className="mb-0">
           <img
             className="mb-[18px] max-w-[120px] w-full rounded-full inline-block"
-            src={`/hexadash-nextjs/${img}`}
+            src={`/${img}`}
             alt=""
           />
         </figure>

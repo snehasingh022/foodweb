@@ -17,7 +17,7 @@ function SampleCardFour({ item }:SampleCardProps) {
 
   return (
     <figure className="mb-0 bg-white dark:bg-white/10 rounded-10">
-      <img className="w-full rounded-t-10" src={`/hexadash-nextjs/${img}`} alt="" />
+      <img className="w-full rounded-t-10" src={`/${img}`} alt="" />
       <figcaption className="p-[25px]">
         <h4 className="flex justify-between mt-0 mb-0 font-medium text-light dark:text-white/60 text-[12px]">
           <span>Web Development</span>
@@ -27,7 +27,7 @@ function SampleCardFour({ item }:SampleCardProps) {
         <p className="leading-[1.79] text-theme-gray dark:text-white/60">{content}</p>
         <div className="flex items-center justify-between text-light">
           <div className="flex items-center text-theme-gray dark:text-white/60 gap-[10px]">
-            <img className="w-[50px] rounded-full" src={'/hexadash-nextjs/img/chat-author/t1.jpg'} alt="" />
+            <img className="w-[50px] rounded-full" src={'/img/chat-author/t1.jpg'} alt="" />
             <span className="text-[14px] font-medium">Burns Marks</span>
           </div>
           <div className="inline-flex items-center gap-[10px]">

@@ -28,7 +28,7 @@ function BlogCard(item:BlogCardProps, theme:string) {
       <div className="relative after:absolute after:h-0 after:w-full ltr:after:left-0 rtl:after:right-0 after:top-0 after:bg-[#0a0a0a15] after:rounded-10 after:transition-all after:duration-300 group-hover:after:h-full">
         <Image 
           className="w-full max-h-[217px] rounded-10" 
-          src={`/hexadash-nextjs/img/blogs/${img}`} 
+          src={`/img/blogs/${img}`} 
           alt="hexadash Blog" 
           width="455"
           height="217"
@@ -67,7 +67,7 @@ function BlogCard(item:BlogCardProps, theme:string) {
           <div className="flex items-center gap-x-4">
             <Image 
               className="rounded-full max-w-[32px]" 
-              src='/hexadash-nextjs/img/chat-author/t1.jpg' 
+              src='/img/chat-author/t1.jpg' 
               alt=""
               width="32"
               height="32"

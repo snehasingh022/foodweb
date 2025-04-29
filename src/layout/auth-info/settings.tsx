@@ -15,7 +15,7 @@ const Settings = React.memo(() => {
             <figure className="flex items-start px-4 py-5 mb-0 setting-dropdown__single hover:shadow-action">
               <Image
                 className="h-fit ltr:mr-4 rtl:ml-4"
-                src='/hexadash-nextjs/img/icon/014-document.png'
+                src='/img/icon/014-document.png'
                 alt=""
                 width="20" 
                 height="20"
@@ -32,7 +32,7 @@ const Settings = React.memo(() => {
             <figure className="flex items-start px-4 py-5 mb-0 setting-dropdown__single hover:shadow-action">
               <Image
                 className="h-fit ltr:mr-4 rtl:ml-4"
-                src='/hexadash-nextjs/img/icon/015-color-palette.png'
+                src='/img/icon/015-color-palette.png'
                 alt=""
                 width="20" 
                 height="20"
@@ -47,7 +47,7 @@ const Settings = React.memo(() => {
           </Col>
           <Col sm={12} xs={24}>
             <figure className="flex items-start px-4 py-5 mb-0 setting-dropdown__single hover:shadow-action">
-              <Image className="h-fit ltr:mr-4 rtl:ml-4" src='/hexadash-nextjs/img/icon/010-home.png' alt="" width="20" height="20" />
+              <Image className="h-fit ltr:mr-4 rtl:ml-4" src='/img/icon/010-home.png' alt="" width="20" height="20" />
               <figcaption>
                 <Heading className="mb-0.5 -mt-1 text-[15px] font-medium" as="h5">
                   Payments
@@ -60,7 +60,7 @@ const Settings = React.memo(() => {
             <figure className="flex items-start px-4 py-5 mb-0 setting-dropdown__single hover:shadow-action">
               <Image
                 className="h-fit ltr:mr-4 rtl:ml-4"
-                src='/hexadash-nextjs/img/icon/017-video-camera.png'
+                src='/img/icon/017-video-camera.png'
                 alt=""
                 width="20" 
                 height="20"
@@ -77,7 +77,7 @@ const Settings = React.memo(() => {
             <figure className="flex items-start px-4 py-5 mb-0 setting-dropdown__single hover:shadow-action">
               <Image
                 className="h-fit ltr:mr-4 rtl:ml-4"
-                src='/hexadash-nextjs/img/icon/013-document-1.png'
+                src='/img/icon/013-document-1.png'
                 alt=""
                 width="20" 
                 height="20"
@@ -94,7 +94,7 @@ const Settings = React.memo(() => {
             <figure className="flex items-start px-4 py-5 mb-0 setting-dropdown__single hover:shadow-action">
               <Image
                 className="h-fit ltr:mr-4 rtl:ml-4"
-                src='/hexadash-nextjs/img/icon/007-microphone-1.png'
+                src='/img/icon/007-microphone-1.png'
                 alt=""
                 width="20" 
                 height="20"
@@ -118,7 +118,7 @@ const Settings = React.memo(() => {
         <Link href="#" className="flex hexadash-nav-action-link">
           <ReactSVG
             className="text-[#a0a0a0] dark:text-white/60"
-            src='/hexadash-nextjs/img/icon/setting.svg'
+            src='/img/icon/setting.svg'
           />
         </Link>
       </PopOver>

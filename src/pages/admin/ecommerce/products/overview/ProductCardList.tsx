@@ -38,7 +38,7 @@ const ProductCardsList = React.memo(({ product }:Item) => {
         <Row gutter={15}>
           <Col md={6} xs={24}>
             <figure className="ltr:mr-[15px] rtl:ml-[15px] mb-0">
-              <img className="w-full rounded-10" src={`/hexadash-nextjs/${img}`} alt="" />
+              <img className="w-full rounded-10" src={`/${img}`} alt="" />
             </figure>
           </Col>
           <Col md={12} xs={24}>
@@ -65,7 +65,7 @@ const ProductCardsList = React.memo(({ product }:Item) => {
                 href="#"
               >
                 {popular ? (
-                  <ReactSVG src='/hexadash-nextjs/img/icon/heart-fill.svg' className="[&>div>svg]:w-[14px] [&>div>svg]:h-[14px]" />
+                  <ReactSVG src='/img/icon/heart-fill.svg' className="[&>div>svg]:w-[14px] [&>div>svg]:h-[14px]" />
                 ) : (
                   <UilHeart className="w-[14px] h-[14px]" />
                 )}

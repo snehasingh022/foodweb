@@ -78,13 +78,13 @@ function OrderSummary({ subtotal, checkout }:any) {
               <Form.Item name="couponType" initialValue="" label="" className="mb-0">
                 <Select className="w-full  [&>.ant-select-selector]:pl-0 [&>.ant-select-selector]:border-none [&>.ant-select-selector]:shadow-none [&>.ant-select-selector]:right-0 [&>.ant-select-arrow]:text-body dark:[&>.ant-select-arrow]:text-white/60 dark:text-white/60 [&>.ant-select-arrow]:right-0 [&>div>.ant-select-selection-item]:flex [&>div>.ant-select-selection-item]:items-center [&>div>.ant-select-selection-item]:text-body dark:[&>div>.ant-select-selection-item]:text-white/60 [&>div>.ant-select-selection-item]:font-medium ltr:[&>div>.ant-select-selection-item>img]:h-[14px] [&>div>.ant-select-selection-item>img]:mr-[5px] rtl:[&>div>.ant-select-selection-item>img]:h-[14px] [&>div>.ant-select-selection-item>img]:ml-[5px] [&>div]:bg-transparent dark:[&>div]:bg-transparent">
                   <Option value="">
-                    <img src='/hexadash-nextjs/img/Subtraction1.png' alt="" /> Select Coupon
+                    <img src='/img/Subtraction1.png' alt="" /> Select Coupon
                   </Option>
                   <Option value="one">
-                    <img src='/hexadash-nextjs/img/Subtraction1.png' alt="" /> Coupon one
+                    <img src='/img/Subtraction1.png' alt="" /> Coupon one
                   </Option>
                   <Option value="tow">
-                    <img src='/hexadash-nextjs/img/Subtraction1.png' alt="" /> Coupon tow
+                    <img src='/img/Subtraction1.png' alt="" /> Coupon tow
                   </Option>
                 </Select>
               </Form.Item>

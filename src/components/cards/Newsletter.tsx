@@ -13,7 +13,7 @@ function Newsletter() {
           </button>
         </form>
       </figcaption>
-      <img className="max-w-[150px] 3xl:max-w-[100px]" src={require('/hexadash-nextjs/img/new-message.png')} alt="" />
+      <img className="max-w-[150px] 3xl:max-w-[100px]" src={require('/img/new-message.png')} alt="" />
     </div>
   );
 }

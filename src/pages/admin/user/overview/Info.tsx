@@ -24,7 +24,7 @@ function Info() {
           </Heading>
 
           <figure className="relative max-w-[260px] mb-[30px] flex items-center gap-[20px]">
-            <img className="rounded-full" src='/hexadash-nextjs/img/avatar/profileImage.png' alt="" />
+            <img className="rounded-full" src='/img/avatar/profileImage.png' alt="" />
             <figcaption>
               <Upload className="[&>.ant-upload-select]:inline-flex [&>.ant-upload-select]:items-center [&>.ant-upload-select]:justify-center [&>.ant-upload-select]:w-[40px] [&>.ant-upload-select]:h-[40px] [&>.ant-upload-select]:rounded-full [&>.ant-upload-select]:absolute ltr:[&>.ant-upload-select]:left-[85px] rtl:[&>.ant-upload-select]:right-[85px] [&>.ant-upload-select]:bottom-[5px] [&>.ant-upload-select]:z-[10] [&>.ant-upload-select]:bg-white dark:[&>.ant-upload-select]:bg-white/10 [&>.ant-upload-select>.ant-upload]:text-white dark:[&>.ant-upload-select>.ant-upload]:text-white/[.87] [&>.ant-upload-select>.ant-upload]:inline-flex [&>.ant-upload-select>.ant-upload]:items-center [&>.ant-upload-select>.ant-upload]:justify-content-center [&>.ant-upload-select>.ant-upload]:w-[32px] [&>.ant-upload-select>.ant-upload]:h-[32px] [&>.ant-upload-select>.ant-upload]:rounded-full [&>.ant-upload-select>.ant-upload]:justify-center [&>.ant-upload-select>.ant-upload]:z-[1] [&>.ant-upload-select>.ant-upload]:bg-primary [&>.ant-upload-select>.ant-upload>a]:flex [&>.ant-upload-select>.ant-upload>a]:items-center [&>.ant-upload-select>.ant-upload>a]:justify-center [&>.ant-upload-select>.ant-upload>a>svg]:text-white dark:[&>.ant-upload-select>.ant-upload>a]:text-white/10">
                 <Link href="#">

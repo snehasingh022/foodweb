@@ -27,7 +27,7 @@ function ProjectActivities() {
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-transparent text-primary">
                     <UilPlus className="w-4 h-4" />
                   </span>
-                  <img className="w-[30px] h-[30px]" src='/hexadash-nextjs/img/users/1.png' alt="" />
+                  <img className="w-[30px] h-[30px]" src='/img/users/1.png' alt="" />
                 </div>
                 <div>
                   <Heading className="mb-0 -mt-1 text-sm font-medium text-dark dark:text-white/60" as="h5">
@@ -43,7 +43,7 @@ function ProjectActivities() {
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-secondary-transparent text-secondary">
                     <UilArrow className="w-4 h-4" />
                   </span>
-                  <img className="w-[30px] h-[30px]" src='/hexadash-nextjs/img/users/1.png' alt="" />
+                  <img className="w-[30px] h-[30px]" src='/img/users/1.png' alt="" />
                 </div>
                 <div>
                   <Heading className="mb-0 -mt-1 text-sm font-medium text-dark dark:text-white/60" as="h5">
@@ -59,7 +59,7 @@ function ProjectActivities() {
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-success-transparent text-success">
                     <UilPlus className="w-4 h-4" />
                   </span>
-                  <img className="w-[30px] h-[30px]" src='/hexadash-nextjs/img/users/1.png' alt="" />
+                  <img className="w-[30px] h-[30px]" src='/img/users/1.png' alt="" />
                 </div>
                 <div>
                   <Heading className="mb-0 -mt-1 text-sm font-medium text-dark dark:text-white/60" as="h5">
@@ -89,7 +89,7 @@ function ProjectActivities() {
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-transparent text-primary">
                   <UilUserPlus className="w-4 h-4" />
                 </span>
-                <img className="w-[30px] h-[30px]" src='/hexadash-nextjs/img/users/1.png' alt="" />
+                <img className="w-[30px] h-[30px]" src='/img/users/1.png' alt="" />
               </div>
               <div>
                 <Heading className="mb-0 -mt-1 text-sm font-medium text-dark dark:text-white/60" as="h5">
@@ -105,7 +105,7 @@ function ProjectActivities() {
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-secondary-transparent text-secondary">
                   <UilArrow className="w-4 h-4" />
                 </span>
-                <img className="w-[30px] h-[30px]" src='/hexadash-nextjs/img/users/1.png' alt="" />
+                <img className="w-[30px] h-[30px]" src='/img/users/1.png' alt="" />
               </div>
               <div>
                 <Heading className="mb-0 -mt-1 text-sm font-medium dark:text-white/60 text-dark" as="h5">
@@ -121,7 +121,7 @@ function ProjectActivities() {
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-success-transparent text-success">
                   <UilUpload className="w-4 h-4" />
                 </span>
-                <img className="w-[30px] h-[30px]" src='/hexadash-nextjs/img/users/1.png' alt="" />
+                <img className="w-[30px] h-[30px]" src='/img/users/1.png' alt="" />
               </div>
               <div>
                 <Heading className="mb-0 -mt-1 text-sm font-medium text-dark dark:text-white/60" as="h5">

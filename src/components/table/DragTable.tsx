@@ -53,7 +53,7 @@ function DragAndDropTable() {
       user: (
         <div className="flex items-center gap-x-[10px] gap-y-[10px]">
           <figure className="mb-0">
-            <img style={{ width: '40px' }} src={`/hexadash-nextjs/${img}`} alt="" />
+            <img style={{ width: '40px' }} src={`/${img}`} alt="" />
           </figure>
           <figcaption>
             <Heading className="user-name text-dark dark:text-white/[.87] text-[14px] font-semibold mb-0" as="h6">

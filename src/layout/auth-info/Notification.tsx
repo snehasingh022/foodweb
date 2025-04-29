@@ -182,7 +182,7 @@ const NotificationBox = React.memo(() => {
         >
           <ReactSVG
             className="text-[#a0a0a0] dark:text-white/60"
-            src='/hexadash-nextjs/img/icon/bell.svg'
+            src='/img/icon/bell.svg'
           />
         </Link>
       </PopOver>

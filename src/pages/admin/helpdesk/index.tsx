@@ -36,18 +36,31 @@ interface Ticket {
   category: string;
   openMessage: string;
   createdAt: any;
-  notes?: Array<{
-    message: string;
-    status?: string;
-    addedBy: string;
-    timestamp: any;
-  }>;
   updatedAt?: any;
   createdBy?: string;
   priority?: string;
   title?: string;
   description?: string;
   ticketId?: string;
+  helpDeskID?: string;
+  responses?: {
+    opened?: {
+      createdAt: any;
+      response?: string;
+    };
+    resolved?: {
+      createdAt: any;
+      response?: string;
+    };
+    reopened?: {
+      createdAt: any;
+      response?: string;
+    };
+    closed?: {
+      createdAt: any;
+      response?: string;
+    };
+  };
 }
 
 function Helpdesk() {
@@ -63,13 +76,18 @@ function Helpdesk() {
   const [currentPage, setCurrentPage] = useState(1);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [firstVisible, setFirstVisible] = useState<any>(null);
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [submitLoading, setSubmitLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [noteForm] = Form.useForm();
   const [noteSubmitLoading, setNoteSubmitLoading] = useState(false);
-  const [currentTab, setCurrentTab] = useState('all');
+  const [currentTab, setCurrentTab] = useState('opened');
+  const [clicked, setClicked] = useState('opened');
+  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [resolvedMessage, setResolvedMessage] = useState('');
+  const [closedMessage, setClosedMessage] = useState('');
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [responseModalVisible, setResponseModalVisible] = useState(false);
+  const [responseForm] = Form.useForm();
 
   const PageRoutes = [
     {
@@ -84,7 +102,8 @@ function Helpdesk() {
 
   useEffect(() => {
     fetchTickets();
-  }, [statusFilter]);
+    setClicked(currentTab);
+  }, [currentTab]);
 
   // Generate ticket ID with "HID" + timestamp (8 digits)
   const generateTicketId = () => {
@@ -92,6 +111,15 @@ function Helpdesk() {
     // Take the last 8 digits of the timestamp
     const shortTimestamp = timestamp.slice(-8);
     return `HID${shortTimestamp}`;
+  };
+
+  // Format category string
+  const formatCategory = (category: string) => {
+    // Replace underscores with spaces
+    let formatted = category.replace(/_/g, ' ');
+    
+    // Capitalize first letter of each word
+    return formatted.replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
   // Fetch tickets from Firebase
@@ -115,22 +143,37 @@ function Helpdesk() {
       const ticketList: Ticket[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        if (!statusFilter || data.status === statusFilter) {
+        const status = data.status || 'Opened';
+        
+        // Filter based on current tab
+        if (
+          (currentTab === 'opened' && status === 'Opened') ||
+          (currentTab === 'resolved' && status === 'Resolved') ||
+          (currentTab === 'reopened' && status === 'Re-Opened') ||
+          (currentTab === 'closed' && status === 'Closed') ||
+          searchText.trim() !== '' // Always include if there's a search
+        ) {
           ticketList.push({
             id: doc.id,
-            status: data.status || 'Opened',
+            status: status,
             customerName: data.customerName || '',
             email: data.email || '',
             category: data.category || '',
             openMessage: data.openMessage || '',
             createdAt: data.createdAt,
-            notes: data.notes,
+            responses: data.responses || {
+              opened: {
+                createdAt: data.createdAt,
+                response: data.openMessage || ''
+              }
+            },
             updatedAt: data.updatedAt,
             createdBy: data.createdBy,
             priority: data.priority,
             title: data.title,
             description: data.description,
-            ticketId: data.ticketId
+            ticketId: data.ticketId,
+            helpDeskID: data.helpDeskID
           });
         }
       });
@@ -176,13 +219,19 @@ function Helpdesk() {
               category: data.category || '',
               openMessage: data.openMessage || '',
               createdAt: data.createdAt,
-              notes: data.notes,
+              responses: data.responses || {
+                opened: {
+                  createdAt: data.createdAt,
+                  response: data.openMessage || ''
+                }
+              },
               updatedAt: data.updatedAt,
               createdBy: data.createdBy,
               priority: data.priority,
               title: data.title,
               description: data.description,
-              ticketId: data.ticketId
+              ticketId: data.ticketId,
+              helpDeskID: data.helpDeskID
             });
           }
         });
@@ -230,13 +279,19 @@ function Helpdesk() {
               category: data.category || '',
               openMessage: data.openMessage || '',
               createdAt: data.createdAt,
-              notes: data.notes,
+              responses: data.responses || {
+                opened: {
+                  createdAt: data.createdAt,
+                  response: data.openMessage || ''
+                }
+              },
               updatedAt: data.updatedAt,
               createdBy: data.createdBy,
               priority: data.priority,
               title: data.title,
               description: data.description,
-              ticketId: data.ticketId
+              ticketId: data.ticketId,
+              helpDeskID: data.helpDeskID
             });
           }
         });
@@ -252,61 +307,27 @@ function Helpdesk() {
     }
   };
 
-  // Add new ticket
-  const handleAddTicket = async (values: any) => {
-    setLoading(true);
-    try {
-      const ticketID = generateTicketId();
-      const newTicket = {
-        category: values.category,
-        status: 'Opened',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        customerName: values.customerName,
-        email: values.email,
-        openMessage: values.openMessage,
-        ticketId: ticketID
-      };
-      
-      // Create a document reference with the custom ID
-      const ticketRef = doc(db, 'helpdesk', ticketID);
-      
-      // Set the document with the custom ID
-      await setDoc(ticketRef, newTicket);
-      
-      message.success("Ticket created successfully");
-      setVisible(false);
-      form.resetFields();
-      fetchTickets();
-    } catch (error) {
-      console.error("Error adding ticket:", error);
-      message.error("Failed to add ticket");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete ticket
-  const handleDeleteTicket = async (id: string) => {
-    setLoading(true);
-    try {
-      await deleteDoc(doc(db, 'helpdesk', id));
-      message.success("Ticket deleted successfully");
-      fetchTickets();
-    } catch (error) {
-      console.error("Error deleting ticket:", error);
-      message.error("Failed to delete ticket");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Fetch ticket details
   const fetchTicketDetails = async (ticketId: string) => {
     try {
       const ticketDoc = await getDoc(doc(db, 'helpdesk', ticketId));
       if (ticketDoc.exists()) {
-        setCurrentTicket({ id: ticketDoc.id, ...ticketDoc.data() } as Ticket);
+        const data = ticketDoc.data();
+        
+        // Ensure the opened response always exists
+        let responses = data.responses || {};
+        if (!responses.opened) {
+          responses.opened = {
+            createdAt: data.createdAt,
+            response: data.openMessage || ''
+          };
+        }
+        
+        setCurrentTicket({ 
+          id: ticketDoc.id, 
+          ...data,
+          responses: responses 
+        } as Ticket);
       }
     } catch (error) {
       console.error("Error fetching ticket details:", error);
@@ -342,6 +363,65 @@ function Helpdesk() {
     (item.email?.toLowerCase().includes(searchText.toLowerCase()) || false)
   );
 
+  // Get action buttons with updated functionality
+  const getActionButtons = (record: Ticket) => {
+    const actions = [];
+    
+    // Only show "Resolve" button for Opened tickets
+    if (currentTab === 'opened') {
+      actions.push(
+        <Button
+          key="resolve"
+          type="primary"
+          size="small"
+          onClick={() => {
+            setCurrentTicket(record);
+            setResponseModalVisible(true);
+            responseForm.setFieldsValue({ status: 'Resolved' });
+          }}
+        >
+          Resolve
+        </Button>
+      );
+    }
+    
+    // Only show "Close" button for Resolved and Re-Opened tickets
+    if (currentTab === 'resolved' || currentTab === 'reopened') {
+      actions.push(
+        <Button
+          key="close"
+          type="primary"
+          size="small"
+          onClick={() => {
+            setCurrentTicket(record);
+            setResponseModalVisible(true);
+            responseForm.setFieldsValue({ status: 'Closed' });
+          }}
+        >
+          Close
+        </Button>
+      );
+    }
+    
+    // Always show "View" button
+    actions.push(
+      <Button
+        key="view"
+        type="default"
+        size="small"
+        className="view group hover:text-success"
+        onClick={() => {
+          fetchTicketDetails(record.id);
+          setViewModalVisible(true);
+        }}
+      >
+        View
+      </Button>
+    );
+    
+    return <div className="flex items-center gap-[15px]">{actions}</div>;
+  };
+
   const columns = [
     {
       title: 'Ticket ID',
@@ -368,7 +448,7 @@ function Helpdesk() {
       dataIndex: 'category',
       key: 'category',
       className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (text: string) => <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">{text}</span>,
+      render: (text: string) => <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">{formatCategory(text)}</span>,
     },
     {
       title: 'Status',
@@ -380,6 +460,8 @@ function Helpdesk() {
           className={`text-xs font-medium inline-flex items-center justify-center min-h-[24px] px-3 rounded-[15px] ${
             status === 'Opened' ? 'text-green-500 bg-green-100' : 
             status === 'Closed' ? 'text-red-500 bg-red-100' : 
+            status === 'Resolved' ? 'text-blue-500 bg-blue-100' :
+            status === 'Re-Opened' ? 'text-yellow-500 bg-yellow-100' :
             'text-yellow-500 bg-yellow-100'
           }`}
         >
@@ -388,9 +470,9 @@ function Helpdesk() {
       ),
     },
     {
-      title: 'Created Date',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      title: 'Updated Date',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
       className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
       render: (date: any) => {
         if (!date) return <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">N/A</span>;
@@ -413,49 +495,13 @@ function Helpdesk() {
       title: 'Actions',
       key: 'action',
       className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (_: any, record: Ticket) => (
-        <div className="flex items-center gap-[15px]">
-          <Button
-            type="text"
-            className="view group hover:text-success p-0 border-none"
-            onClick={() => fetchTicketDetails(record.id)}
-            icon={<UilEye className="w-4 text-light-extra dark:text-white/60 group-hover:text-currentColor" />}
-          />
-          <Popconfirm
-            title="Are you sure to delete this ticket?"
-            onConfirm={() => handleDeleteTicket(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button
-              type="text"
-              className="delete group hover:text-danger p-0 border-none"
-              icon={<UilTrash className="w-4 text-light-extra dark:text-white/60 group-hover:text-currentColor" />}
-            />
-          </Popconfirm>
-        </div>
-      ),
+      render: (_: any, record: Ticket) => getActionButtons(record),
     },
   ];
 
   const handleSubmit = async (values: any) => {
-    setSubmitLoading(true);
-    try {
-      if (editMode) {
-        await updateTicket(currentTicket!.id, values);
-      } else {
-        await handleAddTicket(values);
-      }
-      setAddModalVisible(false);
-      setEditMode(false);
-      form.resetFields();
-      fetchTickets();
-    } catch (error) {
-      console.error("Error submitting ticket:", error);
-      message.error("Failed to submit ticket");
-    } finally {
-      setSubmitLoading(false);
-    }
+    // This function is intentionally left empty after removing ticket creation
+    message.info("Ticket creation has been disabled");
   };
 
   const updateTicket = async (id: string, values: any) => {
@@ -472,24 +518,32 @@ function Helpdesk() {
     setNoteSubmitLoading(true);
     try {
       const ticketRef = doc(db, 'helpdesk', currentTicket!.id);
+      
+      // Create the appropriate response object based on status
+      const responseType = values.status.toLowerCase().replace('-', '');
+      const responseData = {
+        [responseType]: {
+          createdAt: serverTimestamp(),
+          response: values.message
+        }
+      };
+      
       await updateDoc(ticketRef, {
-        notes: [
-          ...(currentTicket!.notes || []),
-          {
-            message: values.message,
-            status: values.status,
-            addedBy: 'Admin',
-            timestamp: serverTimestamp()
-          }
-        ]
+        status: values.status,
+        responses: {
+          ...(currentTicket!.responses || {}),
+          ...responseData
+        },
+        updatedAt: serverTimestamp()
       });
-      message.success("Note added successfully");
+      
+      message.success("Response added successfully");
       setViewModalVisible(false);
       setNoteSubmitLoading(false);
       fetchTicketDetails(currentTicket!.id);
     } catch (error) {
-      console.error("Error adding note:", error);
-      message.error("Failed to add note");
+      console.error("Error adding response:", error);
+      message.error("Failed to add response");
     } finally {
       setNoteSubmitLoading(false);
     }
@@ -506,9 +560,9 @@ function Helpdesk() {
   
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'open': return 'blue';
-      case 'in-progress': return 'orange';
-      case 'resolved': return 'green';
+      case 'opened': return 'green';
+      case 're-opened': return 'yellow';
+      case 'resolved': return 'blue';
       case 'closed': return 'red';
       default: return 'default';
     }
@@ -523,12 +577,81 @@ function Helpdesk() {
     }
   };
 
+  // Send email notification
+  const sendEmailNotification = async (email: string, subject: string, message: string) => {
+    try {
+      const response = await fetch('/api/sendEmail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, subject, message }),
+      });
+      
+      if (response.ok) {
+        console.log('Email notification sent successfully');
+      } else {
+        console.error('Failed to send email notification');
+      }
+    } catch (error) {
+      console.error('Error sending email notification:', error);
+    }
+  };
+
+  // Handle response submission from the response modal
+  const handleResponseSubmit = async (values: any) => {
+    try {
+      setSubmitLoading(true);
+      
+      const ticketRef = doc(db, 'helpdesk', currentTicket!.id);
+      const responseType = values.status.toLowerCase().replace('-', '');
+      
+      // Create response update object
+      const responseData = {
+        [responseType]: {
+          createdAt: serverTimestamp(),
+          response: values.message
+        }
+      };
+      
+      await updateDoc(ticketRef, {
+        status: values.status,
+        responses: {
+          ...(currentTicket!.responses || {}),
+          ...responseData
+        },
+        updatedAt: serverTimestamp()
+      });
+      
+      // Send email notification
+      const emailSubject = `Your Ticket ${currentTicket!.id} ${values.status}`;
+      const emailMessage = `Hello ${currentTicket!.customerName},\n\nYour ticket with ID ${currentTicket!.id} has been ${values.status.toLowerCase()}. Here is our response:\n${values.message}\n\nThank you.`;
+      await sendEmailNotification(currentTicket!.email, emailSubject, emailMessage);
+      
+      message.success(`Ticket ${values.status.toLowerCase()} successfully`);
+      setResponseModalVisible(false);
+      responseForm.resetFields();
+      fetchTickets();
+    } catch (error) {
+      console.error(`Error updating ticket: ${error}`);
+      message.error(`Failed to update ticket`);
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  // Add an effect to set form status when modal opens
+  useEffect(() => {
+    if (viewModalVisible && currentTicket) {
+      noteForm.setFieldsValue({ status: currentTicket.status });
+    }
+  }, [viewModalVisible, currentTicket]);
+
   return (
     <>
       <PageHeaders
         className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
-        title="Helpdesk"
-        routes={PageRoutes}
+        
       />
       <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
@@ -536,36 +659,36 @@ function Helpdesk() {
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-4 sm:p-[25px]">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                  <div className="flex flex-row sm:flex-row justify-between items-start sm:items-center mb-6 gap-12">
                     <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Helpdesk Management</h2>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                      <Input
-                        placeholder="Search tickets..."
-                        prefix={<SearchOutlined />}
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        className="w-full sm:w-64"
-                      />
-                      <Button
-                        className="w-full sm:w-auto"
-                        type="primary"
-                        onClick={() => setAddModalVisible(true)}
-                        icon={<PlusOutlined />}
-                      >
-                        Create Ticket
-                      </Button>
+                    <div className="flex justify-end flex-col sm:flex-row gap-3 w-auto ml-auto">
+                      <div className="flex items-center">
+                        <Input
+                          placeholder="Search queries..."
+                          prefix={<SearchOutlined />}
+                          value={searchText}
+                          onChange={(e) => setSearchText(e.target.value)}
+                          className="w-48 sm:w-48"
+                        />
+                        <Button 
+                          type="primary" 
+                          className="ml-2"
+                          onClick={fetchTickets}
+                        >
+                          Refresh
+                        </Button>
+                      </div>
                     </div>
                   </div>
                   
                   <Tabs 
-                    defaultActiveKey="all" 
+                    defaultActiveKey="opened" 
                     onChange={setCurrentTab}
                     className="mb-6"
                     items={[
-                      { key: 'all', label: 'All Tickets' },
-                      { key: 'open', label: 'Open' },
-                      { key: 'in-progress', label: 'In Progress' },
+                      { key: 'opened', label: 'Opened' },
                       { key: 'resolved', label: 'Resolved' },
+                      { key: 'reopened', label: 'Reopened' },
                       { key: 'closed', label: 'Closed' },
                     ]}
                   />
@@ -596,241 +719,205 @@ function Helpdesk() {
         </Row>
       </main>
 
-      {/* Create/Edit Ticket Modal */}
+      {/* View Ticket Modal - Simplified to only show details */}
       <Modal
         title={
-          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
-              {editMode ? "Edit Ticket" : "Create New Ticket"}
-            </span>
+          <div className="px-2 py-1">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Ticket Details</h3>
           </div>
         }
-        open={addModalVisible}
-        onCancel={() => {
-          setAddModalVisible(false);
-          setEditMode(false);
-          form.resetFields();
-        }}
-        footer={null}
-        width="95%"
-        style={{ maxWidth: '700px' }}
-        className="responsive-modal"
-        bodyStyle={{ padding: '24px' }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          className="px-6 pt-4"
-        >
-          <div className="mb-6">
-            <h3 className="text-base text-gray-500 dark:text-gray-400 mb-4">Ticket Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Form.Item
-                name="customerName"
-                label={<span className="text-dark dark:text-white/[.87] font-medium">Customer Name</span>}
-                rules={[{ required: true, message: 'Please enter customer name' }]}
-              >
-                <Input 
-                  prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
-                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-                  </svg>}
-                  placeholder="Enter customer name" 
-                  className="py-2"
-                />
-              </Form.Item>
-              
-              <Form.Item
-                name="email"
-                label={<span className="text-dark dark:text-white/[.87] font-medium">Email</span>}
-                rules={[
-                  { required: true, message: 'Please enter email' },
-                  { type: 'email', message: 'Please enter a valid email' }
-                ]}
-              >
-                <Input 
-                  prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
-                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
-                  </svg>}
-                  placeholder="Enter email address" 
-                  className="py-2"
-                />
-              </Form.Item>
-            </div>
-            
-            <Form.Item
-              name="category"
-              label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
-              rules={[{ required: true, message: 'Please select category' }]}
-            >
-              <Select 
-                placeholder="Select a category"
-                className="w-full"
-                dropdownStyle={{ borderRadius: '6px' }}
-              >
-                <Select.Option value="booking_issue">Booking Issue</Select.Option>
-                <Select.Option value="payment_issue">Payment Issue</Select.Option>
-                <Select.Option value="technical_support">Technical Support</Select.Option>
-                <Select.Option value="feedback">Feedback</Select.Option>
-                <Select.Option value="other">Other</Select.Option>
-              </Select>
-            </Form.Item>
-            
-            <Form.Item
-              name="openMessage"
-              label={<span className="text-dark dark:text-white/[.87] font-medium">Message</span>}
-              rules={[{ required: true, message: 'Please enter message' }]}
-            >
-              <Input.TextArea 
-                rows={4} 
-                placeholder="Describe the issue or request in detail..." 
-                className="text-base"
-              />
-            </Form.Item>
-          </div>
-          
-          <div className="flex justify-end mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Space>
-              <Button 
-                onClick={() => {
-                  setAddModalVisible(false);
-                  setEditMode(false);
-                  form.resetFields();
-                }}
-                className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                loading={submitLoading}
-                className="px-5 h-10 shadow-none"
-              >
-                {editMode ? "Update Ticket" : "Create Ticket"}
-              </Button>
-            </Space>
-          </div>
-        </Form>
-      </Modal>
-
-      {/* View Ticket Modal */}
-      <Modal
-        title="Ticket Details"
         open={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
-        footer={null}
-        width="95%"
-        style={{ maxWidth: '800px' }}
-        className="responsive-modal"
+        footer={[
+          <Button key="close" onClick={() => setViewModalVisible(false)}>
+            Close
+          </Button>
+        ]}
+        width={700}
+        className="helpdesk-view-modal"
       >
         {currentTicket && (
-          <div className="p-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Ticket ID</p>
-                <p className="font-medium">{currentTicket.id}</p>
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Ticket ID</p>
+                <p className="text-base font-semibold">{currentTicket.id}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                <Tag color={getStatusColor(currentTicket.status)}>
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                <Tag color={getStatusColor(currentTicket.status)} className="px-3 py-1 text-sm">
                   {currentTicket.status.toUpperCase()}
                 </Tag>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Created At</p>
-                <p>{formatDate(currentTicket.createdAt)}</p>
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Created At</p>
+                <p className="text-base">{formatDate(currentTicket.createdAt)}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Customer Name</p>
-                <p className="font-medium">{currentTicket.customerName}</p>
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Customer Name</p>
+                <p className="text-base font-semibold">{currentTicket.customerName}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Email</p>
-                <p className="font-medium">{currentTicket.email}</p>
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Email</p>
+                <p className="text-base">{currentTicket.email}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Category</p>
-                <p className="font-medium">{currentTicket.category}</p>
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Category</p>
+                <p className="text-base">{formatCategory(currentTicket.category)}</p>
               </div>
             </div>
             
-            <div className="mb-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Message</p>
-              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+            <div className="mb-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Message</p>
+              <div className="bg-white dark:bg-gray-700 p-3 rounded-md text-gray-800 dark:text-gray-200 whitespace-pre-wrap border border-gray-200 dark:border-gray-600">
                 {currentTicket.openMessage}
               </div>
             </div>
             
-            {currentTicket.notes && currentTicket.notes.length > 0 && (
-              <div className="mb-6">
-                <p className="font-medium mb-2">Notes & Updates</p>
-                <Timeline>
-                  {currentTicket.notes.map((note, index) => (
-                    <Timeline.Item key={index} color={getStatusColor(note.status || 'open')}>
-                      <div className="flex flex-col">
-                        <div className="flex justify-between items-center flex-wrap gap-2">
-                          <Text strong>{note.message}</Text>
-                          <Tag color={getStatusColor(note.status || 'open')}>
-                            {note.status?.toUpperCase() || 'OPEN'}
-                          </Tag>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {note.addedBy} - {formatDate(note.timestamp)}
-                        </div>
+            {/* Ticket History Timeline */}
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <p className="text-base font-medium mb-4">Ticket History</p>
+              <Timeline>
+                <Timeline.Item color="green">
+                  <div className="flex flex-col">
+                    <div className="flex justify-between items-center flex-wrap gap-2">
+                      <Text strong>Ticket Opened</Text>
+                      <Tag color="green">OPENED</Tag>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {formatDate(currentTicket.createdAt)}
+                    </div>
+                    <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
+                      {currentTicket.openMessage}
+                    </div>
+                  </div>
+                </Timeline.Item>
+
+                {currentTicket.responses?.resolved && (
+                  <Timeline.Item color="blue">
+                    <div className="flex flex-col">
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <Text strong>Ticket Resolved</Text>
+                        <Tag color="blue">RESOLVED</Tag>
                       </div>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              </div>
-            )}
-            
-            {currentTicket.status !== 'closed' && (
-              <div className="border-t dark:border-gray-700 pt-4 mt-4">
-                <p className="font-medium mb-2">Add Note or Update Status</p>
-                <Form
-                  form={noteForm}
-                  layout="vertical"
-                  onFinish={handleAddNote}
-                >
-                  <Form.Item
-                    name="message"
-                    rules={[{ required: true, message: 'Please enter a note' }]}
-                  >
-                    <Input.TextArea 
-                      rows={3} 
-                      placeholder="Enter your note or update..." 
-                    />
-                  </Form.Item>
-                  
-                  <Form.Item name="status" label="Update Status">
-                    <Select>
-                      <Select.Option value="open">Open</Select.Option>
-                      <Select.Option value="in-progress">In Progress</Select.Option>
-                      <Select.Option value="resolved">Resolved</Select.Option>
-                      <Select.Option value="closed">Closed</Select.Option>
-                    </Select>
-                  </Form.Item>
-                  
-                  <Form.Item className="mb-0 flex justify-end">
-                    <Space>
-                      <Button onClick={() => setViewModalVisible(false)}>
-                        Close
-                      </Button>
-                      <Button 
-                        type="primary" 
-                        htmlType="submit" 
-                        loading={noteSubmitLoading}
-                      >
-                        Add Note/Update
-                      </Button>
-                    </Space>
-                  </Form.Item>
-                </Form>
-              </div>
-            )}
+                      <div className="text-xs text-gray-500">
+                        {formatDate(currentTicket.responses.resolved.createdAt)}
+                      </div>
+                      <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
+                        {currentTicket.responses.resolved.response}
+                      </div>
+                    </div>
+                  </Timeline.Item>
+                )}
+
+                {currentTicket.responses?.reopened && (
+                  <Timeline.Item color="yellow">
+                    <div className="flex flex-col">
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <Text strong>Ticket Reopened</Text>
+                        <Tag color="yellow">REOPENED</Tag>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDate(currentTicket.responses.reopened.createdAt)}
+                      </div>
+                      <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
+                        {currentTicket.responses.reopened.response}
+                      </div>
+                    </div>
+                  </Timeline.Item>
+                )}
+
+                {currentTicket.responses?.closed && (
+                  <Timeline.Item color="red">
+                    <div className="flex flex-col">
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <Text strong>Ticket Closed</Text>
+                        <Tag color="red">CLOSED</Tag>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDate(currentTicket.responses.closed.createdAt)}
+                      </div>
+                      <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
+                        {currentTicket.responses.closed.response}
+                      </div>
+                    </div>
+                  </Timeline.Item>
+                )}
+              </Timeline>
+            </div>
           </div>
         )}
+      </Modal>
+
+      {/* Response Modal (Replaces Resolve and Close dialogs) */}
+      <Modal
+        title={
+          <div className="px-2 py-1">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              {currentTicket?.status === 'Opened' ? 'Resolve Ticket' : 'Close Ticket'}
+            </h3>
+          </div>
+        }
+        open={responseModalVisible}
+        onCancel={() => {
+          setResponseModalVisible(false);
+          responseForm.resetFields();
+        }}
+        footer={null}
+        width={500}
+        className="helpdesk-response-modal"
+      >
+        <div className="p-4">
+          {currentTicket && (
+            <Form
+              form={responseForm}
+              layout="vertical"
+              onFinish={handleResponseSubmit}
+            >
+              <Form.Item
+                name="message"
+                label="Add Response"
+                rules={[{ required: true, message: 'Please enter a response' }]}
+              >
+                <Input.TextArea 
+                  rows={4} 
+                  placeholder="Enter your response..." 
+                  className="w-full"
+                />
+              </Form.Item>
+              
+              <Form.Item 
+                name="status" 
+                label="Update Status"
+                rules={[{ required: true, message: 'Please select a status' }]}
+              >
+                <Select className="w-full">
+                  {currentTicket.status === 'Opened' && (
+                    <Select.Option value="Resolved">Resolved</Select.Option>
+                  )}
+                  {(currentTicket.status === 'Resolved' || currentTicket.status === 'Re-Opened') && (
+                    <Select.Option value="Closed">Closed</Select.Option>
+                  )}
+                </Select>
+              </Form.Item>
+              
+              <Form.Item className="mb-0 flex justify-end">
+                <Space>
+                  <Button onClick={() => setResponseModalVisible(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    loading={submitLoading}
+                  >
+                    Submit
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          )}
+        </div>
       </Modal>
     </>
   );

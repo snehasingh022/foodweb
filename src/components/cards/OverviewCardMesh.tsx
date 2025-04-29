@@ -29,7 +29,7 @@ function OverviewCardMesh( data:any, circleIcon:string ) {
             }`}
           >
             <ReactSVG
-              src={require(`/hexadash-nextjs/img/icon/${icon}`)}
+              src={require(`/img/icon/${icon}`)}
               className="3xl:[&>div>svg]:w-5 3xl:[&>div>svg]:h-5[&>div>svg]:text-{type}"
             />
           </div>

@@ -188,23 +188,23 @@ function Posts({ postId, from, time, img, like, comment, content, author }:Posts
   const dataImages = [
     {
       id: 1,
-      image: '/hexadash-nextjs/img/profile/post/506.png',
+      image: '/img/profile/post/506.png',
     },
     {
       id: 2,
-      image: '/hexadash-nextjs/img/profile/post/907.png',
+      image: '/img/profile/post/907.png',
     },
     {
       id: 3,
-      image: '/hexadash-nextjs/img/profile/post/brightland_3744.png',
+      image: '/img/profile/post/brightland_3744.png',
     },
     {
       id: 4,
-      image: '/hexadash-nextjs/img/profile/post/70.png',
+      image: '/img/profile/post/70.png',
     },
     {
       id: 5,
-      image: '/hexadash-nextjs/img/profile/post/165.png',
+      image: '/img/profile/post/165.png',
     },
   ];
 
@@ -214,7 +214,7 @@ function Posts({ postId, from, time, img, like, comment, content, author }:Posts
         className="rounded-10 [&>.ant-card-head]:px-[25px] [&>.ant-card-body]:py-[20px] [&>.ant-card-body]:px-0 mb-[25px] [&>div>.ant-card-head-wrapper]:flex-row"
         title={
           <h3 className="flex items-center gap-[15px] py-[15px]">
-            <img className="w-[46px] h-[46px] rounded-full" src={`/hexadash-nextjs/${author}`} alt="" />
+            <img className="w-[46px] h-[46px] rounded-full" src={`/${author}`} alt="" />
             <p className="text-[14px] font-medium text-dark dark:text-white/[.87] m-0">
               {from}{' '}
               <span className="text-[13px] font-normal block m-0 text-light dark:text-white/60 text-start">
@@ -247,7 +247,7 @@ function Posts({ postId, from, time, img, like, comment, content, author }:Posts
                           <img
                             className="mb-[10px] rounded-[8px] w-full"
                             key={key + 1}
-                            src={`/hexadash-nextjs/${src}`}
+                            src={`/${src}`}
                             alt=""
                           />
                         </a>
@@ -274,7 +274,7 @@ function Posts({ postId, from, time, img, like, comment, content, author }:Posts
                             <img
                               className="mb-[10px] rounded-[8px] w-full"
                               key={key + 1}
-                              src={`/hexadash-nextjs/${src}`}
+                              src={`/${src}`}
                               alt=""
                             />
                           </a>
@@ -337,7 +337,7 @@ function Posts({ postId, from, time, img, like, comment, content, author }:Posts
               <div className="relative flex items-center sm:flex-wrap flex-1 sm:flex-[0_0_100%] gap-[10px]">
                 <img
                   className="max-w-[36px] rounded-full"
-                  src={'/hexadash-nextjs/img/chat-author/t2.jpg'}
+                  src={'/img/chat-author/t2.jpg'}
                   alt=""
                 />
                 <Input.TextArea

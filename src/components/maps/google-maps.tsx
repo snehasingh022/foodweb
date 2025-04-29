@@ -1,7 +1,7 @@
 import { GoogleMap, MarkerF , useJsApiLoader} from '@react-google-maps/api';
 
 const apiKey:any = process.env.NEXT_PUBLIC_GOOGLE_MAP_KEY;
-const icon = '/hexadash-nextjs/img/map/mpc.png';
+const icon = '/img/map/mpc.png';
 
 interface GoogleMapsProps {
   latitude: number;

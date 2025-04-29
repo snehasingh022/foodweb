@@ -144,7 +144,7 @@ const Customizer = (props:any) => {
                     }}
                     className='p-0 border-none shadow-none'
                   >
-                    <Image src='/hexadash-nextjs/img/ltr.png' alt="" width="141" height="87" />
+                    <Image src='/img/ltr.png' alt="" width="141" height="87" />
                     <FontAwesome
                       className={!rtl ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
@@ -159,7 +159,7 @@ const Customizer = (props:any) => {
                     }}
                     className='p-0 border-none shadow-none'
                   >
-                    <Image src='/hexadash-nextjs/img/rtl.png' alt="" width="141" height="87" />
+                    <Image src='/img/rtl.png' alt="" width="141" height="87" />
                     <FontAwesome
                       className={rtl ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
@@ -182,7 +182,7 @@ const Customizer = (props:any) => {
                     }}
                     className='p-0 border-none shadow-none'
                   >
-                    <Image src='/hexadash-nextjs/img/light.png' alt="" width="141" height="87" />
+                    <Image src='/img/light.png' alt="" width="141" height="87" />
                     <FontAwesome
                       className={layoutMode === 'lightMode' ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
@@ -198,7 +198,7 @@ const Customizer = (props:any) => {
                     }}
                     className='p-0 border-none shadow-none'
                   >
-                    <Image src='/hexadash-nextjs/img/dark.png' alt="" width="141" height="87" />
+                    <Image src='/img/dark.png' alt="" width="141" height="87" />
                     <FontAwesome
                       className={layoutMode === 'darkMode' ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
@@ -220,7 +220,7 @@ const Customizer = (props:any) => {
                     }}
                     className='p-0 border-none shadow-none'
                   >
-                    <Image src='/hexadash-nextjs/img/side.png' alt="" width="141" height="87" />
+                    <Image src='/img/side.png' alt="" width="141" height="87" />
                     <FontAwesome
                       className={!topMenu ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
@@ -235,7 +235,7 @@ const Customizer = (props:any) => {
                     }}
                     className='p-0 border-none shadow-none'
                   >
-                    <Image src='/hexadash-nextjs/img/top.png' alt="" width="141" height="87" />
+                    <Image src='/img/top.png' alt="" width="141" height="87" />
                     <FontAwesome
                       className={topMenu ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"

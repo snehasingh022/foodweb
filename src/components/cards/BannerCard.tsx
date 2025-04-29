@@ -75,7 +75,7 @@ function BannerCard( { item }:BannerCardProps ) {
         <h4
           className={`text-[16px] font-medium items-center mb-[14px] ${titleColor} dark:[&.text-dark]:text-white flex gap-[10px]`}
         >
-          <img className="w-[14px] h-[14px]" src={`/hexadash-nextjs/img/icon/${icon}`} alt="HexaDash Banner" />
+          <img className="w-[14px] h-[14px]" src={`/img/icon/${icon}`} alt="HexaDash Banner" />
           <span>{title}</span>
         </h4>
         <DropDown
@@ -91,7 +91,7 @@ function BannerCard( { item }:BannerCardProps ) {
       </div>
       <div className="flex flex-wrap items-center justify-between">
         <div className="flex items-center gap-[15px]">
-          <img className="w-[30px] h-[30px] rounded-full" src={`/hexadash-nextjs/img/users/${authorImg}`} alt="" />
+          <img className="w-[30px] h-[30px] rounded-full" src={`/img/users/${authorImg}`} alt="" />
           <span className={`${subTitleColor} text-[15px] font-medium dark:text-white/60`}>{authorName}</span>
         </div>
         <div>

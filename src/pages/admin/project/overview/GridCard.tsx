@@ -142,49 +142,49 @@ const GridCard: React.FC<GridCardProps> = ({ value }) => {
                         <li className="m-[3px]">
                             <img
                                 className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-                                src="/hexadash-nextjs/img/users/1.png"
+                                src="/img/users/1.png"
                                 alt=""
                             />
                         </li>
                         <li className="m-[3px]">
                             <img
                                 className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-                                src="/hexadash-nextjs/img/users/2.png"
+                                src="/img/users/2.png"
                                 alt=""
                             />
                         </li>
                         <li className="m-[3px]">
                             <img
                                 className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-                                src="/hexadash-nextjs/img/users/3.png"
+                                src="/img/users/3.png"
                                 alt=""
                             />
                         </li>
                         <li className="m-[3px]">
                             <img
                                 className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-                                src="/hexadash-nextjs/img/users/4.png"
+                                src="/img/users/4.png"
                                 alt=""
                             />
                         </li>
                         <li className="m-[3px]">
                             <img
                                 className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-                                src="/hexadash-nextjs/img/users/5.png"
+                                src="/img/users/5.png"
                                 alt=""
                             />
                         </li>
                         <li className="m-[3px]">
                             <img
                                 className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-                                src="/hexadash-nextjs/img/users/6.png"
+                                src="/img/users/6.png"
                                 alt=""
                             />
                         </li>
                         <li className="m-[3px]">
                             <img
                                 className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-                                src="/hexadash-nextjs/img/users/7.png"
+                                src="/img/users/7.png"
                                 alt=""
                             />
                         </li>

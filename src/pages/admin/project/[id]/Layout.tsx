@@ -214,7 +214,7 @@ const ProjectDetailsLayout = ({ children }: { children: React.ReactNode }) => {
                   <div>
                     <img
                       className="w-[45px] h-[45px] rounded-full"
-                      src='/hexadash-nextjs/img/users/1.png'
+                      src='/img/users/1.png'
                       alt=""
                     />
                   </div>
@@ -229,7 +229,7 @@ const ProjectDetailsLayout = ({ children }: { children: React.ReactNode }) => {
                   <div>
                     <img
                       className="w-[45px] h-[45px] rounded-full"
-                      src='/hexadash-nextjs/img/users/3.png'
+                      src='/img/users/3.png'
                       alt=""
                     />
                   </div>
@@ -244,7 +244,7 @@ const ProjectDetailsLayout = ({ children }: { children: React.ReactNode }) => {
                   <div>
                     <img
                       className="w-[45px] h-[45px] rounded-full"
-                      src='/hexadash-nextjs/img/users/9.jpg'
+                      src='/img/users/9.jpg'
                       alt=""
                     />
                   </div>
@@ -259,7 +259,7 @@ const ProjectDetailsLayout = ({ children }: { children: React.ReactNode }) => {
                   <div>
                     <img
                       className="w-[45px] h-[45px] rounded-full"
-                      src='/hexadash-nextjs/img/users/4.png'
+                      src='/img/users/4.png'
                       alt=""
                     />
                   </div>
@@ -274,7 +274,7 @@ const ProjectDetailsLayout = ({ children }: { children: React.ReactNode }) => {
                   <div>
                     <img
                       className="w-[45px] h-[45px] rounded-full"
-                      src='/hexadash-nextjs/img/users/5.png'
+                      src='/img/users/5.png'
                       alt=""
                     />
                   </div>

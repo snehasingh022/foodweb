@@ -64,7 +64,7 @@ const BrowserState = React.memo(() => {
         name: (
           <div className="flex items-center">
             <div className="ltr:mr-2.5 rtl:ml-2.5 w-8 h-8">
-              <Image className="w-8 h-8" src={`/hexadash-nextjs/img/browser/${img}`} width="32" height="32" alt={name} />
+              <Image className="w-8 h-8" src={`/img/browser/${img}`} width="32" height="32" alt={name} />
             </div>
             <span className="font-medium capitalize text-dark dark:text-white/[.87] text-15">{name}</span>
           </div>

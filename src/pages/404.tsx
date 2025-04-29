@@ -24,7 +24,7 @@ function NotFound() {
         </div>
       ) : (
         <div className="flex justify-center items-center flex-col min-h-screen pb-36 px-[15px] text-center">
-          <Image className="mx-auto mb-20" src={`/hexadash-nextjs/img/pages/404.svg`} alt="404" width="400" height="315" />
+          <Image className="mx-auto mb-20" src={`/img/pages/404.svg`} alt="404" width="400" height="315" />
           <Heading
             className="text-light-extra dark:text-white/60 mb-5 text-6xl ssm:text-5xl xs:text-4xl font-semibold"
             as="h3"

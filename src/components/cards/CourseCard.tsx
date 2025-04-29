@@ -20,7 +20,7 @@ function CourseCard( courseData:CourseCardProps ) {
       <div className="mb-[25px] [&>.ant-card>.ant-card-body]:p-[18px]">
         <Card bordered={false}>
           <div className="mb-[15px] rounded-[10px]">
-            <img className="3xl:w-full" src={require(`/hexadash-nextjs/img/courses/${thumbnail}`)} alt="hexadash" />
+            <img className="3xl:w-full" src={require(`/img/courses/${thumbnail}`)} alt="hexadash" />
           </div>
           <div>
             <h4 className="text-xl 3xl:text-lg font-semibold mb-3">
@@ -32,7 +32,7 @@ function CourseCard( courseData:CourseCardProps ) {
               </Link>
             </h4>
             <div className="flex items-center gap-2.5 mb-5">
-              <img className="w-[30px]" src={require(`/hexadash-nextjs/img/avatar/${authorImg}`)} alt="hexadash" />
+              <img className="w-[30px]" src={require(`/img/avatar/${authorImg}`)} alt="hexadash" />
               <span className="text-[15px] text-light dark:text-white/60">{author}</span>
             </div>
             <div className="flex items-center justify-between gap-[10px]">

@@ -20,7 +20,7 @@ function App({ Component, pageProps }: AppProps) {
   const renderLayout = () => {
     if (pathname=='/' || pathname.startsWith('/register') || pathname.startsWith('/forgotPassword') || pathname.startsWith('/login')) {
       return (
-        <UserProvider profileUrl="/hexadash-nextjs/api/auth/me">
+        <UserProvider profileUrl="/api/auth/me">
           <AuthContextProvider>
             <AuthLayout>
               <Component {...pageProps} />
@@ -31,7 +31,7 @@ function App({ Component, pageProps }: AppProps) {
     }
     else {
       return (
-        <UserProvider profileUrl="/hexadash-nextjs/api/auth/me">
+        <UserProvider profileUrl="/api/auth/me">
           <AuthContextProvider>
             <AdminLayout>
               <Component {...pageProps} />

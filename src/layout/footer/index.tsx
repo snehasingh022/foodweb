@@ -8,25 +8,13 @@ const Footer = () => {
       <Row>
         <Col md={12} xs={24}>
           <span className="inline-block w-full font-medium admin-footer__copyright md:text-center text-theme-gray dark:text-white/60 md:mb-[10px]">
-            © 2024
-            <Link className="mx-[4px] text-primary" href="#">
-              SovWare
-            </Link>
+            © 2025
+            <span className="mx-[4px] text-black">
+              Parthvi Travles
+            </span>
           </span>
         </Col>
-        <Col md={12} xs={24}>
-          <div className="justify-end md:justify-center items-center flex gap-[15px]">
-            <Link className="text-theme-gray dark:text-white/60 text-[14px] hover:text-primary" href="#">
-              About
-            </Link>
-            <Link className="text-theme-gray dark:text-white/60 text-[14px] hover:text-primary" href="#">
-              Team
-            </Link>
-            <Link className="text-theme-gray dark:text-white/60 text-[14px] hover:text-primary" href="#">
-              Contact
-            </Link>
-          </div>
-        </Col>
+        
       </Row>
     </footer>
   );

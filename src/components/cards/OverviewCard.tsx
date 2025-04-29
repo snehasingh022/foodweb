@@ -56,7 +56,7 @@ function OverviewCard( data:any, contentFirst?:boolean, bottomStatus?:boolean, h
           >
             <ReactSVG
               className={`fill-${type} w-[25px] h-[25px] svg-w-full [&>div>svg]:w-full [&>div>svg]:h-full flex items-center`}
-              src={`/hexadash-nextjs/img/icon/${icon}`}
+              src={`/img/icon/${icon}`}
             />
           </div>
           <div className={contentFirst ? '' : 'text-end'}>

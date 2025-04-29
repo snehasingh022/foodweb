@@ -137,27 +137,27 @@ const CreateProject: React.FC<CreateProjectProps> = ({ visible, onCancel }) => {
           <div className="flex items-center flex-wrap gap-3 mb-[30px]">
             <img
               className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-              src='/hexadash-nextjs/img/users/1.png'
+              src='/img/users/1.png'
               alt=""
             />
             <img
               className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-              src='/hexadash-nextjs/img/users/2.png'
+              src='/img/users/2.png'
               alt=""
             />
             <img
               className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-              src='/hexadash-nextjs/img/users/3.png'
+              src='/img/users/3.png'
               alt=""
             />
             <img
               className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-              src='/hexadash-nextjs/img/users/4.png'
+              src='/img/users/4.png'
               alt=""
             />
             <img
               className="w-[35px] min-w-[35px] h-[35px] rounded-full object-cover"
-              src='/hexadash-nextjs/img/users/5.png'
+              src='/img/users/5.png'
               alt=""
             />
           </div>

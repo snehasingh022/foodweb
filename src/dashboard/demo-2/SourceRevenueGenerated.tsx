@@ -171,7 +171,7 @@ const SourceRevenueGenerated = React.memo(() => {
             </div>
             <div>
               <div className="flex items-center justify-center bg-danger-transparent text-danger w-[80px] h-[80px] mb-[10px] rounded-[10px]">
-                <ReactSVG src='/hexadash-nextjs/img/icon/google-customIcon.svg' />
+                <ReactSVG src='/img/icon/google-customIcon.svg' />
               </div>
               <div className="text-center">
                 <span className="text-[15px] text-dark dark:text-white/[.87] block font-medium">

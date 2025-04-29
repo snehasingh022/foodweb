@@ -68,7 +68,7 @@ const FileListCard: React.FC<FileListCardProps> = ({ title }) => {
                         <div className="flex items-center w-[50%] gap-x-[16px]">
                             <img
                                 className="max-w-[42px]"
-                                src={`/hexadash-nextjs/img/files/${file.logo}`}
+                                src={`/img/files/${file.logo}`}
                                 alt="File Logo"
                             />
                             <div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Button, Upload, message, Spin, Modal } from 'antd';
-import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { mediaDb, mediaAnalytics, mediaStorage } from '../../../authentication/firebase-media';
 import { db } from '../../../authentication/firebase'; // Import the main db from firebase.tsx
@@ -32,6 +32,7 @@ function Media() {
   const [previewVisible, setPreviewVisible] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string>('');
   const [previewTitle, setPreviewTitle] = useState<string>('');
+  const { confirm } = Modal;
 
   const PageRoutes = [
     {
@@ -100,6 +101,38 @@ function Media() {
     }
   };
 
+  const showDeleteConfirm = (id: string, imageUrl: string, fileName: string) => {
+    confirm({
+      title: 'Are you sure you want to delete this file?',
+      icon: <ExclamationCircleFilled style={{ borderColor: '#ff4d4f' }} />,
+      content: `File: ${fileName}`,
+      okText: 'Yes, delete it',
+      okType: 'danger',
+      cancelText: 'No',
+      onOk() {
+        handleDelete(id, imageUrl);
+      },
+      className: 'delete-confirmation-modal',
+      centered: true,
+      maskClosable: true,
+      width: 420,
+      bodyStyle: { 
+        padding: '24px',
+        fontSize: '15px'
+      },
+      okButtonProps: {
+        style: { 
+          borderColor: '#ff4d4f'
+        }
+      },
+      cancelButtonProps: {
+        style: {
+          borderColor: '#d9d9d9'
+        }
+      }
+    });
+  };
+
   const handleDelete = async (id: string, imageUrl: string) => {
     try {
       // Delete from the main Firestore
@@ -144,8 +177,7 @@ function Media() {
     <>
       <PageHeaders
         className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
-        title="Media"
-        routes={PageRoutes}
+        
       />
       <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
@@ -153,17 +185,20 @@ function Media() {
             <Card className="h-full">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-4 sm:p-[25px]">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                  <div className="flex flex-row sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Media Management</h2>
-                    <Upload {...uploadProps}>
-                      <Button 
-                        icon={<UploadOutlined />} 
-                        className="bg-primary hover:bg-primary-hover text-white w-full sm:w-auto"
-                        loading={loading}
-                      >
-                        Upload Media
-                      </Button>
-                    </Upload>
+                    <div className="flex items-center gap-3">
+                      <Upload {...uploadProps}>
+                        <Button 
+                          icon={<UploadOutlined />} 
+                          type="primary"
+                          className="bg-purple-600 hover:bg-purple-700"
+                          loading={loading}
+                        >
+                          Upload Media
+                        </Button>
+                      </Upload>
+                    </div>
                   </div>
                   
                   {loading && (
@@ -172,49 +207,44 @@ function Media() {
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="flex flex-wrap gap-6 p-4">
                     {mediaFiles.map((file) => (
                       <div 
                         key={file.id} 
-                        className="relative border border-gray-200 dark:border-white/10 rounded-md overflow-hidden group"
+                        className="w-[30vh] h-[30vh] border border-purple-300 bg-purple-50 dark:bg-purple-900/10 rounded-md overflow-hidden relative cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md flex justify-center items-center"
                       >
                         <div 
-                          className="h-[180px] cursor-pointer bg-gray-50 dark:bg-white/10 flex items-center justify-center overflow-hidden"
+                          className="w-full h-full flex items-center justify-center p-2 overflow-hidden"
                           onClick={() => handlePreview(file)}
                         >
                           <img 
                             src={file.image} 
                             alt={file.name} 
-                            className="max-w-full max-h-full object-contain"
+                            className="max-w-[95%] max-h-[95%] object-contain"
                           />
                         </div>
-                        <div className="p-3 flex justify-between items-center">
-                          <div className="truncate text-sm" title={file.name}>
-                            {file.name}
-                          </div>
+                        <div 
+                          className="absolute inset-0 bg-purple-500/60 opacity-0 hover:opacity-100 transition-opacity duration-700 flex items-center justify-center"
+                        >
                           <Button 
                             type="text" 
                             danger 
                             icon={<DeleteOutlined />} 
-                            onClick={() => handleDelete(file.id, file.image)}
-                            className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                          />
-                        </div>
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Button 
-                            type="primary" 
-                            danger 
-                            icon={<DeleteOutlined />} 
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(file.id, file.image);
+                              showDeleteConfirm(file.id, file.image, file.name);
                             }}
-                          >
-                            Delete
-                          </Button>
+                            className="text-white hover:text-red-500 hover:bg-white"
+                          />
                         </div>
                       </div>
                     ))}
+                    
+                    <Upload {...uploadProps}>
+                      <div className="w-[30vh] h-[30vh] border border-purple-300 bg-purple-50 dark:bg-purple-900/10 rounded-md flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md">
+                        <div className="text-4xl text-purple-400">+</div>
+                      </div>
+                    </Upload>
                   </div>
                   
                   {!loading && mediaFiles.length === 0 && (

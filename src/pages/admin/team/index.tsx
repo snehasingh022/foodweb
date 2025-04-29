@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Modal, Form, Input, Select, Space, Spin } from 'antd';
+import { 
+  Row, 
+  Col, 
+  Card, 
+  Table, 
+  Button, 
+  Modal, 
+  Form, 
+  Input, 
+  Select, 
+  Space, 
+  Spin,
+  Typography,
+  Tag
+} from 'antd';
+import { 
+  EditOutlined, 
+  DeleteOutlined,
+} from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { useRouter } from 'next/router';
 import { db, auth } from '../../../authentication/firebase';
@@ -19,9 +37,16 @@ import {
   DocumentData
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { UilPlus, UilEdit, UilTrash } from '@iconscout/react-unicons';
+import { 
+  UilPlus, 
+  UilEdit, 
+  UilTrash, 
+  UilEye
+} from '@iconscout/react-unicons';
 import type { Breakpoint } from 'antd/es/_util/responsiveObserver';
 import Protected from '../../../components/Protected/Protected';
+
+const { Text, Title } = Typography;
 
 // Define user type
 interface UserType {
@@ -75,6 +100,7 @@ function Team() {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [form] = Form.useForm<EditUserFormValues>();
   const [addForm] = Form.useForm<AddUserFormValues>();
+  const [searchText, setSearchText] = useState('');
   const router = useRouter();
 
   const roleOptions = [
@@ -91,57 +117,34 @@ function Team() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // First check if the userAdmin collection exists
-      const userAdminCollection = collection(db, "userAdmin");
-      const usersQuery = query(userAdminCollection, orderBy("createdAt", "desc"));
+      // Use only the admins collection 
+      const adminsCollection = collection(db, "admins");
+      const usersQuery = query(adminsCollection, orderBy("createdAt", "desc"));
       
       const querySnapshot = await getDocs(usersQuery);
       
-      // If no users found, check admins collection as fallback
-      if (querySnapshot.empty) {
-        console.log("No users found in userAdmin collection. Checking admins collection...");
-        const adminsCollection = collection(db, "admins");
-        const adminsSnapshot = await getDocs(adminsCollection);
-        
-        if (!adminsSnapshot.empty) {
-          const adminsList = adminsSnapshot.docs.map(doc => {
-            const data = doc.data() as DocumentData;
-            return {
-              key: doc.id,
-              id: doc.id,
-              name: data.name || data.displayName || '',
-              email: data.email || '',
-              roles: ['admin'], // Default role for admins collection
-              status: 'active',
-              uid: data.uid
-            } as UserType;
-          });
-          setUsers(adminsList);
-        } else {
-          setUsers([]);
-        }
-      } else {
-        // Process users from userAdmin collection
-        const usersList = querySnapshot.docs.map((doc) => {
+      if (!querySnapshot.empty) {
+        const adminsList = querySnapshot.docs.map(doc => {
           const data = doc.data() as DocumentData;
           return {
             key: doc.id,
             id: doc.id,
-            name: data.name || '',
+            name: data.name || data.displayName || '',
             email: data.email || '',
-            roles: data.roles || [],
+            roles: data.roles || (data.isAdmin ? ['admin'] : []),
             status: data.status || 'active',
+            uid: data.uid || doc.id,
             authorDescription: data.authorDescription,
             slug: data.slug,
-            createdAt: data.createdAt,
-            uid: data.uid
+            createdAt: data.createdAt
           } as UserType;
         });
-        setUsers(usersList);
+        setUsers(adminsList);
+      } else {
+        setUsers([]);
       }
     } catch (error) {
       console.error("Error fetching users:", error);
-      // Add fallback empty array to prevent undefined errors
       setUsers([]);
     } finally {
       setLoading(false);
@@ -177,7 +180,7 @@ function Team() {
     
     setLoading(true);
     try {
-      await deleteDoc(doc(db, "userAdmin", selectedUser.id));
+      await deleteDoc(doc(db, "admins", selectedUser.id));
       
       // If the user is an author, delete from authors collection
       if (selectedUser.roles.includes('author')) {
@@ -205,7 +208,7 @@ function Team() {
     
     setLoading(true);
     try {
-      const userRef = doc(db, "userAdmin", selectedUser.id);
+      const userRef = doc(db, "admins", selectedUser.id);
       await updateDoc(userRef, {
         name: values.name,
         roles: values.roles,
@@ -296,14 +299,6 @@ function Team() {
       setAddModalVisible(false);
       addForm.resetFields();
       
-      // Log out the created user to avoid session conflicts
-      // Use the imported signOut function directly with the auth object
-      try {
-        await signOut(auth);
-      } catch (signOutError) {
-        console.error("Error signing out after user creation:", signOutError);
-      }
-      
     } catch (error: any) {
       console.error("Error adding user:", error);
       if (error.code === "auth/email-already-in-use") {
@@ -318,106 +313,158 @@ function Team() {
     }
   };
 
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+  };
+
+  const filteredUsers = users.filter(user => 
+    user.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+    (user.uid ? user.uid.toLowerCase().includes(searchText.toLowerCase()) : false) ||
+    user.roles?.some(role => role.toLowerCase().includes(searchText.toLowerCase()))
+  );
+
   const columns = [
+    {
+      title: 'UID',
+      dataIndex: 'uid',
+      key: 'uid',
+      width: 120,
+      render: (text: string) => <Text copyable>{text}</Text>,
+    },
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
+      render: (text: string) => <span className="font-medium">{text}</span>,
       sorter: (a: UserType, b: UserType) => a.name.localeCompare(b.name),
-      className: 'whitespace-nowrap',
-      responsive: ['xs', 'sm', 'md', 'lg'] as Breakpoint[],
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-      className: 'hidden md:table-cell whitespace-nowrap',
-      responsive: ['md', 'lg'] as Breakpoint[]
     },
     {
-      title: 'Roles',
+      title: 'Role',
       dataIndex: 'roles',
       key: 'roles',
       render: (roles: string[]) => (
         <Space size={[0, 8]} wrap>
           {roles?.map(role => (
-            <span 
+            <Tag 
               key={role} 
-              className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-500 text-xs px-2 py-1 rounded-full whitespace-nowrap"
+              color={
+                role === 'admin' ? 'blue' : 
+                role === 'helpdesk' ? 'orange' : 
+                role === 'author' ? 'purple' : 'default'
+              }
             >
-              {role}
-            </span>
+              {role.toUpperCase()}
+            </Tag>
           ))}
         </Space>
       ),
-      className: 'hidden sm:table-cell',
-      responsive: ['sm', 'md', 'lg'] as Breakpoint[]
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-          status === 'active' 
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-500' 
-            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-500'
-        }`}>
-          {status}
-        </span>
+        <Tag color={status === 'active' ? 'green' : 'red'}>
+          {status?.toUpperCase() || 'ACTIVE'}
+        </Tag>
       ),
-      className: 'hidden sm:table-cell',
-      responsive: ['sm', 'md', 'lg'] as Breakpoint[]
     },
     {
-      title: 'Action',
-      key: 'action',
+      title: 'Actions',
+      key: 'actions',
+      width: 100,
       render: (_: any, record: UserType) => (
-        <Space size="small" className="flex flex-row sm:flex-row items-center">
-          <Button 
-            type="text" 
+        <Space size="small">
+          {/* <Button 
+            type="primary" 
+            icon={<UilEdit />} 
+            size="small" 
             onClick={() => handleEditUser(record)}
-            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-            icon={<UilEdit size={16} />}
-          />
+          /> */}
           <Button 
-            type="text" 
+                type="primary" 
+                size="small" 
+                icon={<EditOutlined />}
+                onClick={() => handleEditUser(record)}
+                className="bg-primary hover:bg-primary-hbr"
+              />
+          {/* <Button 
+            type="primary" 
             danger
+            icon={<UilTrash />}
+            size="small"
             onClick={() => handleDeleteUser(record)}
-            icon={<UilTrash size={16} />}
-          />
+          /> */}
+          <Button 
+                type="primary" 
+                danger
+                size="small" 
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteUser(record)}
+              />
         </Space>
       ),
     },
   ];
 
   return (
-    <div className="text-theme-gray dark:text-white/60">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Team Members</h2>
-        <Button 
-          type="primary" 
-          onClick={() => setAddModalVisible(true)}
-          icon={<UilPlus />}
-          className="bg-primary hover:bg-primary-hover text-white w-full sm:w-auto"
-        >
-          Add User
-        </Button>
-      </div>
-      <div className="overflow-x-auto">
-        <Table
-          dataSource={users}
-          columns={columns}
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 'max-content' }}
-          className="team-table"
-        />
-      </div>
+    <>
+      <PageHeaders
+        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
+        routes={PageRoutes}
+      />
+      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+        <Row gutter={25}>
+          <Col sm={24} xs={24}>
+            <Card className="h-full">
+              <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
+                <div className="p-[25px]">
+                  <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                    <Title level={4} className="mb-0 text-dark dark:text-white/[.87]">
+                      All Team Members
+                    </Title>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        placeholder="Search team members..." 
+                        onChange={e => handleSearch(e.target.value)}
+                        className="min-w-[280px]"
+                      />
+                      <Button 
+                        type="primary" 
+                        onClick={() => setAddModalVisible(true)}
+                        icon={<UilPlus />}
+                      >
+                        Add User
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="table-responsive">
+                    <Table
+                      columns={columns}
+                      dataSource={filteredUsers}
+                      pagination={{ pageSize: 10 }}
+                      loading={loading}
+                      bordered={false}
+                      className="[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-regularBG dark:[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-[#323440] [&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      </main>
 
       {/* User Edit Modal */}
       <Modal
-        title="Edit User"
+        title={<Title level={4} className="text-lg font-semibold p-4">Edit User</Title>}
         open={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
         footer={null}
@@ -429,7 +476,7 @@ function Team() {
           form={form}
           layout="vertical"
           onFinish={handleUpdateUser}
-          className="p-2"
+          className="p-4"
         >
           <Form.Item
             name="name"
@@ -497,10 +544,10 @@ function Team() {
 
           <Form.Item className="mb-0 flex justify-end mt-4">
             <Space>
-              <Button onClick={() => setEditModalVisible(false)}>
+              <Button size="large" onClick={() => setEditModalVisible(false)} className="min-w-[100px] font-medium">
                 Cancel
               </Button>
-              <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
+              <Button type="primary" htmlType="submit" size="large" loading={loading} className="bg-primary hover:bg-primary-hover min-w-[100px] font-medium">
                 Update
               </Button>
             </Space>
@@ -510,7 +557,7 @@ function Team() {
 
       {/* Add User Modal */}
       <Modal
-        title="Add New User"
+        title={<Title level={4} className="text-lg font-semibold p-4">Add New User</Title>}
         open={addModalVisible}
         onCancel={() => setAddModalVisible(false)}
         footer={null}
@@ -522,7 +569,7 @@ function Team() {
           form={addForm}
           layout="vertical"
           onFinish={handleAddUser}
-          className="p-2"
+          className="p-4"
         >
           <Form.Item
             name="name"
@@ -594,6 +641,7 @@ function Team() {
           <Form.Item
             name="status"
             label="Status"
+            initialValue="active"
           >
             <Select
               placeholder="Select status"
@@ -603,10 +651,10 @@ function Team() {
 
           <Form.Item className="mb-0 flex justify-end mt-4">
             <Space>
-              <Button onClick={() => setAddModalVisible(false)}>
+              <Button size="large" onClick={() => setAddModalVisible(false)} className="min-w-[100px] font-medium">
                 Cancel
               </Button>
-              <Button type="primary" htmlType="submit" loading={loading} className="bg-primary hover:bg-primary-hover">
+              <Button type="primary" htmlType="submit" size="large" loading={loading} className="bg-primary hover:bg-primary-hover min-w-[100px] font-medium">
                 Add User
               </Button>
             </Space>
@@ -616,14 +664,14 @@ function Team() {
 
       {/* Delete Confirmation Modal */}
       <Modal
-        title="Confirm Delete"
+        title={<Title level={4} className="text-lg font-semibold p-4">Confirm Delete</Title>}
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         footer={[
-          <Button key="back" onClick={() => setDeleteModalVisible(false)}>
+          <Button key="back" size="large" onClick={() => setDeleteModalVisible(false)} className="min-w-[100px] font-medium">
             Cancel
           </Button>,
-          <Button key="submit" type="primary" danger loading={loading} onClick={confirmDelete}>
+          <Button key="submit" type="primary" danger size="large" loading={loading} onClick={confirmDelete} className="min-w-[100px] font-medium">
             Delete
           </Button>,
         ]}
@@ -631,9 +679,11 @@ function Team() {
         style={{ maxWidth: '500px' }}
         className="responsive-modal"
       >
-        <p>Are you sure you want to delete {selectedUser?.name}?</p>
+        <div className="p-4">
+          <p>Are you sure you want to delete {selectedUser?.name}?</p>
+        </div>
       </Modal>
-    </div>
+    </>
   );
 }
 
@@ -674,7 +724,5 @@ function TeamPage() {
   // Only render Team component if user has admin access
   return isAdmin ? <Team /> : null;
 } 
-
-
 
 export default Protected(TeamPage, ["admin"]);

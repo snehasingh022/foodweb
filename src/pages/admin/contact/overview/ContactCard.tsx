@@ -127,7 +127,7 @@ function ContactCard({ user }: any) {
                 <figure className="m-0 text-center">
                     <img
                         className="inline-block rounded-full w-[120px] h-[120px]"
-                        src={`/hexadash-nextjs/${img}`}
+                        src={`/${img}`}
                         alt=""
                     />
                     <figcaption className="mt-[20px]">

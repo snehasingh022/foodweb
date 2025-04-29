@@ -43,7 +43,7 @@ const MessageBox = React.memo((props:any) => {
               className="group relative block w-full px-3 py-3.5 text-body dark:text-white/60 transition-[0.3s] hover:text-primary hover:bg-white dark:hover:bg-white/[.06] hover:shadow-custom dark:shadow-none dark:hover:shadow-[0_5px_30px_rgba(1,4,19,.20)] dark:rounded-4"
             >
               <figure className="inline-flex w-full mb-0 align-top sm:gap-[10px]">
-                <Image className="h-[40px] min-w-[40px] rounded-full object-cover" src={`/hexadash-nextjs/${message.img ? message.img : 'img/avatar/app-developer.png'} `} alt="" width="40" height="40" />
+                <Image className="h-[40px] min-w-[40px] rounded-full object-cover" src={`/${message.img ? message.img : 'img/avatar/app-developer.png'} `} alt="" width="40" height="40" />
                 <figcaption className="min-sm:-mt-1 min-sm:mx-4 ssm:w-full">
                   <Heading as="h5" className="flex items-center justify-between mb-0.5 text-sm font-semibold text-current">
                   {message.author} <span className="text-xs font-normal text-success">{message.time}</span>
@@ -74,17 +74,17 @@ const MessageBox = React.memo((props:any) => {
 
   return (
     <div className="flex">
-      <PopOver placement="bottomLeft" content={content} action="click">
+      {/* <PopOver placement="bottomLeft" content={content} action="click">
         <Link
           href="#"
           className="flex relative before:absolute before:bg-success before:w-1.5 before:h-1.5 before:rounded-full before:-top-1 before:right-0 before:shadow-dot"
         >
           <ReactSVG
             className="text-[#a0a0a0] dark:text-white/60"
-            src='/hexadash-nextjs/img/icon/envelope.svg'
+            src='/img/icon/envelope.svg'
           />
         </Link>
-      </PopOver>
+      </PopOver> */}
     </div>
   );
 });

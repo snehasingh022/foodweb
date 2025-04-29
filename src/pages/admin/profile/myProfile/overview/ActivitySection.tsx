@@ -48,7 +48,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t1.jpg'
+                src='/img/chat-author/t1.jpg'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -73,7 +73,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t2.jpg'
+                src='/img/chat-author/t2.jpg'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -98,7 +98,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t3.jpg'
+                src='/img/chat-author/t3.jpg'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -123,7 +123,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t4.jpg'
+                src='/img/chat-author/t4.jpg'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -148,7 +148,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t5.png'
+                src='/img/chat-author/t5.png'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -173,7 +173,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t1.jpg'
+                src='/img/chat-author/t1.jpg'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -198,7 +198,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t6.png'
+                src='/img/chat-author/t6.png'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -223,7 +223,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t7.png'
+                src='/img/chat-author/t7.png'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -248,7 +248,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t8.png'
+                src='/img/chat-author/t8.png'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">
@@ -273,7 +273,7 @@ function ActivityContent() {
             <div className="flex items-center gap-[20px]">
               <img
                 className="rounded-full max-w-[40px]"
-                src='/hexadash-nextjs/img/chat-author/t1.jpg'
+                src='/img/chat-author/t1.jpg'
                 alt=""
               />
               <p className="mb-0 text-[14px] text-theme-gray dark:text-white/60">

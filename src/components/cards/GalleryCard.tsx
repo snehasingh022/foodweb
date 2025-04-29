@@ -15,7 +15,7 @@ function GalleryCard({ item }:GalleryCardProps) {
   return (
     <div className="mb-[25px]">
       <figure className="bg-white dark:bg-white/10 rounded-10">
-        <img style={{ width: '100%' }} src={`/hexadash-nextjs/${img}`} alt="" />
+        <img style={{ width: '100%' }} src={`/${img}`} alt="" />
         <figcaption>
           <div className="px-6 py-5">
             <Heading className="text-15 font-medium mb-0.5 text-dark dark:text-white/60" as="h4">

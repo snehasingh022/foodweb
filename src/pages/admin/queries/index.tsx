@@ -196,7 +196,7 @@ function Queries() {
             size="small" 
             onClick={() => showQueryDetails(record)}
           >
-            View
+           
           </Button>
         </Space>
       ),
@@ -207,8 +207,7 @@ function Queries() {
     <>
       <PageHeaders
         className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        title="Customer Queries"
-        routes={PageRoutes}
+       
       />
       <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
@@ -255,82 +254,92 @@ function Queries() {
 
       {/* Query Details Modal */}
       <Modal
-        title={<Title level={4}>Query Details</Title>}
+        title={<Title level={4} className="text-lg font-semibold p-4">Query Details</Title>}
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
         footer={[
-          <Button key="back" onClick={() => setDetailModalVisible(false)}>
+          <Button 
+            key="back" 
+            size="large"
+            onClick={() => setDetailModalVisible(false)}
+            className="min-w-[100px] font-medium"
+          >
             Close
           </Button>,
           currentQuery?.status !== 'resolved' && (
             <Button 
               key="resolve" 
               type="primary" 
+              size="large"
               icon={<CheckCircleOutlined />}
               onClick={() => handleStatusChange('resolved')}
               loading={statusUpdateLoading && currentQuery?.status !== 'resolved'}
+              className="min-w-[160px] font-medium"
             >
               Mark as Resolved
             </Button>
           ),
-          currentQuery?.status !== 'rejected' && (
-            <Button 
-              key="reject" 
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => handleStatusChange('rejected')}
-              loading={statusUpdateLoading && currentQuery?.status !== 'rejected'}
-            >
-              Reject
-            </Button>
-          ),
+          // currentQuery?.status !== 'rejected' && (
+          //   <Button 
+          //     key="reject" 
+          //     danger
+          //     icon={<CloseCircleOutlined />}
+          //     onClick={() => handleStatusChange('rejected')}
+          //     loading={statusUpdateLoading && currentQuery?.status !== 'rejected'}
+          //   >
+          //     Reject
+          //   </Button>
+          // ),
         ]}
         width={700}
+        className="query-detail-modal"
+        bodyStyle={{ padding: '20px 24px' }}
+        maskClosable={false}
       >
         {currentQuery ? (
-          <div className="py-4">
+          <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
             <Spin spinning={statusUpdateLoading}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <Text type="secondary">Query ID:</Text>
-                  <div>
-                    <Text copyable strong>{currentQuery.queryID}</Text>
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Query ID:</Text>
+                  <div className="mt-1">
+                    <Text copyable strong className="text-base">{currentQuery.queryID}</Text>
                   </div>
                 </div>
-                <div>
-                  <Text type="secondary">Status:</Text>
-                  <div>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Status:</Text>
+                  <div className="mt-1">
                     <Tag color={
                       currentQuery.status === 'resolved' ? 'green' : 
                       currentQuery.status === 'rejected' ? 'red' : 
                       currentQuery.status === 'pending' ? 'orange' : 'blue'
-                    }>
+                    } className="text-sm px-3 py-1">
                       {currentQuery.status?.toUpperCase() || 'ACTIVE'}
                     </Tag>
                   </div>
                 </div>
-                <div>
-                  <Text type="secondary">Name:</Text>
-                  <div>
-                    <Text strong>{currentQuery.name}</Text>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Name:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentQuery.name}</Text>
                   </div>
                 </div>
-                <div>
-                  <Text type="secondary">Email:</Text>
-                  <div>
-                    <Text strong>{currentQuery.email}</Text>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Email:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentQuery.email}</Text>
                   </div>
                 </div>
-                <div>
-                  <Text type="secondary">Phone:</Text>
-                  <div>
-                    <Text strong>{currentQuery.phone || 'N/A'}</Text>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Phone:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentQuery.phone || 'N/A'}</Text>
                   </div>
                 </div>
-                <div>
-                  <Text type="secondary">Date:</Text>
-                  <div>
-                    <Text strong>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Date:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">
                       {currentQuery.createdAt?.toDate ? 
                         currentQuery.createdAt.toDate().toLocaleString() : 
                         new Date(currentQuery.createdAt).toLocaleString()}
@@ -339,23 +348,25 @@ function Queries() {
                 </div>
               </div>
               
-              <div className="mb-4">
-                <Text type="secondary">Subject:</Text>
-                <div>
-                  <Text strong>{currentQuery.subject}</Text>
+              <div className="mb-6 border-b pb-2">
+                <Text type="secondary" className="text-sm">Subject:</Text>
+                <div className="mt-1">
+                  <Text strong className="text-base">{currentQuery.subject}</Text>
                 </div>
               </div>
               
               <div>
-                <Text type="secondary">Message:</Text>
-                <div className="mt-2 p-4 bg-regularBG dark:bg-[#323440] rounded-md">
-                  <Text>{currentQuery.message}</Text>
+                <Text type="secondary" className="text-sm">Message:</Text>
+                <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
+                  <Text className="text-base whitespace-pre-line">{currentQuery.message}</Text>
                 </div>
               </div>
             </Spin>
           </div>
         ) : (
-          <Spin />
+          <div className="flex justify-center items-center p-10">
+            <Spin size="large" />
+          </div>
         )}
       </Modal>
     </>

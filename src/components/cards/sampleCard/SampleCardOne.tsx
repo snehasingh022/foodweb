@@ -14,7 +14,7 @@ function SampleCardOne({ item }:SampleCardProps) {
 
   return (
     <figure className="mb-0 bg-white dark:bg-white/10 rounded-10">
-      <img className="w-full rounded-t-10" src={`/hexadash-nextjs/${img}`} alt="" />
+      <img className="w-full rounded-t-10" src={`/${img}`} alt="" />
       <figcaption className="p-[25px]">
         <h2 className="mb-[10px] text-[18px] font-semibold text-dark dark:text-white/[.87]">{title}</h2>
         <p className="leading-[1.79] mb-[15px] text-theme-gray dark:text-white/60">{content}</p>

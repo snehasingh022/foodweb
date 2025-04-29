@@ -60,7 +60,7 @@ function RightAside() {
                 key={key}
               >
                 <div className="flex gap-[10px]">
-                  <img className="w-[46px] h-[46px] rounded-full" src={`/hexadash-nextjs/${img}`} alt="" />
+                  <img className="w-[46px] h-[46px] rounded-full" src={`/${img}`} alt="" />
                   <p className="p-0 m-0 text-[14px] font-semibold text-dark dark:text-white/[.87]">
                     {name}{' '}
                     <span className="block mt-[3px] font-normal text-light dark:text-white/60">{designation}</span>
@@ -108,7 +108,7 @@ function RightAside() {
                   <Col className="my-[4px]" key={id} xxl={8} lg={4} md={4} sm={8} xs={8}>
                     <img
                       className="w-full min-4xl:max-w-[103px] rounded-[6px]"
-                      src={`/hexadash-nextjs/${img}`}
+                      src={`/${img}`}
                       alt=""
                     />
                   </Col>
@@ -140,7 +140,7 @@ function RightAside() {
                     >
                       <img
                         className="w-full min-4xl:max-w-[103px] rounded-[6px]"
-                        src={`/hexadash-nextjs/${img}`}
+                        src={`/${img}`}
                         alt=""
                       />
                       <span className="w-[30px] h-[30px] rounded-full flex items-center justify-center absolute top-[50%] start-[50%] z-[5] bg-dark/[38%] translate-x-[-50%] translate-y-[-50%] group-hover:bg-primary">

@@ -63,7 +63,7 @@ const DemoOne = () => {
   return (
     <>
       <PageHeaders
-        routes={PageRoutes}
+       
         title="Dashboard"
         className="flex items-center justify-between px-8 xl:px-[15px] pt-[18px] pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
       />

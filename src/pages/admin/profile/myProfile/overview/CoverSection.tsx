@@ -23,7 +23,7 @@ function CoverSection() {
     <div className="relative">
       <Image
         className="w-full min-h-[220px] object-cover rounded-t-10"
-        src='/hexadash-nextjs/img/profile/cover-img.png'
+        src='/img/profile/cover-img.png'
         alt="banner"
         width="1500"
         height="220"

@@ -165,7 +165,7 @@ function SignIn() {
                   >
                     <ReactSVG
                       className="[&>div>svg>path]:fill-google-plus group-hover:[&>div>svg>path]:fill-white"
-                      src='/hexadash-nextjs/img/icon/google-plus.svg'
+                      src='/img/icon/google-plus.svg'
                     />
                   </Link>
                 </li>

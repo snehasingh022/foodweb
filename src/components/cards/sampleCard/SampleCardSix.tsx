@@ -60,7 +60,7 @@ function SampleCardSix({ item }: SampleCardProps) {
             <div
                 className={`w-[60px] h-[60px] rounded-[12px] flex items-center justify-center bg-${className}`}
             >
-                <img src={`/hexadash-nextjs/${img}`} alt="" />
+                <img src={`/${img}`} alt="" />
             </div>
             <figcaption>
                 <h2 className="text-dark dark:text-white/[.87] text-[20px] font-semibold mb-0">

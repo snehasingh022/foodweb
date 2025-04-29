@@ -80,8 +80,8 @@ const HeaderTop = () => {
                   className="w-full max-w-[120px] xs:max-w-[100px]"
                   src={
                     layoutMode === 'lightMode'
-                      ? '/hexadash-nextjs/img/logo_dark.svg'
-                      : '/hexadash-nextjs/img/logo_white.svg'
+                      ? '/img_adm/logo-05.png'
+                      : '/img_adm/logo-05.png'
                   }
                   alt="Logo"
                   width="140" 
@@ -95,7 +95,7 @@ const HeaderTop = () => {
                     toggleCollapsed(!collapsed);
                   }}
                 >
-                  <ReactSVG src={`/hexadash-nextjs/img/icon/left-bar.svg`} className="[&>div>svg]:w-[20px] [&>div>svg]:h-[20px]" />
+                  <ReactSVG src={`/img/icon/left-bar.svg`} className="[&>div>svg]:w-[20px] [&>div>svg]:h-[20px]" />
                 </button>
               ) : null}
             </div>
@@ -113,12 +113,7 @@ const HeaderTop = () => {
               )}
             </div>
           </div>
-          <div className="hidden md:flex items-center ltr:pr-[25px] rtl:pl-[25px] ltr:ssm:pr-[10px] rtl:ssm:pl-[10px] sm:gap-x-[10px]">
-            <Search />
-            <Link className="inline-flex text-light dark:text-white/60" onClick={onShowHide} href="#">
-              <UilEllipsisV className="w-[18px] h-[18px]" />
-            </Link>
-          </div>
+          
         </div>
       </Header>
       <Row>
