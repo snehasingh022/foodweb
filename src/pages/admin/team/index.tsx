@@ -17,8 +17,8 @@ import {
 import { 
   EditOutlined, 
   DeleteOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
-import { PageHeaders } from '../../../components/page-headers/index';
 import { useRouter } from 'next/router';
 import { db, auth } from '../../../authentication/firebase';
 import { useAuth } from '../../../authentication/AuthContext';
@@ -80,17 +80,6 @@ interface AddUserFormValues extends EditUserFormValues {
 type SorterFn = (a: UserType, b: UserType) => number;
 
 function Team() {
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Team',
-    },
-  ];
-
   const { currentUser } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -415,36 +404,40 @@ function Team() {
 
   return (
     <>
-      <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        routes={PageRoutes}
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
+        <Row gutter={25} className="mb-5">
+          <Col xs={24}>
+            <div className="flex justify-between items-center mb-5 flex-wrap gap-3 p-5">
+              <div className="flex-1">
+                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Team Management</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input 
+                  placeholder="Search team members..." 
+                  prefix={<SearchOutlined />}
+                  onChange={e => handleSearch(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-"
+                />
+                <Button 
+                  type="primary" 
+                  onClick={() => setAddModalVisible(true)}
+                  icon={<UilPlus />}
+                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                >
+                  Add User
+                </Button>
+                {loading && <Spin />}
+              </div>
+            </div>
+          </Col>
+        </Row>
+        
         <Row gutter={25}>
           <Col sm={24} xs={24}>
-            <Card className="h-full">
+            <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                    <Title level={4} className="mb-0 text-dark dark:text-white/[.87]">
-                      All Team Members
-                    </Title>
-                    <div className="flex items-center gap-2">
-                      <Input 
-                        placeholder="Search team members..." 
-                        onChange={e => handleSearch(e.target.value)}
-                        className="min-w-[280px]"
-                      />
-                      <Button 
-                        type="primary" 
-                        onClick={() => setAddModalVisible(true)}
-                        icon={<UilPlus />}
-                      >
-                        Add User
-                      </Button>
-                    </div>
-                  </div>
-                  
+                <div className="p-6 sm:p-[30px]">
                   <div className="table-responsive">
                     <Table
                       columns={columns}

@@ -8,7 +8,8 @@ import {
   Button, 
   Space, 
   Modal, 
-  message 
+  message,
+  Spin 
 } from 'antd';
 import { 
   SearchOutlined, 
@@ -16,7 +17,6 @@ import {
   DeleteOutlined,
   EyeOutlined
 } from '@ant-design/icons';
-import { PageHeaders } from '../../../components/page-headers/index';
 import { 
   collection, 
   getDocs, 
@@ -43,17 +43,6 @@ interface User {
 }
 
 function Users() {
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Users',
-    },
-  ];
-
   // State declarations
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -196,27 +185,32 @@ function Users() {
 
   return (
     <>
-      <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-     
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
+        <Row gutter={25} className="mb-5">
+          <Col xs={24}>
+            <div className="flex justify-between items-center mb-5 flex-wrap gap-3 p-5">
+              <div className="flex-1">
+                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">User Management</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Search users..."
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                />
+                {loading && <Spin />}
+              </div>
+            </div>
+          </Col>
+        </Row>
+        
         <Row gutter={25}>
           <Col sm={24} xs={24}>
-            <Card className="h-full">
+            <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex items-center justify-between flex-wrap gap-[15px] mb-[25px]">
-                    <h2 className="text-dark dark:text-white/[.87] text-[18px] font-semibold mb-0">Users</h2>
-                    <div className="flex items-center gap-[15px]">
-                      <Input
-                        placeholder="Search users..."
-                        prefix={<SearchOutlined />}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        style={{ width: 250 }}
-                      />
-                    </div>
-                  </div>
+                <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
                     <Table 
                       dataSource={filteredUsers} 

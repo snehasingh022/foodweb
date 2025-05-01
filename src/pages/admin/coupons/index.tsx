@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Row, Col, Card, Input, Button, Table, Modal, Form, message, Switch, Space, Tabs, Tooltip, Divider, Badge, Dropdown, MenuProps, Typography, Radio, Select } from 'antd';
+import { Row, Col, Card, Input, Button, Table, Modal, Form, message, Switch, Space, Tabs, Tooltip, Divider, Badge, Dropdown, MenuProps, Typography, Radio, Select, Spin } from 'antd';
 import type { InputRef } from 'antd';
-import { PageHeaders } from '../../../components/page-headers/index';
 import { 
   SearchOutlined, 
   PlusOutlined, 
@@ -63,17 +62,6 @@ function Coupons() {
   // Responsive detection
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const searchInputRef = useRef<InputRef>(null);
-
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Coupons',
-    },
-  ];
 
   // Fetch coupons from Firestore
   const fetchCoupons = async () => {
@@ -406,42 +394,47 @@ function Coupons() {
 
   return (
     <>
-      <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
+        <Row gutter={25} className="mb-5">
+          <Col xs={24}>
+            <div className="flex justify-between items-center mb-5 flex-wrap gap-3 p-5">
+              <div className="flex-1">
+                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">
+                  {isMobile ? 'Coupons' : 'Coupon Management'}
+                </h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input 
+                  placeholder="Search coupons..." 
+                  prefix={<SearchOutlined />} 
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                  ref={searchInputRef}
+                />
+                <Button 
+                  type="primary" 
+                  onClick={() => {
+                    setCurrentCoupon(null);
+                    setIsModalVisible(true);
+                  }}
+                  icon={<PlusOutlined />}
+                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                >
+                  {!isMobile && "Add Coupon"}
+                </Button>
+                {loading && <Spin />}
+              </div>
+            </div>
+          </Col>
+        </Row>
+        
         <Row gutter={25}>
           <Col sm={24} xs={24}>
-            <Card className="h-full">
+            <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                    <Title level={4} className="mb-0 text-dark dark:text-white/[.87]">
-                      {isMobile ? 'Coupons' : 'Coupon Management'}
-                    </Title>
-                    
-                    <div className="flex items-center gap-2">
-                      <Input 
-                        placeholder="Search coupons..." 
-                        prefix={<SearchOutlined />} 
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        className="min-w-[280px]"
-                        ref={searchInputRef}
-                      />
-                      <Button 
-                        type="primary" 
-                        onClick={() => {
-                          setCurrentCoupon(null);
-                          setIsModalVisible(true);
-                        }}
-                        icon={<PlusOutlined />}
-                      >
-                        {!isMobile && "Add Coupon"}
-                      </Button>
-                    </div>
-                  </div>
-                  
+                <div className="p-6 sm:p-[30px]">
                   <Tabs
                     activeKey={activeFilter}
                     onChange={(key) => setActiveFilter(key as 'active' | 'inactive' | 'all')}

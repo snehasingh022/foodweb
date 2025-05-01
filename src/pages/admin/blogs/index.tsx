@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Row, 
   Col, 
@@ -37,6 +37,7 @@ import { getDownloadURL, ref, uploadBytes, getStorage, deleteObject } from 'fire
 import { Editor } from '@tinymce/tinymce-react';
 import Protected from '../../../components/Protected/Protected';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 // Initialize Firebase Storage
 let storage: any = null;
@@ -74,17 +75,6 @@ function Blogs() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Blogs',
-    },
-  ];
 
   useEffect(() => {
     // Only fetch data on the client side
@@ -220,64 +210,57 @@ function Blogs() {
     },
   ];
 
+  const filteredBlogs = blogs.filter(blog => 
+    blog.title.toLowerCase().includes(searchText.toLowerCase()) ||
+    blog.slug.toLowerCase().includes(searchText.toLowerCase()) ||
+    blog.summary?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   return (
     <>
-      <PageHeaders
-        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
+        <Row gutter={25} className="mb-5">
+          <Col xs={24}>
+            <div className="flex justify-between items-center mb-5 flex-wrap gap-3 p-5">
+              <div className="flex-1">
+                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Blog Management</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input 
+                  placeholder="Search blogs..." 
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                />
+                <Link href="/admin/blogs/add">
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Add Blog
+                  </Button>
+                </Link>
+                {loading && <Spin />}
+              </div>
+            </div>
+          </Col>
+        </Row>
         
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
-            <Card className="h-full">
+            <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-4 sm:p-[25px]">
-                  <div className="flex flex-row sm:flex-row justify-between items-start sm:items-center mb-6 gap-12">
-                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Blog Management</h2>
-                    <div className="flex justify-end flex-col sm:flex-row gap-3 w-auto ml-auto">
-                      <div className="flex items-center">
-                        <Input
-                          placeholder="Search blogs..."
-                          prefix={<SearchOutlined />}
-                          value={searchText}
-                          onChange={(e) => setSearchText(e.target.value)}
-                          className="w-48 sm:w-48"
-                        />
-                        <Button
-                          type="primary"
-                          onClick={handleAdd}
-                          icon={<PlusOutlined />}
-                          className="ml-2"
-                        >
-                          Add Blog
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  
+                <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
-                    <Table
-                      dataSource={blogs.filter(blog => 
-                        blog.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                        blog.slug.toLowerCase().includes(searchText.toLowerCase()) ||
-                        blog.summary?.toLowerCase().includes(searchText.toLowerCase())
-                      )}
-                      columns={columns.map(col => ({
-                        ...col,
-                        responsive: col.dataIndex === 'title' || col.key === 'action' 
-                          ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
-                          : col.dataIndex === 'slug' || col.dataIndex === 'isFeatured'
-                            ? ['sm', 'md', 'lg', 'xl'] as any
-                            : ['md', 'lg', 'xl'] as any,
-                      }))}
+                    <Table 
+                      dataSource={filteredBlogs} 
+                      columns={columns} 
+                      pagination={{ pageSize: 10 }}
                       loading={loading}
-                      pagination={{ 
-                        pageSize: 10,
-                        showSizeChanger: false,
-                        responsive: true,
-                      }}
-                      className="responsive-table"
-                      scroll={{ x: 'max-content' }}
+                      rowKey="id"
+                      className="[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-regularBG dark:[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-[#323440] [&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:font-medium"
                     />
                   </div>
                 </div>

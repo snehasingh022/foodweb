@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Button, Upload, message, Spin, Modal } from 'antd';
-import { UploadOutlined, DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
-import { PageHeaders } from '../../../components/page-headers/index';
+import { UploadOutlined, DeleteOutlined, ExclamationCircleFilled, PlusOutlined } from '@ant-design/icons';
 import { mediaDb, mediaAnalytics, mediaStorage } from '../../../authentication/firebase-media';
 import { db } from '../../../authentication/firebase'; // Import the main db from firebase.tsx
 import { 
@@ -33,17 +32,6 @@ function Media() {
   const [previewImage, setPreviewImage] = useState<string>('');
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const { confirm } = Modal;
-
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Media',
-    },
-  ];
 
   const fetchMediaFiles = async () => {
     setLoading(true);
@@ -175,31 +163,35 @@ function Media() {
 
   return (
     <>
-      <PageHeaders
-        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
+        <Row gutter={25} className="mb-5">
+          <Col xs={24}>
+            <div className="flex justify-between items-center mb-5 flex-wrap gap-3 p-5">
+              <div className="flex-1">
+                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Media Management</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Upload {...uploadProps}>
+                  <Button 
+                    type="primary"
+                    icon={<UploadOutlined />}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                    loading={loading}
+                  >
+                    Upload Media
+                  </Button>
+                </Upload>
+                {loading && <Spin />}
+              </div>
+            </div>
+          </Col>
+        </Row>
         
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
-            <Card className="h-full">
+            <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-4 sm:p-[25px]">
-                  <div className="flex flex-row sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Media Management</h2>
-                    <div className="flex items-center gap-3">
-                      <Upload {...uploadProps}>
-                        <Button 
-                          icon={<UploadOutlined />} 
-                          type="primary"
-                          className="bg-purple-600 hover:bg-purple-700"
-                          loading={loading}
-                        >
-                          Upload Media
-                        </Button>
-                      </Upload>
-                    </div>
-                  </div>
+                <div className="p-6 sm:p-[30px]">
                   
                   {loading && (
                     <div className="flex justify-center items-center py-10">

@@ -9,7 +9,8 @@ import {
   Space, 
   Modal, 
   Form, 
-  message 
+  message,
+  Spin
 } from 'antd';
 import { 
   SearchOutlined, 
@@ -17,7 +18,6 @@ import {
   EditOutlined, 
   DeleteOutlined 
 } from '@ant-design/icons';
-import { PageHeaders } from '../../../components/page-headers/index';
 import { 
   collection, 
   getDocs, 
@@ -44,17 +44,6 @@ interface Tag {
 }
 
 function Tags() {
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Tags',
-    },
-  ];
-
   // State declarations
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -261,54 +250,48 @@ function Tags() {
 
   return (
     <>
-      <PageHeaders
-        className="flex items-center justify-between px-4 sm:px-8 xl:px-[15px] pt-2 pb-4 sm:pb-6 bg-transparent sm:flex-row flex-col gap-4"
+      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
+        <Row gutter={25} className="mb-5">
+          <Col xs={24}>
+            <div className="flex justify-between items-center mb-5 flex-wrap gap-3 p-5">
+              <div className="flex-1">
+                <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Tag Management</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Search tags..."
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                />
+                <Button 
+                  type="primary" 
+                  onClick={() => setModalVisible(true)}
+                  icon={<PlusOutlined />}
+                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                >
+                  Add Tag
+                </Button>
+                {loading && <Spin />}
+              </div>
+            </div>
+          </Col>
+        </Row>
         
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25}>
           <Col sm={24} xs={24}>
-            <Card className="h-full">
+            <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-4 sm:p-[25px]">
-                  <div className="flex flex-row sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold">Tag Management</h2>
-                    <div className="flex items-center gap-3">
-                      <Input
-                        placeholder="Search tags..."
-                        prefix={<SearchOutlined />}
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        className="w-64"
-                      />
-                      <Button
-                        type="primary"
-                        onClick={() => setModalVisible(true)}
-                        icon={<PlusOutlined />}
-                        className="bg-purple-600 hover:bg-purple-700"
-                      >
-                        Add Tag
-                      </Button>
-                    </div>
-                  </div>
-                  
+                <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
-                    <Table
-                      dataSource={filteredTags}
-                      columns={columns.map(col => ({
-                        ...col,
-                        responsive: col.dataIndex === 'name' || col.key === 'action' 
-                          ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
-                          : ['sm', 'md', 'lg', 'xl'] as any,
-                      }))}
+                    <Table 
+                      dataSource={filteredTags} 
+                      columns={columns} 
+                      pagination={{ pageSize: 10 }}
                       loading={loading}
-                      pagination={{ 
-                        pageSize: 10,
-                        showSizeChanger: false,
-                        responsive: true,
-                      }}
-                      className="responsive-table"
-                      scroll={{ x: 'max-content' }}
+                      className="[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-regularBG dark:[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-[#323440] [&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:font-medium"
+                      bordered={false}
                     />
                   </div>
                 </div>
