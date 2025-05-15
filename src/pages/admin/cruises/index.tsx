@@ -30,6 +30,9 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useMediaQuery } from 'react-responsive';
 import moment from 'moment';
+import type { ColumnsType } from 'antd/es/table';
+import type { Breakpoint } from 'antd/es/_util/responsiveObserver';
+
 
 // Cruise interface
 interface Cruise {
@@ -160,7 +163,7 @@ function Cruises() {
     router.push(`/admin/cruises/edit/${record.id}`);
   };
 
-  const columns = [
+  const columns: ColumnsType<Cruise> = [
     {
       title: 'Cruise ID',
       dataIndex: 'id',
