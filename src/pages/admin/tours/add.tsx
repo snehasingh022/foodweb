@@ -857,7 +857,8 @@ function AddTour() {
                                                                                     input.type = 'file';
                                                                                     input.accept = 'image/*';
                                                                                     input.onchange = (e) => {
-                                                                                        const file = e.target?.files?.[0];
+                                                                                        const target = e.target as HTMLInputElement;
+                                                                                        const file = target.files?.[0];
                                                                                         if (file) {
                                                                                             handleItineraryImageUpload(`${index + 1}`, file);
                                                                                         }

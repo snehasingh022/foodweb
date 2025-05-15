@@ -29,7 +29,7 @@ function AddCruise() {
     // State variables
     const [categories, setCategories] = useState<any[]>([])
     const [tags, setTags] = useState<any[]>([])
-    const [selectedTags, setSelectedTags] = useState<string[]>([])
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [imageLoading, setImageLoading] = useState(false)
     const [imageUrl, setImageUrl] = useState("")
     const [editorContent, setEditorContent] = useState("")
@@ -294,12 +294,9 @@ function AddCruise() {
     };
     
     const handleRemoveSelectedTag = (tagId: string) => {
-        setSelectedTags((prev) => {
-            const newTags = { ...prev };
-            delete newTags[tagId];
-            return newTags;
-        });
+        setSelectedTags((prev) => prev.filter(tag => tag !== tagId));
     };
+    
 
     return (
         <>
