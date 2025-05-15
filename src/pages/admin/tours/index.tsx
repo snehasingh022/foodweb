@@ -262,7 +262,7 @@ function Tours() {
         title: 'Price',
         dataIndex: 'price',
         key: 'price',
-        render: (price: number) => price ? `$${price}` : 'N/A',
+        render: (price: number) => price ? `₹${price}` : 'N/A',
         responsive: ['sm'] as any,
       },
       {

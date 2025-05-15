@@ -13,14 +13,17 @@ import {
     message,
     Space,
     Modal,
-    DatePicker
+    DatePicker,
+    Switch,
+    InputNumber
 } from 'antd';
 import {
     UploadOutlined,
     PlusOutlined,
     ArrowLeftOutlined,
     PictureOutlined,
-    LoadingOutlined
+    LoadingOutlined,
+    MinusCircleOutlined
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
@@ -46,7 +49,7 @@ function AddTour() {
     // State variables
     const [categories, setCategories] = useState<any[]>([]);
     const [tags, setTags] = useState<any[]>([]);
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [selectedTags, setSelectedTags] = useState<{ [key: string]: any }>({});
     const [imageLoading, setImageLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState('');
     const [editorContent, setEditorContent] = useState('');
@@ -62,6 +65,7 @@ function AddTour() {
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [imageType, setImageType] = useState(''); // 'main' or 'seo'
     const [archive, setArchive] = useState<any[]>([]);
+    const [itineraryImages, setItineraryImages] = useState<{ [key: string]: string[] }>({});
 
     const PageRoutes = [
         {
@@ -142,6 +146,10 @@ function AddTour() {
     const handleImageUpload = async (file: File) => {
         setImageLoading(true);
         try {
+            if (!file) {
+                setImageLoading(false);
+                return;
+            }
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
@@ -243,7 +251,7 @@ function AddTour() {
             message.error("Error adding tag. Please try again.");
         }
     };
-    
+
     const handleSetArchiveImage = (url: string) => {
         if (imageType === 'main') {
             setImageUrl(url);
@@ -254,6 +262,36 @@ function AddTour() {
     const handleOpenImageDialog = (type: string) => {
         setImageType(type);
         setImageDialogOpen(true);
+    };
+
+    // Modified handleItineraryImageUpload function
+    const handleItineraryImageUpload = async (day: string, file: File) => {
+        try {
+            setImageLoading(true);
+            if (!storage) {
+                throw new Error("Firebase Storage is not available");
+            }
+            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`;
+            const storageRef = ref(storage, `tour/${slug}/itinerary/day${day}/${file.name}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            setItineraryImages(prev => {
+                const dayImages = prev[day] || [];
+                return {
+                    ...prev,
+                    [day]: [...dayImages, downloadURL]
+                };
+            });
+
+            message.success("Itinerary image uploaded successfully");
+            return downloadURL;
+        } catch (error) {
+            console.error("Error uploading itinerary image:", error);
+            message.error("Failed to upload itinerary image");
+        } finally {
+            setImageLoading(false);
+        }
     };
 
     const handleSlugGeneration = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,31 +307,81 @@ function AddTour() {
         if (typeof window === "undefined") return;
 
         try {
+            // Process itineraries
+            const processedItineraries: { [key: string]: any } = {};
+            if (values.itineraries) {
+                values.itineraries.forEach((itinerary: any, index: number) => {
+                    const dayKey = `Day${index + 1}`;
+                    processedItineraries[dayKey] = {
+                        title: itinerary.title,
+                        description: itinerary.description,
+                        imageURL: itineraryImages[`${index + 1}`] || []
+                    };
+                });
+            }
+
+            // Process tags
+            const processedTags: { [key: string]: any } = {};
+            Object.entries(selectedTags).forEach(([tagId, tagData]) => {
+                processedTags[tagId] = tagData;
+            });
+
+            // Create tour data according to your schema
             const tourData = {
                 title: values.title,
                 slug: values.slug,
-                summary: values.summary,
-                content: editorContent,
-                category: values.category,
-                image: imageUrl,
-                isFeatured: values.isFeatured || 'No',
-                tags: selectedTags,
-                startDate: values.startDate ? values.startDate.toDate() : null,
-                endDate: values.endDate ? values.endDate.toDate() : null,
-                price: values.price || 0,
+                description: editorContent.replace(/<\/?[^>]+(>|$)/g, ""), // Strip HTML tags
+                categoryDetails: {
+                    categoryID: values.categoryID || "",
+                    name: values.categoryName || "",
+                    slug: values.categorySlug || "",
+                    description: values.categoryDescription || "",
+                    createdAt: serverTimestamp()
+                },
+                imageURL: imageUrl,
+                isFeatured: values.isFeatured || false,
+                isStartDate: values.isStartDate || false,
+                itenaries: processedItineraries,
                 location: values.location || "",
-                duration: values.duration || "",
+                numberofDays: values.numberOfDays || 0,
+                numberofNights: values.numberOfNights || 0,
+                price: values.price || 0,
+                startDate: values.startDate ? values.startDate.toDate() : null,
+                status: values.status || "active",
+                tags: processedTags,
+                tourType: values.tourType || "domestic",
+                flightIncluded: values.flightIncluded || false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
 
-            await addDoc(collection(db, "tours"), tourData);
-            message.success("Tour created successfully");
-            router.push('/admin/tours');
+            try {
+                await addDoc(collection(db, "tours"), tourData);
+                message.success("Tour created successfully");
+                router.push('/admin/tours');
+            } catch (error) {
+                console.error("Error saving tour:", error);
+                message.error("Failed to save tour");
+            }
         } catch (error) {
             console.error("Error saving tour:", error);
             message.error("Failed to save tour");
         }
+    };
+
+    // Function to add a tag to selected tags
+    const handleAddSelectedTag = (tagId: string, tagData: any) => {
+        setSelectedTags(prev => ({
+            ...prev,
+            [tagId]: tagData
+        }));
+    };
+
+    // Function to remove a tag from selected tags
+    const handleRemoveSelectedTag = (tagId: string) => {
+        const newSelectedTags = { ...selectedTags };
+        delete newSelectedTags[tagId];
+        setSelectedTags(newSelectedTags);
     };
 
     return (
@@ -361,63 +449,86 @@ function AddTour() {
                                             </Row>
 
                                             <Row gutter={24}>
-                                                <Col span={12}>
+                                                <Col span={8}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Start Date</span>}
                                                         name="startDate"
-                                                        rules={[{ required: true, message: 'Please select start date' }]}
                                                     >
-                                                        <DatePicker 
+                                                        <DatePicker
                                                             className="w-full py-2"
                                                             format="YYYY-MM-DD"
                                                         />
                                                     </Form.Item>
                                                 </Col>
-                                                <Col span={12}>
+                                                <Col span={8}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">End Date</span>}
-                                                        name="endDate"
-                                                        rules={[{ required: true, message: 'Please select end date' }]}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Use Start Date</span>}
+                                                        name="isStartDate"
+                                                        valuePropName="checked"
+                                                        initialValue={false}
                                                     >
-                                                        <DatePicker 
-                                                            className="w-full py-2"
-                                                            format="YYYY-MM-DD"
-                                                        />
+                                                        <Switch />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={8}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Status</span>}
+                                                        name="status"
+                                                        initialValue="active"
+                                                    >
+                                                        <Select className="w-full">
+                                                            <Option value="active">Active</Option>
+                                                            <Option value="inactive">Inactive</Option>
+                                                            <Option value="draft">Draft</Option>
+                                                        </Select>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
 
                                             <Row gutter={24}>
-                                                <Col span={12}>
+                                                <Col span={8}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Price ($)</span>}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Number of Days</span>}
+                                                        name="numberOfDays"
+                                                        rules={[{ required: true, message: 'Please enter number of days' }]}
+                                                    >
+                                                        <InputNumber
+                                                            className="w-full py-2"
+                                                            min={1}
+                                                            placeholder="Number of days"
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={8}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Number of Nights</span>}
+                                                        name="numberOfNights"
+                                                        rules={[{ required: true, message: 'Please enter number of nights' }]}
+                                                    >
+                                                        <InputNumber
+                                                            className="w-full py-2"
+                                                            min={0}
+                                                            placeholder="Number of nights"
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={8}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Price (₹)</span>}
                                                         name="price"
                                                         rules={[{ required: true, message: 'Please enter tour price' }]}
                                                     >
-                                                        <Input
-                                                            type="number"
+                                                        <InputNumber
+                                                            className="w-full py-2"
+                                                            min={0}
                                                             placeholder="Enter price"
-                                                            className="py-2"
-                                                        />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Duration (days)</span>}
-                                                        name="duration"
-                                                        rules={[{ required: true, message: 'Please enter tour duration' }]}
-                                                    >
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="Enter duration in days"
-                                                            className="py-2"
                                                         />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
 
                                             <Row gutter={24}>
-                                                <Col span={12}>
+                                                <Col span={8}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Location</span>}
                                                         name="location"
@@ -429,27 +540,44 @@ function AddTour() {
                                                         />
                                                     </Form.Item>
                                                 </Col>
-                                                
-                                            </Row>
-
-                                            <Row gutter={24}>
-                                                <Col span={12}>
+                                                <Col span={8}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Featured</span>}
-                                                        name="isFeatured"
-                                                        initialValue="No"
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Tour Type</span>}
+                                                        name="tourType"
+                                                        initialValue="domestic"
                                                     >
-                                                        <Select
-                                                            className="w-full"
-                                                            dropdownStyle={{ borderRadius: '6px' }}
-                                                        >
-                                                            <Select.Option value="Yes">Yes</Select.Option>
-                                                            <Select.Option value="No">No</Select.Option>
+                                                        <Select className="w-full">
+                                                            <Option value="domestic">Domestic</Option>
+                                                            <Option value="international">International</Option>
                                                         </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={8}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Flight Included</span>}
+                                                        name="flightIncluded"
+                                                        valuePropName="checked"
+                                                        initialValue={false}
+                                                    >
+                                                        <Switch />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
 
+                                            <Row gutter={24}>
+                                                <Col span={8}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Featured</span>}
+                                                        name="isFeatured"
+                                                        valuePropName="checked"
+                                                        initialValue={false}
+                                                    >
+                                                        <Switch />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+
+                                            <Divider orientation="left">Category Details</Divider>
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <div className="flex justify-between items-center mb-2">
@@ -465,12 +593,23 @@ function AddTour() {
                                                         </Button>
                                                     </div>
                                                     <Form.Item
-                                                        name="category"
+                                                        name="categoryName"
+                                                        rules={[{ required: true, message: 'Please select category' }]}
                                                     >
                                                         <Select
                                                             placeholder="Select category"
                                                             className="w-full"
                                                             dropdownStyle={{ borderRadius: '6px' }}
+                                                            onChange={(value, option: any) => {
+                                                                const selectedCategory = categories.find(cat => cat.name === value);
+                                                                if (selectedCategory) {
+                                                                    form.setFieldsValue({
+                                                                        categoryID: selectedCategory.id || `CID${Math.floor(Math.random() * 1000000)}`,
+                                                                        categorySlug: selectedCategory.slug,
+                                                                        categoryDescription: selectedCategory.description
+                                                                    });
+                                                                }
+                                                            }}
                                                         >
                                                             {categories.map((cat) => (
                                                                 <Select.Option key={cat.id} value={cat.name}>
@@ -481,6 +620,48 @@ function AddTour() {
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category ID</span>}
+                                                        name="categoryID"
+                                                    >
+                                                        <Input
+                                                            placeholder="Category ID"
+                                                            className="py-2"
+                                                            readOnly
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Row gutter={24}>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Slug</span>}
+                                                        name="categorySlug"
+                                                    >
+                                                        <Input
+                                                            placeholder="Category Slug"
+                                                            className="py-2"
+                                                            readOnly
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Description</span>}
+                                                        name="categoryDescription"
+                                                    >
+                                                        <Input.TextArea
+                                                            placeholder="Category Description"
+                                                            rows={1}
+                                                            readOnly
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+
+                                            <Divider orientation="left">Tags</Divider>
+                                            <Row gutter={24}>
+                                                <Col span={24}>
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-dark dark:text-white/[.87] font-medium">Tags</span>
                                                         <Button
@@ -493,33 +674,30 @@ function AddTour() {
                                                             Add New
                                                         </Button>
                                                     </div>
-                                                    <Form.Item>
-                                                        <Select
-                                                            mode="multiple"
-                                                            placeholder="Select tags"
-                                                            value={selectedTags}
-                                                            onChange={setSelectedTags}
-                                                            style={{ width: '100%' }}
-                                                            optionLabelProp="label"
-                                                            className="w-full"
-                                                            dropdownStyle={{ borderRadius: '6px' }}
-                                                        >
-                                                            {tags.map((tag) => (
-                                                                <Select.Option key={tag.id} value={tag.name} label={tag.name}>
-                                                                    {tag.name}
-                                                                </Select.Option>
-                                                            ))}
-                                                        </Select>
-                                                    </Form.Item>
+                                                    <div className="flex flex-wrap gap-2 mb-4">
+                                                        {tags.map((tag) => (
+                                                            <Tag
+                                                                key={tag.id}
+                                                                className={`px-3 py-1 rounded-full cursor-pointer ${selectedTags[tag.id] ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'
+                                                                    }`}
+                                                                onClick={() => {
+                                                                    if (selectedTags[tag.id]) {
+                                                                        handleRemoveSelectedTag(tag.id);
+                                                                    } else {
+                                                                        handleAddSelectedTag(tag.id, {
+                                                                            name: tag.name,
+                                                                            slug: tag.slug,
+                                                                            description: tag.description
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {tag.name}
+                                                            </Tag>
+                                                        ))}
+                                                    </div>
                                                 </Col>
                                             </Row>
-
-                                            <Form.Item
-                                                label={<span className="text-dark dark:text-white/[.87] font-medium">Summary</span>}
-                                                name="summary"
-                                            >
-                                                <Input.TextArea rows={3} placeholder="Write a brief summary of the tour" className="text-base" />
-                                            </Form.Item>
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
@@ -531,7 +709,7 @@ function AddTour() {
                                                             {imageUrl ? (
                                                                 <div className="relative inline-block group">
                                                                     <img
-                                                                        src={imageUrl}
+                                                                        src={imageUrl || "/placeholder.svg"}
                                                                         alt="tour"
                                                                         className="mx-auto h-32 object-contain transition-opacity duration-300"
                                                                     />
@@ -573,12 +751,142 @@ function AddTour() {
                                                         ],
                                                         toolbar:
                                                             'undo redo | formatselect | bold italic backcolor | \
-                              alignleft aligncenter alignright alignjustify | \
-                              bullist numlist outdent indent | removeformat | help'
+            alignleft aligncenter alignright alignjustify | \
+            bullist numlist outdent indent | removeformat | help',
+                                                        // Add content_style to ensure proper styling
+                                                        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
+                                                        // Set formats to preserve HTML content appropriately
+                                                        formats: {
+                                                            // This ensures content is properly formatted
+                                                            p: { block: 'p' }
+                                                        },
+                                                        entity_encoding: 'raw', // Prevents automatic entity encoding
+                                                        setup: (editor) => {
+                                                            editor.on('change', () => {
+                                                                setEditorContent(editor.getContent({ format: 'raw' }));
+                                                            });
+                                                        },
                                                     }}
                                                     onEditorChange={(content) => setEditorContent(content)}
                                                 />
                                             </Form.Item>
+                                        </div>
+
+                                        <div className="mb-8">
+                                            <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                                                </svg>
+                                                Itinerary
+                                            </h3>
+                                            <Form.List name="itineraries">
+                                                {(fields, { add, remove }) => (
+                                                    <>
+                                                        {fields.map(({ key, name, ...restField }, index) => (
+                                                            <div key={key} className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg relative">
+                                                                <Button
+                                                                    type="text"
+                                                                    icon={<MinusCircleOutlined />}
+                                                                    onClick={() => remove(name)}
+                                                                    className="absolute right-2 top-2 text-red-500 hover:text-red-700"
+                                                                />
+                                                                <h4 className="text-dark dark:text-white/[.87] font-medium mb-3">Day {index + 1}</h4>
+                                                                <Row gutter={24}>
+                                                                    <Col span={24}>
+                                                                        <Form.Item
+                                                                            {...restField}
+                                                                            name={[name, 'title']}
+                                                                            label={<span className="text-dark dark:text-white/[.87] font-medium">Title</span>}
+                                                                            rules={[{ required: true, message: 'Please enter day title' }]}
+                                                                        >
+                                                                            <Input placeholder="Enter day title" />
+                                                                        </Form.Item>
+                                                                    </Col>
+                                                                </Row>
+                                                                <Row gutter={24}>
+                                                                    <Col span={24}>
+                                                                        <Form.Item
+                                                                            {...restField}
+                                                                            name={[name, 'description']}
+                                                                            label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+                                                                            rules={[{ required: true, message: 'Please enter day description' }]}
+                                                                        >
+                                                                            <Input.TextArea rows={3} placeholder="Enter day description" />
+                                                                        </Form.Item>
+                                                                    </Col>
+                                                                </Row>
+                                                                <Row gutter={24}>
+                                                                    <Col span={24}>
+                                                                        <div className="mb-2">
+                                                                            <span className="text-dark dark:text-white/[.87] font-medium">Images</span>
+                                                                        </div>
+                                                                        <div className="flex flex-wrap gap-4">
+                                                                            {/* Display existing images */}
+                                                                            {(itineraryImages[`${index + 1}`] || []).map((url, imgIndex) => (
+                                                                                <div
+                                                                                    key={imgIndex}
+                                                                                    className="relative w-32 h-32 border border-gray-200 rounded-md overflow-hidden group"
+                                                                                >
+                                                                                    <img
+                                                                                        src={url || "/placeholder.svg"}
+                                                                                        alt={`Day ${index + 1} image ${imgIndex + 1}`}
+                                                                                        className="w-full h-full object-cover"
+                                                                                    />
+                                                                                    <div
+                                                                                        className="absolute inset-0 bg-black/50 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                                                                        onClick={() => {
+                                                                                            const newImages = { ...itineraryImages };
+                                                                                            const dayImages = [...(newImages[`${index + 1}`] || [])];
+                                                                                            dayImages.splice(imgIndex, 1);
+                                                                                            newImages[`${index + 1}`] = dayImages;
+                                                                                            setItineraryImages(newImages);
+                                                                                        }}
+                                                                                    >
+                                                                                        <MinusCircleOutlined style={{ fontSize: '20px', color: 'white' }} />
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+
+                                                                            {/* Upload new image button - styled like featured image */}
+                                                                            <div
+                                                                                className="w-32 h-32 border border-dashed border-gray-300 rounded-md p-2 text-center cursor-pointer hover:border-primary transition-colors duration-300 flex flex-col justify-center items-center"
+                                                                                onClick={() => {
+                                                                                    // Create a hidden file input and trigger it
+                                                                                    const input = document.createElement('input');
+                                                                                    input.type = 'file';
+                                                                                    input.accept = 'image/*';
+                                                                                    input.onchange = (e) => {
+                                                                                        const file = e.target?.files?.[0];
+                                                                                        if (file) {
+                                                                                            handleItineraryImageUpload(`${index + 1}`, file);
+                                                                                        }
+                                                                                    };
+                                                                                    input.click();
+                                                                                }}
+                                                                            >
+                                                                                <PictureOutlined style={{ fontSize: '24px', color: '#d9d9d9' }} />
+                                                                                <p className="mt-2 text-gray-500 text-sm">Add Image</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </Col>
+                                                                </Row>
+                                                            </div>
+                                                        ))}
+                                                        <Form.Item>
+                                                            <Button
+                                                                type="dashed"
+                                                                onClick={() => add()}
+                                                                block
+                                                                icon={<PlusOutlined />}
+                                                                className="border-primary text-primary hover:text-white hover:bg-primary"
+                                                            >
+                                                                Add Day
+                                                            </Button>
+                                                        </Form.Item>
+                                                    </>
+                                                )}
+                                            </Form.List>
                                         </div>
                                         <div className="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                                             <Space size="middle">
@@ -716,7 +1024,7 @@ function AddTour() {
                             onClick={() => handleSetArchiveImage(item.ImageUrl)}
                         >
                             <img
-                                src={item.ImageUrl}
+                                src={item.ImageUrl || "/placeholder.svg"}
                                 alt="Archive item"
                                 className="w-full h-24 object-cover"
                             />
@@ -728,4 +1036,4 @@ function AddTour() {
     );
 }
 
-export default Protected(AddTour, ["admin"]); 
+export default Protected(AddTour, ["admin"]);

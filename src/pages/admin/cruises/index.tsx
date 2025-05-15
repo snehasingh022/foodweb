@@ -201,7 +201,7 @@ function Cruises() {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => price ? `$${price.toLocaleString()}` : 'N/A',
+      render: (price: number) => price ? `₹${price.toLocaleString()}` : 'N/A',
       responsive: ['sm'],
     },
     {

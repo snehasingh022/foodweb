@@ -1,198 +1,181 @@
-import { useState, useEffect } from 'react';
-import {
-    Row,
-    Col,
-    Card,
-    Input,
-    Button,
-    Form,
-    Select,
-    Tag,
-    Divider,
-    Upload,
-    message,
-    Space,
-    Modal,
-    DatePicker
-} from 'antd';
-import {
-    UploadOutlined,
-    PlusOutlined,
-    ArrowLeftOutlined,
-    PictureOutlined,
-    LoadingOutlined
-} from '@ant-design/icons';
-import { PageHeaders } from '../../../components/page-headers/index';
-import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { db, app } from '../../../authentication/firebase';
-import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
-import { Editor } from '@tinymce/tinymce-react';
-import Protected from '../../../components/Protected/Protected';
-import { useRouter } from 'next/router';
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload,Tag, message, Space, Modal, DatePicker } from "antd"
+import { UploadOutlined, PlusOutlined, ArrowLeftOutlined, PictureOutlined } from "@ant-design/icons"
+import { PageHeaders } from "../../../components/page-headers/index"
+import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore"
+import { db, app } from "../../../authentication/firebase"
+import { getDownloadURL, ref, uploadBytes, getStorage } from "firebase/storage"
+import { Editor } from "@tinymce/tinymce-react"
+import Protected from "../../../components/Protected/Protected"
+import { useRouter } from "next/router"
 
 // Initialize Firebase Storage
-let storage: any = null;
+let storage: any = null
 // Storage should only be initialized on the client side
 if (typeof window !== "undefined") {
-    storage = getStorage(app);
+    storage = getStorage(app)
 }
 
-const { Option } = Select;
+const { Option } = Select
 
 function AddCruise() {
-    const router = useRouter();
-    const [form] = Form.useForm();
+    const router = useRouter()
+    const [form] = Form.useForm()
 
     // State variables
-    const [categories, setCategories] = useState<any[]>([]);
-    const [tags, setTags] = useState<any[]>([]);
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
-    const [imageLoading, setImageLoading] = useState(false);
-    const [imageUrl, setImageUrl] = useState('');
-    const [editorContent, setEditorContent] = useState('');
-    const [keywordInput, setKeywordInput] = useState('');
-    const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-    const [newCategory, setNewCategory] = useState('');
-    const [categorySlug, setCategorySlug] = useState('');
-    const [categoryDescription, setCategoryDescription] = useState('');
-    const [tagDialogOpen, setTagDialogOpen] = useState(false);
-    const [newTag, setNewTag] = useState('');
-    const [tagSlug, setTagSlug] = useState('');
-    const [tagDescription, setTagDescription] = useState('');
-    const [imageDialogOpen, setImageDialogOpen] = useState(false);
-    const [imageType, setImageType] = useState(''); // 'main' or 'seo'
-    const [archive, setArchive] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([])
+    const [tags, setTags] = useState<any[]>([])
+    const [selectedTags, setSelectedTags] = useState<string[]>([])
+    const [imageLoading, setImageLoading] = useState(false)
+    const [imageUrl, setImageUrl] = useState("")
+    const [editorContent, setEditorContent] = useState("")
+    const [keywordInput, setKeywordInput] = useState("")
+    const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
+    const [newCategory, setNewCategory] = useState("")
+    const [categorySlug, setCategorySlug] = useState("")
+    const [categoryDescription, setCategoryDescription] = useState("")
+    const [tagDialogOpen, setTagDialogOpen] = useState(false)
+    const [newTag, setNewTag] = useState("")
+    const [tagSlug, setTagSlug] = useState("")
+    const [tagDescription, setTagDescription] = useState("")
+    const [imageDialogOpen, setImageDialogOpen] = useState(false)
+    const [imageType, setImageType] = useState("") // 'main' or 'seo'
+    const [archive, setArchive] = useState<any[]>([])
 
     const PageRoutes = [
         {
-            path: '/admin',
-            breadcrumbName: 'Dashboard',
+            path: "/admin",
+            breadcrumbName: "Dashboard",
         },
         {
-            path: '/admin/cruises',
-            breadcrumbName: 'Cruises',
+            path: "/admin/cruises",
+            breadcrumbName: "Cruises",
         },
         {
-            path: '',
-            breadcrumbName: 'Add Cruise',
+            path: "",
+            breadcrumbName: "Add Cruise",
         },
-    ];
+    ]
 
     useEffect(() => {
         // Only fetch data on the client side
         if (typeof window !== "undefined") {
-            fetchCategories();
-            fetchTags();
-            fetchArchive();
+            fetchCategories()
+            fetchTags()
+            fetchArchive()
         }
-    }, []);
+    }, [])
 
     useEffect(() => {
-        setCategorySlug(newCategory.toLowerCase().replace(/ /g, '-'));
-    }, [newCategory]);
+        setCategorySlug(newCategory.toLowerCase().replace(/ /g, "-"))
+    }, [newCategory])
 
     useEffect(() => {
-        setTagSlug(newTag.toLowerCase().replace(/ /g, '-'));
-    }, [newTag]);
+        setTagSlug(newTag.toLowerCase().replace(/ /g, "-"))
+    }, [newTag])
 
     const fetchCategories = async () => {
         try {
-            const q = query(collection(db, "categories"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const categoriesData = querySnapshot.docs.map(doc => ({
+            const q = query(collection(db, "categories"), orderBy("createdAt", "desc"))
+            const querySnapshot = await getDocs(q)
+            const categoriesData = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
-            }));
-            setCategories(categoriesData);
+            }))
+            setCategories(categoriesData)
         } catch (error) {
-            console.error("Error fetching categories:", error);
-            message.error("Failed to fetch categories");
+            console.error("Error fetching categories:", error)
+            message.error("Failed to fetch categories")
         }
-    };
+    }
 
     const fetchTags = async () => {
         try {
-            const q = query(collection(db, "tags"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const tagsData = querySnapshot.docs.map(doc => ({
+            const q = query(collection(db, "tags"), orderBy("createdAt", "desc"))
+            const querySnapshot = await getDocs(q)
+            const tagsData = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
-            }));
-            setTags(tagsData);
+            }))
+            setTags(tagsData)
         } catch (error) {
-            console.error("Error fetching tags:", error);
-            message.error("Failed to fetch tags");
+            console.error("Error fetching tags:", error)
+            message.error("Failed to fetch tags")
         }
-    };
+    }
 
     const fetchArchive = async () => {
         try {
-            const archiveRef = collection(db, "archive");
-            const querySnapshot = await getDocs(archiveRef);
+            const archiveRef = collection(db, "archive")
+            const querySnapshot = await getDocs(archiveRef)
             const archiveData = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
-            }));
-            setArchive(archiveData);
+            }))
+            setArchive(archiveData)
         } catch (error) {
-            console.error("Error fetching archive:", error);
+            console.error("Error fetching archive:", error)
         }
-    };
+    }
 
     const handleImageUpload = async (file: File) => {
-        setImageLoading(true);
+        setImageLoading(true)
         try {
             if (!storage) {
-                throw new Error("Firebase Storage is not available");
+                throw new Error("Firebase Storage is not available")
             }
-            const slug = form.getFieldValue('slug') || `cruise-${Date.now()}`;
-            const storageRef = ref(storage, `cruise/${slug}/images/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-            setImageUrl(downloadURL);
-            return downloadURL;
+            const slug = form.getFieldValue("slug") || `cruise-${Date.now()}`
+            const storageRef = ref(storage, `cruise/${slug}/images/${file.name}`)
+            await uploadBytes(storageRef, file)
+            const downloadURL = await getDownloadURL(storageRef)
+            setImageUrl(downloadURL) // We'll keep using imageUrl as the state variable name
+            return downloadURL
         } catch (error) {
-            console.error("Error uploading image:", error);
-            message.error("Failed to upload image");
+            console.error("Error uploading image:", error)
+            message.error("Failed to upload image")
         } finally {
-            setImageLoading(false);
+            setImageLoading(false)
         }
-    };
+    }
 
     const handleArchiveImageUpload = async (file: File) => {
         try {
             if (!storage) {
-                throw new Error("Firebase Storage is not available");
+                throw new Error("Firebase Storage is not available")
             }
-            const storageRef = ref(storage, `/archive/images/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
+            const storageRef = ref(storage, `/archive/images/${file.name}`)
+            await uploadBytes(storageRef, file)
+            const downloadURL = await getDownloadURL(storageRef)
 
-            const archiveRef = collection(db, "archive");
+            const archiveRef = collection(db, "archive")
             await addDoc(archiveRef, {
                 ImageUrl: downloadURL,
-            });
+            })
 
-            setArchive([...archive, { ImageUrl: downloadURL }]);
-            message.success("Image saved to archive successfully!");
-            return downloadURL;
+            setArchive([...archive, { ImageUrl: downloadURL }])
+            message.success("Image saved to archive successfully!")
+            return downloadURL
         } catch (error) {
-            console.error("Error saving image to archive:", error);
-            message.error("Error saving image to archive. Please try again.");
+            console.error("Error saving image to archive:", error)
+            message.error("Error saving image to archive. Please try again.")
         }
-    };
+    }
 
     const handleAddCategory = async () => {
-        if (typeof window === "undefined" || newCategory.trim() === "") return;
+        if (typeof window === "undefined" || newCategory.trim() === "") return
 
         try {
-            const categoriesRef = collection(db, "categories");
+            const categoriesRef = collection(db, "categories")
             const docRef = await addDoc(categoriesRef, {
                 name: newCategory,
                 slug: categorySlug,
                 description: categoryDescription,
                 createdAt: serverTimestamp(),
-            });
+            })
             setCategories([
                 ...categories,
                 {
@@ -201,29 +184,29 @@ function AddCruise() {
                     slug: categorySlug,
                     description: categoryDescription,
                 },
-            ]);
-            setNewCategory("");
-            setCategorySlug("");
-            setCategoryDescription("");
-            setCategoryDialogOpen(false);
-            message.success("Category added successfully!");
+            ])
+            setNewCategory("")
+            setCategorySlug("")
+            setCategoryDescription("")
+            setCategoryDialogOpen(false)
+            message.success("Category added successfully!")
         } catch (error) {
-            console.error("Error adding category:", error);
-            message.error("Error adding category. Please try again.");
+            console.error("Error adding category:", error)
+            message.error("Error adding category. Please try again.")
         }
-    };
+    }
 
     const handleAddTag = async () => {
-        if (typeof window === "undefined" || newTag.trim() === "") return;
+        if (typeof window === "undefined" || newTag.trim() === "") return
 
         try {
-            const tagsRef = collection(db, "tags");
+            const tagsRef = collection(db, "tags")
             const docRef = await addDoc(tagsRef, {
                 name: newTag,
                 slug: tagSlug,
                 description: tagDescription,
                 createdAt: serverTimestamp(),
-            });
+            })
             setTags([
                 ...tags,
                 {
@@ -232,38 +215,38 @@ function AddCruise() {
                     slug: tagSlug,
                     description: tagDescription,
                 },
-            ]);
-            setNewTag("");
-            setTagSlug("");
-            setTagDescription("");
-            setTagDialogOpen(false);
-            message.success("Tag added successfully!");
+            ])
+            setNewTag("")
+            setTagSlug("")
+            setTagDescription("")
+            setTagDialogOpen(false)
+            message.success("Tag added successfully!")
         } catch (error) {
-            console.error("Error adding tag:", error);
-            message.error("Error adding tag. Please try again.");
+            console.error("Error adding tag:", error)
+            message.error("Error adding tag. Please try again.")
         }
-    };
-    
+    }
+
     const handleSetArchiveImage = (url: string) => {
-        if (imageType === 'main') {
-            setImageUrl(url);
+        if (imageType === "main") {
+            setImageUrl(url)
         }
-        setImageDialogOpen(false);
-    };
+        setImageDialogOpen(false)
+    }
 
     const handleOpenImageDialog = (type: string) => {
-        setImageType(type);
-        setImageDialogOpen(true);
-    };
+        setImageType(type)
+        setImageDialogOpen(true)
+    }
 
     const handleSlugGeneration = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const title = e.target.value;
+        const title = e.target.value
         const slug = title
             .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
-        form.setFieldsValue({ slug });
-    };
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "")
+        form.setFieldsValue({ slug })
+    }
 
     const handleSubmit = async (values: any) => {
         if (typeof window === "undefined") return;
@@ -272,27 +255,50 @@ function AddCruise() {
             const cruiseData = {
                 title: values.title,
                 slug: values.slug,
-                summary: values.summary,
-                content: editorContent,
-                category: values.category,
-                image: imageUrl,
-                isFeatured: values.isFeatured || 'No',
-                tags: selectedTags,
-                startDate: values.startDate ? values.startDate.toDate() : null,
-                endDate: values.endDate ? values.endDate.toDate() : null,
-                price: values.price || 0,
+                description: editorContent.replace(/<\/?[^>]+(>|$)/g, ""),
+                categoryDetails: {
+                    categoryID: values.categoryID || "",
+                    name: values.categoryName || "",
+                    slug: values.categorySlug || "",
+                    description: values.categoryDescription || "",
+                },
+                imageURL: imageUrl,
+                isFeatured: values.isFeatured === "Yes", // Convert to boolean
+                cruiseType: values.cruiseType || "domestic",
                 location: values.location || "",
+                numberofDays: Number.parseInt(values.numberofDays) || 0,
+                numberofNights: Number.parseInt(values.numberofNights) || 0,
+                price: values.price || "0", // Store as string
+                startDate: values.startDate ? values.startDate.toDate() : null,
+                status: values.status || "active",
+                videoURL: values.videoURL || "",
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
 
             await addDoc(collection(db, "cruises"), cruiseData);
             message.success("Cruise created successfully");
-            router.push('/admin/cruises');
+            router.push("/admin/cruises");
         } catch (error) {
             console.error("Error saving cruise:", error);
             message.error("Failed to save cruise");
         }
+    };
+
+    // Function to add a tag to selected tags
+    const handleAddSelectedTag = (tagId: string, tagData: any) => {
+        setSelectedTags((prev) => ({
+            ...prev,
+            [tagId]: tagData,
+        }));
+    };
+    
+    const handleRemoveSelectedTag = (tagId: string) => {
+        setSelectedTags((prev) => {
+            const newTags = { ...prev };
+            delete newTags[tagId];
+            return newTags;
+        });
     };
 
     return (
@@ -311,7 +317,7 @@ function AddCruise() {
                                     <div className="flex justify-between items-center mb-6">
                                         <Button
                                             type="default"
-                                            onClick={() => router.push('/admin/cruises')}
+                                            onClick={() => router.push("/admin/cruises")}
                                             icon={<ArrowLeftOutlined />}
                                             className="flex items-center"
                                         >
@@ -319,14 +325,16 @@ function AddCruise() {
                                         </Button>
                                     </div>
 
-                                    <Form
-                                        form={form}
-                                        layout="vertical"
-                                        onFinish={handleSubmit}
-                                    >
+                                    <Form form={form} layout="vertical" onFinish={handleSubmit}>
                                         <div className="mb-8">
                                             <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="16"
+                                                    height="16"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 16 16"
+                                                >
                                                     <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
                                                 </svg>
                                                 Basic Information
@@ -336,25 +344,18 @@ function AddCruise() {
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Title</span>}
                                                         name="title"
-                                                        rules={[{ required: true, message: 'Please enter cruise title' }]}
+                                                        rules={[{ required: true, message: "Please enter cruise title" }]}
                                                     >
-                                                        <Input
-                                                            placeholder="Enter cruise title"
-                                                            onChange={handleSlugGeneration}
-                                                            className="py-2"
-                                                        />
+                                                        <Input placeholder="Enter cruise title" onChange={handleSlugGeneration} className="py-2" />
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={12}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
                                                         name="slug"
-                                                        rules={[{ required: true, message: 'Please enter cruise slug' }]}
+                                                        rules={[{ required: true, message: "Please enter cruise slug" }]}
                                                     >
-                                                        <Input
-                                                            placeholder="cruise-slug"
-                                                            className="py-2"
-                                                        />
+                                                        <Input placeholder="cruise-slug" className="py-2" />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -364,24 +365,18 @@ function AddCruise() {
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Start Date</span>}
                                                         name="startDate"
-                                                        rules={[{ required: true, message: 'Please select start date' }]}
+                                                        rules={[{ required: true, message: "Please select start date" }]}
                                                     >
-                                                        <DatePicker 
-                                                            className="w-full py-2"
-                                                            format="YYYY-MM-DD"
-                                                        />
+                                                        <DatePicker className="w-full py-2" format="YYYY-MM-DD" />
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={12}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">End Date</span>}
                                                         name="endDate"
-                                                        rules={[{ required: true, message: 'Please select end date' }]}
+                                                        rules={[{ required: true, message: "Please select end date" }]}
                                                     >
-                                                        <DatePicker 
-                                                            className="w-full py-2"
-                                                            format="YYYY-MM-DD"
-                                                        />
+                                                        <DatePicker className="w-full py-2" format="YYYY-MM-DD" />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -391,13 +386,9 @@ function AddCruise() {
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Price ($)</span>}
                                                         name="price"
-                                                        rules={[{ required: true, message: 'Please enter cruise price' }]}
+                                                        rules={[{ required: true, message: "Please enter cruise price" }]}
                                                     >
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="Enter price"
-                                                            className="py-2"
-                                                        />
+                                                        <Input type="number" placeholder="Enter price" className="py-2" />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -407,12 +398,9 @@ function AddCruise() {
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Location</span>}
                                                         name="location"
-                                                        rules={[{ required: true, message: 'Please enter cruise location' }]}
+                                                        rules={[{ required: true, message: "Please enter cruise location" }]}
                                                     >
-                                                        <Input
-                                                            placeholder="Enter cruise location"
-                                                            className="py-2"
-                                                        />
+                                                        <Input placeholder="Enter cruise location" className="py-2" />
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={12}>
@@ -421,10 +409,7 @@ function AddCruise() {
                                                         name="isFeatured"
                                                         initialValue="No"
                                                     >
-                                                        <Select
-                                                            className="w-full"
-                                                            dropdownStyle={{ borderRadius: '6px' }}
-                                                        >
+                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
                                                             <Select.Option value="Yes">Yes</Select.Option>
                                                             <Select.Option value="No">No</Select.Option>
                                                         </Select>
@@ -432,6 +417,58 @@ function AddCruise() {
                                                 </Col>
                                             </Row>
 
+                                            <Row gutter={24}>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Number of Days</span>}
+                                                        name="numberofDays"
+                                                        rules={[{ required: true, message: "Please enter number of days" }]}
+                                                    >
+                                                        <Input type="number" placeholder="Enter number of days" className="py-2" />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={
+                                                            <span className="text-dark dark:text-white/[.87] font-medium">Number of Nights</span>
+                                                        }
+                                                        name="numberofNights"
+                                                        rules={[{ required: true, message: "Please enter number of nights" }]}
+                                                    >
+                                                        <Input type="number" placeholder="Enter number of nights" className="py-2" />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Cruise Type</span>}
+                                                        name="cruiseType"
+                                                        initialValue="domestic"
+                                                    >
+                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
+                                                            <Select.Option value="domestic">Domestic</Select.Option>
+                                                            <Select.Option value="international">International</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Status</span>}
+                                                        name="status"
+                                                        initialValue="active"
+                                                    >
+                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
+                                                            <Select.Option value="active">Active</Select.Option>
+                                                            <Select.Option value="inactive">Inactive</Select.Option>
+                                                            <Select.Option value="draft">Draft</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+
+                                            <Divider orientation="left">Category Details</Divider>
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <div className="flex justify-between items-center mb-2">
@@ -447,12 +484,23 @@ function AddCruise() {
                                                         </Button>
                                                     </div>
                                                     <Form.Item
-                                                        name="category"
+                                                        name="categoryName"
+                                                        rules={[{ required: true, message: 'Please select category' }]}
                                                     >
                                                         <Select
                                                             placeholder="Select category"
                                                             className="w-full"
                                                             dropdownStyle={{ borderRadius: '6px' }}
+                                                            onChange={(value, option: any) => {
+                                                                const selectedCategory = categories.find(cat => cat.name === value);
+                                                                if (selectedCategory) {
+                                                                    form.setFieldsValue({
+                                                                        categoryID: selectedCategory.id || `CID${Math.floor(Math.random() * 1000000)}`,
+                                                                        categorySlug: selectedCategory.slug,
+                                                                        categoryDescription: selectedCategory.description
+                                                                    });
+                                                                }
+                                                            }}
                                                         >
                                                             {categories.map((cat) => (
                                                                 <Select.Option key={cat.id} value={cat.name}>
@@ -463,6 +511,47 @@ function AddCruise() {
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category ID</span>}
+                                                        name="categoryID"
+                                                    >
+                                                        <Input
+                                                            placeholder="Category ID"
+                                                            className="py-2"
+                                                            readOnly
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Row gutter={24}>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Slug</span>}
+                                                        name="categorySlug"
+                                                    >
+                                                        <Input
+                                                            placeholder="Category Slug"
+                                                            className="py-2"
+                                                            readOnly
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Description</span>}
+                                                        name="categoryDescription"
+                                                    >
+                                                        <Input.TextArea
+                                                            placeholder="Category Description"
+                                                            rows={1}
+                                                            readOnly
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Divider orientation="left">Tags</Divider>
+                                            <Row gutter={24}>
+                                                <Col span={24}>
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-dark dark:text-white/[.87] font-medium">Tags</span>
                                                         <Button
@@ -475,45 +564,45 @@ function AddCruise() {
                                                             Add New
                                                         </Button>
                                                     </div>
-                                                    <Form.Item>
-                                                        <Select
-                                                            mode="multiple"
-                                                            placeholder="Select tags"
-                                                            value={selectedTags}
-                                                            onChange={setSelectedTags}
-                                                            style={{ width: '100%' }}
-                                                            optionLabelProp="label"
-                                                            className="w-full"
-                                                            dropdownStyle={{ borderRadius: '6px' }}
-                                                        >
-                                                            {tags.map((tag) => (
-                                                                <Select.Option key={tag.id} value={tag.name} label={tag.name}>
-                                                                    {tag.name}
-                                                                </Select.Option>
-                                                            ))}
-                                                        </Select>
-                                                    </Form.Item>
+                                                    <div className="flex flex-wrap gap-2 mb-4">
+                                                        {tags.map((tag) => (
+                                                            <Tag
+                                                                key={tag.id}
+                                                                className={`px-3 py-1 rounded-full cursor-pointer ${selectedTags[tag.id] ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'
+                                                                    }`}
+                                                                onClick={() => {
+                                                                    if (selectedTags[tag.id]) {
+                                                                        handleRemoveSelectedTag(tag.id);
+                                                                    } else {
+                                                                        handleAddSelectedTag(tag.id, {
+                                                                            name: tag.name,
+                                                                            slug: tag.slug,
+                                                                            description: tag.description
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {tag.name}
+                                                            </Tag>
+                                                        ))}
+                                                    </div>
                                                 </Col>
                                             </Row>
 
-                                            <Form.Item
-                                                label={<span className="text-dark dark:text-white/[.87] font-medium">Summary</span>}
-                                                name="summary"
-                                            >
-                                                <Input.TextArea rows={3} placeholder="Write a brief summary of the cruise" className="text-base" />
-                                            </Form.Item>
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
-                                                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Image URL</span>}
+                                                    >
                                                         <div
                                                             className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors duration-300"
-                                                            onClick={() => handleOpenImageDialog('main')}
+                                                            onClick={() => handleOpenImageDialog("main")}
                                                         >
                                                             {imageUrl ? (
                                                                 <div className="relative inline-block group">
                                                                     <img
-                                                                        src={imageUrl}
+                                                                        src={imageUrl || "/placeholder.svg"}
                                                                         alt="cruise"
                                                                         className="mx-auto h-32 object-contain transition-opacity duration-300"
                                                                     />
@@ -523,7 +612,7 @@ function AddCruise() {
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex flex-col justify-center items-center h-32">
-                                                                    <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
+                                                                    <PictureOutlined style={{ fontSize: "32px", color: "#d9d9d9" }} />
                                                                     <p className="mt-2 text-gray-500">Upload Featured Image</p>
                                                                 </div>
                                                             )}
@@ -531,11 +620,28 @@ function AddCruise() {
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
+
+                                            <Row gutter={24}>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Video URL</span>}
+                                                        name="videoURL"
+                                                    >
+                                                        <Input placeholder="Enter video URL" className="py-2" />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
                                         </div>
 
                                         <div className="mb-8">
                                             <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="16"
+                                                    height="16"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 16 16"
+                                                >
                                                     <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z" />
                                                     <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z" />
                                                 </svg>
@@ -549,12 +655,12 @@ function AddCruise() {
                                                         height: 400,
                                                         menubar: true,
                                                         plugins: [
-                                                            'advlist autolink lists link image charmap print preview anchor',
-                                                            'searchreplace visualblocks code fullscreen',
-                                                            'insertdatetime media table paste code help wordcount'
+                                                            "advlist autolink lists link image charmap print preview anchor",
+                                                            "searchreplace visualblocks code fullscreen",
+                                                            "insertdatetime media table paste code help wordcount",
                                                         ],
                                                         toolbar:
-                                                            'undo redo | formatselect | bold italic backcolor | \ alignleft aligncenter alignright alignjustify | \ bullist numlist outdent indent | removeformat | help'
+                                                            "undo redo | formatselect | bold italic backcolor |  alignleft aligncenter alignright alignjustify |  bullist numlist outdent indent | removeformat | help",
                                                     }}
                                                     onEditorChange={(content) => setEditorContent(content)}
                                                 />
@@ -564,7 +670,7 @@ function AddCruise() {
                                             <Space size="middle">
                                                 <Button
                                                     className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
-                                                    onClick={() => router.push('/admin/cruises')}
+                                                    onClick={() => router.push("/admin/cruises")}
                                                 >
                                                     Cancel
                                                 </Button>
@@ -592,7 +698,7 @@ function AddCruise() {
                 onCancel={() => setCategoryDialogOpen(false)}
                 onOk={handleAddCategory}
                 width="95%"
-                style={{ maxWidth: '500px' }}
+                style={{ maxWidth: "500px" }}
                 className="responsive-modal"
             >
                 <Form layout="vertical">
@@ -604,11 +710,7 @@ function AddCruise() {
                         />
                     </Form.Item>
                     <Form.Item label="Slug">
-                        <Input
-                            value={categorySlug}
-                            onChange={(e) => setCategorySlug(e.target.value)}
-                            placeholder="category-slug"
-                        />
+                        <Input value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)} placeholder="category-slug" />
                     </Form.Item>
                     <Form.Item label="Description">
                         <Input.TextArea
@@ -628,23 +730,15 @@ function AddCruise() {
                 onCancel={() => setTagDialogOpen(false)}
                 onOk={handleAddTag}
                 width="95%"
-                style={{ maxWidth: '500px' }}
+                style={{ maxWidth: "500px" }}
                 className="responsive-modal"
             >
                 <Form layout="vertical">
                     <Form.Item label="Tag Name" required>
-                        <Input
-                            value={newTag}
-                            onChange={(e) => setNewTag(e.target.value)}
-                            placeholder="Enter tag name"
-                        />
+                        <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Enter tag name" />
                     </Form.Item>
                     <Form.Item label="Slug">
-                        <Input
-                            value={tagSlug}
-                            onChange={(e) => setTagSlug(e.target.value)}
-                            placeholder="tag-slug"
-                        />
+                        <Input value={tagSlug} onChange={(e) => setTagSlug(e.target.value)} placeholder="tag-slug" />
                     </Form.Item>
                     <Form.Item label="Description">
                         <Input.TextArea
@@ -664,7 +758,7 @@ function AddCruise() {
                 onCancel={() => setImageDialogOpen(false)}
                 footer={null}
                 width="95%"
-                style={{ maxWidth: '1000px' }}
+                style={{ maxWidth: "1000px" }}
                 className="responsive-modal"
             >
                 <div className="flex justify-center gap-4 mb-4">
@@ -672,12 +766,12 @@ function AddCruise() {
                         name="image"
                         showUploadList={false}
                         beforeUpload={(file) => {
-                            if (imageType === 'main') {
-                                handleImageUpload(file);
+                            if (imageType === "main") {
+                                handleImageUpload(file)
                             }
-                            handleArchiveImageUpload(file);
-                            setImageDialogOpen(false);
-                            return false;
+                            handleArchiveImageUpload(file)
+                            setImageDialogOpen(false)
+                            return false
                         }}
                     >
                         <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
@@ -695,17 +789,13 @@ function AddCruise() {
                             className="cursor-pointer border p-2 rounded hover:border-primary"
                             onClick={() => handleSetArchiveImage(item.ImageUrl)}
                         >
-                            <img
-                                src={item.ImageUrl}
-                                alt="Archive item"
-                                className="w-full h-24 object-cover"
-                            />
+                            <img src={item.ImageUrl || "/placeholder.svg"} alt="Archive item" className="w-full h-24 object-cover" />
                         </div>
                     ))}
                 </div>
             </Modal>
         </>
-    );
+    )
 }
 
-export default Protected(AddCruise, ["admin"]); 
+export default Protected(AddCruise, ["admin"])
