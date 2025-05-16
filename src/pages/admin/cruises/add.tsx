@@ -685,14 +685,27 @@ function AddCruise() {
                     </div>
                 }
                 open={tagDialogOpen}
-                onCancel={() => setTagDialogOpen(false)}
-                onOk={handleAddTag}
-                // Remove this line that's causing the issue:
-                // footer={null}
                 width="95%"
                 style={{ maxWidth: '600px' }}
                 className="responsive-modal"
                 bodyStyle={{ padding: '24px' }}
+                footer={[
+                    <Button
+                        key="cancel"
+                        onClick={() => setTagDialogOpen(false)}
+                        style={{ margin: '0 2px 10px', padding: '6px 16px' }}
+                    >
+                        Cancel
+                    </Button>,
+                    <Button
+                        key="submit"
+                        type="primary"
+                        onClick={handleAddTag}
+                        style={{ margin: '0 8px 10px', padding: '6px 16px' }}
+                    >
+                        Add
+                    </Button>
+                ]}
             >
                 <Form layout="vertical">
                     <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}

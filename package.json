@@ -20,6 +20,7 @@
     "@ant-design/pro-table": "^3.11.1",
     "@auth0/auth0-react": "^2.2.1",
     "@auth0/nextjs-auth0": "^3.1.0",
+    "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@iconscout/react-unicons": "^2.0.2",
     "@react-google-maps/api": "^2.19.2",
     "@redux-devtools/extension": "^3.2.5",
