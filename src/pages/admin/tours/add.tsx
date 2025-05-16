@@ -384,7 +384,7 @@ function AddTour() {
         setSelectedTags(newSelectedTags);
     };
 
-    const handleCategoryChange = (value) => {
+    const handleCategoryChange = (value: string | number) => {
         const selectedCategory = categories.find(category => category.id === value);
         if (selectedCategory) {
             // Set the rest of the category details in the form
@@ -396,33 +396,31 @@ function AddTour() {
         }
     };
 
-    const handleNumberOfDaysChange = (value) => {
+    const handleNumberOfDaysChange = (value: number | null) => {
         if (!value || value <= 0) return;
-
-        // Get current itineraries list
+    
         const currentItineraries = form.getFieldValue('itineraries') || [];
-
-        // Create a new array with the correct number of itineraries
+    
         if (value > currentItineraries.length) {
-            // Add new itineraries
             const newItineraries = [...currentItineraries];
             for (let i = currentItineraries.length; i < value; i++) {
                 newItineraries.push({ title: `Day ${i + 1}`, description: '' });
             }
             form.setFieldsValue({ itineraries: newItineraries });
+    
         } else if (value < currentItineraries.length) {
-            // Remove excess itineraries
             const newItineraries = currentItineraries.slice(0, value);
             form.setFieldsValue({ itineraries: newItineraries });
-
-            // Also clean up the itinerary images for removed days
+    
             const newItineraryImages = { ...itineraryImages };
-            for (let i = value + 1; i <= currentItineraries.length; i++) {
-                delete newItineraryImages[`${i}`];
+            for (let i = value; i < currentItineraries.length; i++) {
+                delete newItineraryImages[`${i + 1}`];
             }
             setItineraryImages(newItineraryImages);
         }
     };
+    
+
 
     return (
         <>

@@ -305,7 +305,7 @@ function AddCruise() {
         }
     };
 
-    const handleCategoryChange = (value) => {
+    const handleCategoryChange = (value: string | number) => {
         const selectedCategory = categories.find(category => category.id === value);
         if (selectedCategory) {
             // Set the rest of the category details in the form
@@ -316,6 +316,7 @@ function AddCruise() {
             });
         }
     };
+
 
     return (
         <>
