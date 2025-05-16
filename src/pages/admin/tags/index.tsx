@@ -1,33 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Table, 
-  Input, 
-  Button, 
-  Space, 
-  Modal, 
-  Form, 
+import {
+  Row,
+  Col,
+  Card,
+  Table,
+  Input,
+  Button,
+  Space,
+  Modal,
+  Form,
   message,
   Spin
 } from 'antd';
-import { 
-  SearchOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined 
+import {
+  SearchOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  deleteDoc, 
-  addDoc, 
-  updateDoc, 
-  serverTimestamp, 
-  query, 
-  orderBy 
+import {
+  collection,
+  getDocs,
+  doc,
+  deleteDoc,
+  addDoc,
+  updateDoc,
+  serverTimestamp,
+  query,
+  orderBy
 } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import Protected from '../../../components/Protected/Protected';
@@ -49,12 +49,12 @@ function Tags() {
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>('');
   const [addModalVisible, setAddModalVisible] = useState<boolean>(false);
+  const [editMode, setEditMode] = useState<boolean>(false);
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
-  const [editMode, setEditMode] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   // Fetch tags from Firestore
@@ -63,7 +63,7 @@ function Tags() {
     try {
       const q = query(collection(db, "tags"), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      
+
       const tagsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         key: doc.id,
@@ -73,7 +73,7 @@ function Tags() {
         createdAt: doc.data().createdAt,
         updatedAt: doc.data().updatedAt,
       }));
-      
+
       setTags(tagsData);
     } catch (error) {
       console.error("Error fetching tags:", error);
@@ -110,7 +110,7 @@ function Tags() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      
+
       message.success("Tag added successfully");
       setAddModalVisible(false);
       form.resetFields();
@@ -124,7 +124,7 @@ function Tags() {
   // Edit tag
   const handleEditTag = async (values: any) => {
     if (!selectedTag) return;
-    
+
     try {
       const tagRef = doc(db, "tags", selectedTag.id);
       await updateDoc(tagRef, {
@@ -133,7 +133,7 @@ function Tags() {
         description: values.description,
         updatedAt: serverTimestamp(),
       });
-      
+
       message.success("Tag updated successfully");
       setEditModalVisible(false);
       editForm.resetFields();
@@ -147,7 +147,7 @@ function Tags() {
   // Delete tag
   const handleDeleteTag = async () => {
     if (!selectedTag) return;
-    
+
     try {
       await deleteDoc(doc(db, "tags", selectedTag.id));
       message.success("Tag deleted successfully");
@@ -160,7 +160,7 @@ function Tags() {
   };
 
   // Filter tags based on search text
-  const filteredTags = tags.filter(tag => 
+  const filteredTags = tags.filter(tag =>
     tag.name.toLowerCase().includes(searchText.toLowerCase()) ||
     tag.slug.toLowerCase().includes(searchText.toLowerCase()) ||
     tag.description.toLowerCase().includes(searchText.toLowerCase())
@@ -200,9 +200,9 @@ function Tags() {
       key: 'actions',
       render: (text: string, record: Tag) => (
         <Space size="middle">
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
             onClick={() => {
               setSelectedTag(record);
               editForm.setFieldsValue({
@@ -217,10 +217,10 @@ function Tags() {
           >
             Edit
           </Button>
-          <Button 
-            type="primary" 
-            danger 
-            icon={<DeleteOutlined />} 
+          <Button
+            type="primary"
+            danger
+            icon={<DeleteOutlined />}
             onClick={() => {
               setSelectedTag(record);
               setDeleteModalVisible(true);
@@ -265,8 +265,8 @@ function Tags() {
                   style={{ width: 250 }}
                   className="py-2 text-base font-medium"
                 />
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   onClick={() => setModalVisible(true)}
                   icon={<PlusOutlined />}
                   className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
@@ -278,16 +278,16 @@ function Tags() {
             </div>
           </Col>
         </Row>
-        
+
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
-                    <Table 
-                      dataSource={filteredTags} 
-                      columns={columns} 
+                    <Table
+                      dataSource={filteredTags}
+                      columns={columns}
                       pagination={{ pageSize: 10 }}
                       loading={loading}
                       className="[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-regularBG dark:[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-[#323440] [&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:font-medium"
@@ -301,7 +301,6 @@ function Tags() {
         </Row>
       </main>
 
-      {/* Add/Edit Tag Modal */}
       <Modal
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -322,66 +321,64 @@ function Tags() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          className="px-6 pt-4"
+          className="px-2 pt-1"
         >
           <div className="mb-6">
-            <h3 className="text-base text-gray-500 dark:text-gray-400 mb-4">Tag Information</h3>
-            
             <Form.Item
               label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
               name="name"
               rules={[{ required: true, message: 'Please enter tag name!' }]}
             >
-              <Input 
+              <Input
                 prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
-                  <path d="M3.5 2a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-5a.5.5 0 0 0-.5-.5h-5zm1 .5H8v4H4.5v-4zM11 1a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h10zm-1 2H2v9h8v-9z"/>
+                  <path d="M3.5 2a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-5a.5.5 0 0 0-.5-.5h-5zm1 .5H8v4H4.5v-4zM11 1a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h10zm-1 2H2v9h8v-9z" />
                 </svg>}
-                placeholder="Enter tag name" 
+                placeholder="Enter tag name"
                 onChange={handleNameChange}
-                className="py-2" 
+                className="py-2"
               />
             </Form.Item>
-            
+
             <Form.Item
               label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
               name="slug"
               rules={[{ required: true, message: 'Please enter tag slug!' }]}
               tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens."
             >
-              <Input 
+              <Input
                 prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
-                  <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/>
-                  <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z"/>
+                  <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                  <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z" />
                 </svg>}
-                placeholder="tag-slug" 
+                placeholder="tag-slug"
                 className="py-2"
               />
             </Form.Item>
-            
+
             <Form.Item
               label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
               name="description"
               rules={[{ required: true, message: 'Please enter tag description!' }]}
             >
-              <Input.TextArea 
-                placeholder="Enter a description for this tag" 
-                rows={4} 
+              <Input.TextArea
+                placeholder="Enter a description for this tag"
+                rows={4}
                 className="text-base"
               />
             </Form.Item>
           </div>
-          
+
           <div className="flex justify-end mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <Space size="middle">
-              <Button 
+              <Button
                 onClick={handleModalCancel}
                 className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
               >
                 Cancel
               </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
+              <Button
+                type="primary"
+                htmlType="submit"
                 loading={loading}
                 className="px-5 h-10 shadow-none"
               >

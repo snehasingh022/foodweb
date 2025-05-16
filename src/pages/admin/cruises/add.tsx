@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload,Tag, message, Space, Modal, DatePicker } from "antd"
+import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload, message, Space, Modal, DatePicker } from "antd"
 import { UploadOutlined, PlusOutlined, ArrowLeftOutlined, PictureOutlined } from "@ant-design/icons"
 import { PageHeaders } from "../../../components/page-headers/index"
 import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore"
@@ -29,7 +29,8 @@ function AddCruise() {
     // State variables
     const [categories, setCategories] = useState<any[]>([])
     const [tags, setTags] = useState<any[]>([])
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [videoFileName, setVideoFileName] = useState<string>("");
+    const [selectedTags, setSelectedTags] = useState<string[]>([])
     const [imageLoading, setImageLoading] = useState(false)
     const [imageUrl, setImageUrl] = useState("")
     const [editorContent, setEditorContent] = useState("")
@@ -255,12 +256,13 @@ function AddCruise() {
             const cruiseData = {
                 title: values.title,
                 slug: values.slug,
-                description: editorContent.replace(/<\/?[^>]+(>|$)/g, ""),
+                description: values.description,
                 categoryDetails: {
                     categoryID: values.categoryID || "",
                     name: values.categoryName || "",
                     slug: values.categorySlug || "",
                     description: values.categoryDescription || "",
+                    createdAt: serverTimestamp()
                 },
                 imageURL: imageUrl,
                 isFeatured: values.isFeatured === "Yes", // Convert to boolean
@@ -285,18 +287,35 @@ function AddCruise() {
         }
     };
 
-    // Function to add a tag to selected tags
-    const handleAddSelectedTag = (tagId: string, tagData: any) => {
-        setSelectedTags((prev) => ({
-            ...prev,
-            [tagId]: tagData,
-        }));
+    const handleVideoUpload = async (file: File) => {
+        try {
+            if (!storage) {
+                throw new Error("Firebase Storage is not available");
+            }
+            const slug = form.getFieldValue("slug") || `cruise-${Date.now()}`;
+            const storageRef = ref(storage, `cruise/${slug}/videos/${file.name}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+            form.setFieldsValue({ videoURL: downloadURL });
+            setVideoFileName(file.name); // Update the file name state
+            message.success("Video uploaded successfully!");
+        } catch (error) {
+            console.error("Error uploading video:", error);
+            message.error("Failed to upload video. Please try again.");
+        }
     };
-    
-    const handleRemoveSelectedTag = (tagId: string) => {
-        setSelectedTags((prev) => prev.filter(tag => tag !== tagId));
+
+    const handleCategoryChange = (value) => {
+        const selectedCategory = categories.find(category => category.id === value);
+        if (selectedCategory) {
+            // Set the rest of the category details in the form
+            form.setFieldsValue({
+                categoryName: selectedCategory.name,
+                categorySlug: selectedCategory.slug,
+                categoryDescription: selectedCategory.description
+            });
+        }
     };
-    
 
     return (
         <>
@@ -381,7 +400,7 @@ function AddCruise() {
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Price ($)</span>}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Price (₹)</span>}
                                                         name="price"
                                                         rules={[{ required: true, message: "Please enter cruise price" }]}
                                                     >
@@ -465,90 +484,36 @@ function AddCruise() {
                                                 </Col>
                                             </Row>
 
-                                            <Divider orientation="left">Category Details</Divider>
                                             <Row gutter={24}>
                                                 <Col span={12}>
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
-                                                        <Button
-                                                            type="link"
-                                                            icon={<PlusOutlined />}
-                                                            onClick={() => setCategoryDialogOpen(true)}
-                                                            size="small"
-                                                            className="text-primary"
-                                                        >
-                                                            Add New
-                                                        </Button>
-                                                    </div>
                                                     <Form.Item
-                                                        name="categoryName"
-                                                        rules={[{ required: true, message: 'Please select category' }]}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
+                                                        name="categoryID"
+                                                        rules={[{ required: true, message: "Please select a category" }]}
                                                     >
                                                         <Select
-                                                            placeholder="Select category"
                                                             className="w-full"
-                                                            dropdownStyle={{ borderRadius: '6px' }}
-                                                            onChange={(value, option: any) => {
-                                                                const selectedCategory = categories.find(cat => cat.name === value);
-                                                                if (selectedCategory) {
-                                                                    form.setFieldsValue({
-                                                                        categoryID: selectedCategory.id || `CID${Math.floor(Math.random() * 1000000)}`,
-                                                                        categorySlug: selectedCategory.slug,
-                                                                        categoryDescription: selectedCategory.description
-                                                                    });
-                                                                }
-                                                            }}
+                                                            dropdownStyle={{ borderRadius: "6px" }}
+                                                            onChange={handleCategoryChange}
                                                         >
-                                                            {categories.map((cat) => (
-                                                                <Select.Option key={cat.id} value={cat.name}>
-                                                                    {cat.name}
+                                                            {categories.map((category) => (
+                                                                <Select.Option key={category.id} value={category.id}>
+                                                                    {category.name}
                                                                 </Select.Option>
                                                             ))}
                                                         </Select>
                                                     </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category ID</span>}
-                                                        name="categoryID"
-                                                    >
-                                                        <Input
-                                                            placeholder="Category ID"
-                                                            className="py-2"
-                                                            readOnly
-                                                        />
+                                                    <Form.Item name="categoryName" hidden>
+                                                        <Input />
                                                     </Form.Item>
-                                                </Col>
-                                            </Row>
-                                            <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Slug</span>}
-                                                        name="categorySlug"
-                                                    >
-                                                        <Input
-                                                            placeholder="Category Slug"
-                                                            className="py-2"
-                                                            readOnly
-                                                        />
+                                                    <Form.Item name="categorySlug" hidden>
+                                                        <Input />
+                                                    </Form.Item>
+                                                    <Form.Item name="categoryDescription" hidden>
+                                                        <Input />
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Description</span>}
-                                                        name="categoryDescription"
-                                                    >
-                                                        <Input.TextArea
-                                                            placeholder="Category Description"
-                                                            rows={1}
-                                                            readOnly
-                                                        />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-                                            <Divider orientation="left">Tags</Divider>
-                                            <Row gutter={24}>
-                                                <Col span={24}>
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-dark dark:text-white/[.87] font-medium">Tags</span>
                                                         <Button
@@ -561,30 +526,27 @@ function AddCruise() {
                                                             Add New
                                                         </Button>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-2 mb-4">
-                                                        {tags.map((tag) => (
-                                                            <Tag
-                                                                key={tag.id}
-                                                                className={`px-3 py-1 rounded-full cursor-pointer ${selectedTags[tag.id] ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'
-                                                                    }`}
-                                                                onClick={() => {
-                                                                    if (selectedTags[tag.id]) {
-                                                                        handleRemoveSelectedTag(tag.id);
-                                                                    } else {
-                                                                        handleAddSelectedTag(tag.id, {
-                                                                            name: tag.name,
-                                                                            slug: tag.slug,
-                                                                            description: tag.description
-                                                                        });
-                                                                    }
-                                                                }}
-                                                            >
-                                                                {tag.name}
-                                                            </Tag>
-                                                        ))}
-                                                    </div>
+                                                    <Form.Item>
+                                                        <Select
+                                                            mode="multiple"
+                                                            placeholder="Select tags"
+                                                            value={selectedTags}
+                                                            onChange={setSelectedTags}
+                                                            style={{ width: "100%" }}
+                                                            optionLabelProp="label"
+                                                            className="w-full"
+                                                            dropdownStyle={{ borderRadius: "6px" }}
+                                                        >
+                                                            {tags.map((tag) => (
+                                                                <Select.Option key={tag.id} value={tag.name} label={tag.name}>
+                                                                    {tag.name}
+                                                                </Select.Option>
+                                                            ))}
+                                                        </Select>
+                                                    </Form.Item>
                                                 </Col>
                                             </Row>
+
 
 
                                             <Row gutter={24}>
@@ -621,46 +583,38 @@ function AddCruise() {
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Video URL</span>}
-                                                        name="videoURL"
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Video</span>}
                                                     >
-                                                        <Input placeholder="Enter video URL" className="py-2" />
+                                                        <Upload
+                                                            name="video"
+                                                            accept="video/*"
+                                                            showUploadList={false}
+                                                            beforeUpload={(file) => {
+                                                                handleVideoUpload(file);
+                                                                return false; // Prevent default upload behavior
+                                                            }}
+                                                        >
+                                                            <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
+                                                                Upload Video
+                                                            </Button>
+                                                        </Upload>
+                                                        {videoFileName && (
+                                                            <div className="mt-2 text-gray-600 dark:text-gray-300">
+                                                                Selected Video: <span className="font-medium">{videoFileName}</span>
+                                                            </div>
+                                                        )}
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
                                         </div>
 
                                         <div className="mb-8">
-                                            <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="16"
-                                                    height="16"
-                                                    fill="currentColor"
-                                                    viewBox="0 0 16 16"
-                                                >
-                                                    <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z" />
-                                                    <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z" />
-                                                </svg>
-                                                Content
-                                            </h3>
-                                            <Form.Item>
-                                                <Editor
-                                                    apiKey="cluzl6f3pdaveewms6exdzpvcygpa23rgrx0whym6svjop94"
-                                                    value={editorContent}
-                                                    init={{
-                                                        height: 400,
-                                                        menubar: true,
-                                                        plugins: [
-                                                            "advlist autolink lists link image charmap print preview anchor",
-                                                            "searchreplace visualblocks code fullscreen",
-                                                            "insertdatetime media table paste code help wordcount",
-                                                        ],
-                                                        toolbar:
-                                                            "undo redo | formatselect | bold italic backcolor |  alignleft aligncenter alignright alignjustify |  bullist numlist outdent indent | removeformat | help",
-                                                    }}
-                                                    onEditorChange={(content) => setEditorContent(content)}
-                                                />
+
+                                            <Form.Item
+                                                label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+                                                name="description"
+                                            >
+                                                <Input.TextArea rows={3} placeholder="Write a brief summary of the blog" className="text-base" />
                                             </Form.Item>
                                         </div>
                                         <div className="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -722,22 +676,38 @@ function AddCruise() {
 
             {/* Tag Dialog */}
             <Modal
-                title="Add New Tag"
+                title={
+                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                            {"Add New Tag"}
+                        </span>
+                    </div>
+                }
                 open={tagDialogOpen}
                 onCancel={() => setTagDialogOpen(false)}
                 onOk={handleAddTag}
+                // Remove this line that's causing the issue:
+                // footer={null}
                 width="95%"
-                style={{ maxWidth: "500px" }}
+                style={{ maxWidth: '600px' }}
                 className="responsive-modal"
+                bodyStyle={{ padding: '24px' }}
             >
                 <Form layout="vertical">
-                    <Form.Item label="Tag Name" required>
+                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
+                        name="name"
+                        rules={[{ required: true, message: 'Please enter tag name!' }]} required>
                         <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Enter tag name" />
                     </Form.Item>
-                    <Form.Item label="Slug">
+                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
+                        name="slug"
+                        rules={[{ required: true, message: 'Please enter tag slug!' }]}
+                        tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens.">
                         <Input value={tagSlug} onChange={(e) => setTagSlug(e.target.value)} placeholder="tag-slug" />
                     </Form.Item>
-                    <Form.Item label="Description">
+                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+                        name="description"
+                        rules={[{ required: true, message: 'Please enter tag description!' }]}>
                         <Input.TextArea
                             value={tagDescription}
                             onChange={(e) => setTagDescription(e.target.value)}

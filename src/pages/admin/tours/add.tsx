@@ -384,6 +384,46 @@ function AddTour() {
         setSelectedTags(newSelectedTags);
     };
 
+    const handleCategoryChange = (value) => {
+        const selectedCategory = categories.find(category => category.id === value);
+        if (selectedCategory) {
+            // Set the rest of the category details in the form
+            form.setFieldsValue({
+                categoryName: selectedCategory.name,
+                categorySlug: selectedCategory.slug,
+                categoryDescription: selectedCategory.description
+            });
+        }
+    };
+
+    const handleNumberOfDaysChange = (value) => {
+        if (!value || value <= 0) return;
+
+        // Get current itineraries list
+        const currentItineraries = form.getFieldValue('itineraries') || [];
+
+        // Create a new array with the correct number of itineraries
+        if (value > currentItineraries.length) {
+            // Add new itineraries
+            const newItineraries = [...currentItineraries];
+            for (let i = currentItineraries.length; i < value; i++) {
+                newItineraries.push({ title: `Day ${i + 1}`, description: '' });
+            }
+            form.setFieldsValue({ itineraries: newItineraries });
+        } else if (value < currentItineraries.length) {
+            // Remove excess itineraries
+            const newItineraries = currentItineraries.slice(0, value);
+            form.setFieldsValue({ itineraries: newItineraries });
+
+            // Also clean up the itinerary images for removed days
+            const newItineraryImages = { ...itineraryImages };
+            for (let i = value + 1; i <= currentItineraries.length; i++) {
+                delete newItineraryImages[`${i}`];
+            }
+            setItineraryImages(newItineraryImages);
+        }
+    };
+
     return (
         <>
             <PageHeaders
@@ -467,7 +507,7 @@ function AddTour() {
                                                         valuePropName="checked"
                                                         initialValue={false}
                                                     >
-                                                        <Switch />
+                                                        <Switch className='bg-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none' />
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={8}>
@@ -496,6 +536,7 @@ function AddTour() {
                                                             className="w-full py-2"
                                                             min={1}
                                                             placeholder="Number of days"
+                                                            onChange={handleNumberOfDaysChange}
                                                         />
                                                     </Form.Item>
                                                 </Col>
@@ -559,7 +600,7 @@ function AddTour() {
                                                         valuePropName="checked"
                                                         initialValue={false}
                                                     >
-                                                        <Switch />
+                                                        <Switch className='bg-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none' />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -572,94 +613,42 @@ function AddTour() {
                                                         valuePropName="checked"
                                                         initialValue={false}
                                                     >
-                                                        <Switch />
+                                                        <Switch className='bg-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none' />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
 
-                                            <Divider orientation="left">Category Details</Divider>
                                             <Row gutter={24}>
                                                 <Col span={12}>
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
-                                                        <Button
-                                                            type="link"
-                                                            icon={<PlusOutlined />}
-                                                            onClick={() => setCategoryDialogOpen(true)}
-                                                            size="small"
-                                                            className="text-primary"
-                                                        >
-                                                            Add New
-                                                        </Button>
-                                                    </div>
                                                     <Form.Item
-                                                        name="categoryName"
-                                                        rules={[{ required: true, message: 'Please select category' }]}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
+                                                        name="categoryID"
+                                                        rules={[{ required: true, message: "Please select a category" }]}
                                                     >
                                                         <Select
-                                                            placeholder="Select category"
                                                             className="w-full"
-                                                            dropdownStyle={{ borderRadius: '6px' }}
-                                                            onChange={(value, option: any) => {
-                                                                const selectedCategory = categories.find(cat => cat.name === value);
-                                                                if (selectedCategory) {
-                                                                    form.setFieldsValue({
-                                                                        categoryID: selectedCategory.id || `CID${Math.floor(Math.random() * 1000000)}`,
-                                                                        categorySlug: selectedCategory.slug,
-                                                                        categoryDescription: selectedCategory.description
-                                                                    });
-                                                                }
-                                                            }}
+                                                            dropdownStyle={{ borderRadius: "6px" }}
+                                                            onChange={handleCategoryChange}
                                                         >
-                                                            {categories.map((cat) => (
-                                                                <Select.Option key={cat.id} value={cat.name}>
-                                                                    {cat.name}
+                                                            {categories.map((category) => (
+                                                                <Select.Option key={category.id} value={category.id}>
+                                                                    {category.name}
                                                                 </Select.Option>
                                                             ))}
                                                         </Select>
                                                     </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category ID</span>}
-                                                        name="categoryID"
-                                                    >
-                                                        <Input
-                                                            placeholder="Category ID"
-                                                            className="py-2"
-                                                            readOnly
-                                                        />
+                                                    <Form.Item name="categoryName" hidden>
+                                                        <Input />
                                                     </Form.Item>
-                                                </Col>
-                                            </Row>
-                                            <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Slug</span>}
-                                                        name="categorySlug"
-                                                    >
-                                                        <Input
-                                                            placeholder="Category Slug"
-                                                            className="py-2"
-                                                            readOnly
-                                                        />
+                                                    <Form.Item name="categorySlug" hidden>
+                                                        <Input />
                                                     </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category Description</span>}
-                                                        name="categoryDescription"
-                                                    >
-                                                        <Input.TextArea
-                                                            placeholder="Category Description"
-                                                            rows={1}
-                                                            readOnly
-                                                        />
+                                                    <Form.Item name="categoryDescription" hidden>
+                                                        <Input />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
 
-                                            <Divider orientation="left">Tags</Divider>
                                             <Row gutter={24}>
                                                 <Col span={24}>
                                                     <div className="flex justify-between items-center mb-2">
@@ -730,54 +719,17 @@ function AddTour() {
                                         </div>
 
                                         <div className="mb-8">
-                                            <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                    <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z" />
-                                                    <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z" />
-                                                </svg>
-                                                Content
-                                            </h3>
-                                            <Form.Item>
-                                                <Editor
-                                                    apiKey="cluzl6f3pdaveewms6exdzpvcygpa23rgrx0whym6svjop94"
-                                                    value={editorContent}
-                                                    init={{
-                                                        height: 400,
-                                                        menubar: true,
-                                                        plugins: [
-                                                            'advlist autolink lists link image charmap print preview anchor',
-                                                            'searchreplace visualblocks code fullscreen',
-                                                            'insertdatetime media table paste code help wordcount'
-                                                        ],
-                                                        toolbar:
-                                                            'undo redo | formatselect | bold italic backcolor | \
-            alignleft aligncenter alignright alignjustify | \
-            bullist numlist outdent indent | removeformat | help',
-                                                        // Add content_style to ensure proper styling
-                                                        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
-                                                        // Set formats to preserve HTML content appropriately
-                                                        formats: {
-                                                            // This ensures content is properly formatted
-                                                            p: { block: 'p' }
-                                                        },
-                                                        entity_encoding: 'raw', // Prevents automatic entity encoding
-                                                        setup: (editor) => {
-                                                            editor.on('change', () => {
-                                                                setEditorContent(editor.getContent({ format: 'raw' }));
-                                                            });
-                                                        },
-                                                    }}
-                                                    onEditorChange={(content) => setEditorContent(content)}
-                                                />
+
+                                            <Form.Item
+                                                label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+                                                name="summary"
+                                            >
+                                                <Input.TextArea rows={3} placeholder="Write a brief summary of the blog" className="text-base" />
                                             </Form.Item>
                                         </div>
 
                                         <div className="mb-8">
-                                            <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-                                                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
-                                                </svg>
+                                            <h3 className="text-dark dark:text-white/[.87] font-medium text-base mb-4 flex items-center gap-2">
                                                 Itinerary
                                             </h3>
                                             <Form.List name="itineraries">
@@ -785,12 +737,7 @@ function AddTour() {
                                                     <>
                                                         {fields.map(({ key, name, ...restField }, index) => (
                                                             <div key={key} className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg relative">
-                                                                <Button
-                                                                    type="text"
-                                                                    icon={<MinusCircleOutlined />}
-                                                                    onClick={() => remove(name)}
-                                                                    className="absolute right-2 top-2 text-red-500 hover:text-red-700"
-                                                                />
+
                                                                 <h4 className="text-dark dark:text-white/[.87] font-medium mb-3">Day {index + 1}</h4>
                                                                 <Row gutter={24}>
                                                                     <Col span={24}>
@@ -848,7 +795,7 @@ function AddTour() {
                                                                                 </div>
                                                                             ))}
 
-                                                                            {/* Upload new image button - styled like featured image */}
+                                                                            {/* Upload new image button */}
                                                                             <div
                                                                                 className="w-32 h-32 border border-dashed border-gray-300 rounded-md p-2 text-center cursor-pointer hover:border-primary transition-colors duration-300 flex flex-col justify-center items-center"
                                                                                 onClick={() => {
@@ -874,17 +821,7 @@ function AddTour() {
                                                                 </Row>
                                                             </div>
                                                         ))}
-                                                        <Form.Item>
-                                                            <Button
-                                                                type="dashed"
-                                                                onClick={() => add()}
-                                                                block
-                                                                icon={<PlusOutlined />}
-                                                                className="border-primary text-primary hover:text-white hover:bg-primary"
-                                                            >
-                                                                Add Day
-                                                            </Button>
-                                                        </Form.Item>
+
                                                     </>
                                                 )}
                                             </Form.List>
@@ -952,30 +889,41 @@ function AddTour() {
 
             {/* Tag Dialog */}
             <Modal
-                title="Add New Tag"
+                title={
+                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                            {"Add New Tag"}
+                        </span>
+                    </div>
+                }
                 open={tagDialogOpen}
                 onCancel={() => setTagDialogOpen(false)}
                 onOk={handleAddTag}
+                // Remove or comment out the footer={null} line
+                // footer={null}
                 width="95%"
-                style={{ maxWidth: '500px' }}
+                style={{ maxWidth: '600px' }}
                 className="responsive-modal"
+                bodyStyle={{ padding: '24px' }}
+                // Optionally, you can customize the OK and Cancel button texts
+                okText="Add Tag"
+                cancelText="Cancel"
             >
                 <Form layout="vertical">
-                    <Form.Item label="Tag Name" required>
-                        <Input
-                            value={newTag}
-                            onChange={(e) => setNewTag(e.target.value)}
-                            placeholder="Enter tag name"
-                        />
+                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
+                        name="name"
+                        rules={[{ required: true, message: 'Please enter tag name!' }]} required>
+                        <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Enter tag name" />
                     </Form.Item>
-                    <Form.Item label="Slug">
-                        <Input
-                            value={tagSlug}
-                            onChange={(e) => setTagSlug(e.target.value)}
-                            placeholder="tag-slug"
-                        />
+                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
+                        name="slug"
+                        rules={[{ required: true, message: 'Please enter tag slug!' }]}
+                        tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens.">
+                        <Input value={tagSlug} onChange={(e) => setTagSlug(e.target.value)} placeholder="tag-slug" />
                     </Form.Item>
-                    <Form.Item label="Description">
+                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+                        name="description"
+                        rules={[{ required: true, message: 'Please enter tag description!' }]}>
                         <Input.TextArea
                             value={tagDescription}
                             onChange={(e) => setTagDescription(e.target.value)}
