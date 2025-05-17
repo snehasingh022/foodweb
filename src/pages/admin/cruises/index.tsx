@@ -231,8 +231,8 @@ function Cruises() {
             <Button 
               type="text" 
               icon={<EditOutlined />} 
-              onClick={() => handleEdit(record)}
               className="text-green-600 hover:text-green-800"
+              onClick={() => handleEdit(record)}
             />
           </Tooltip>
           <Tooltip title="Delete">

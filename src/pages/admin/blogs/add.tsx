@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Input, 
-  Button, 
-  Form, 
-  Select, 
-  Tag, 
-  Divider, 
-  Upload, 
+import FirebaseFileUploader from '@/components/FirebaseFileUploader';
+import {
+  Row,
+  Col,
+  Card,
+  Input,
+  Button,
+  Form,
+  Select,
+  Tag,
+  Divider,
+  Upload,
   message,
   Space,
   Modal
 } from 'antd';
-import { 
+import {
   UploadOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
@@ -22,7 +23,7 @@ import {
   LoadingOutlined
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
-import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 import { db, app } from '../../../authentication/firebase';
 import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
@@ -41,7 +42,7 @@ const { Option } = Select;
 function AddBlog() {
   const router = useRouter();
   const [form] = Form.useForm();
-  
+
   // State variables
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
@@ -87,7 +88,7 @@ function AddBlog() {
       fetchArchive();
     }
   }, []);
-  
+
   useEffect(() => {
     setCategorySlug(newCategory.toLowerCase().replace(/ /g, '-'));
   }, [newCategory]);
@@ -188,12 +189,12 @@ function AddBlog() {
       const storageRef = ref(storage, `/archive/images/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
-      
+
       const archiveRef = collection(db, "archive");
       await addDoc(archiveRef, {
         ImageUrl: downloadURL,
       });
-      
+
       setArchive([...archive, { ImageUrl: downloadURL }]);
       message.success("Image saved to archive successfully!");
       return downloadURL;
@@ -306,6 +307,8 @@ function AddBlog() {
     if (typeof window === "undefined") return;
 
     try {
+      const blogId = `CID${Date.now().toString().slice(-6)}`;
+
       const blogData = {
         title: values.title,
         slug: values.slug,
@@ -323,7 +326,7 @@ function AddBlog() {
         updatedAt: serverTimestamp(),
       };
 
-      await addDoc(collection(db, "blogs"), blogData);
+      await setDoc(doc(db, "blogs", blogId), blogData);
       message.success("Blog created successfully");
       router.push('/admin/blogs');
     } catch (error) {
@@ -355,7 +358,7 @@ function AddBlog() {
                       Back to Blogs
                     </Button>
                   </div>
-                  
+
                   <Form
                     form={form}
                     layout="vertical"
@@ -364,7 +367,7 @@ function AddBlog() {
                     <div className="mb-8">
                       <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                          <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
                         </svg>
                         Basic Information
                       </h3>
@@ -375,10 +378,10 @@ function AddBlog() {
                             name="title"
                             rules={[{ required: true, message: 'Please enter blog title' }]}
                           >
-                            <Input 
-                              placeholder="Enter blog title" 
+                            <Input
+                              placeholder="Enter blog title"
                               onChange={handleSlugGeneration}
-                              className="py-2" 
+                              className="py-2"
                             />
                           </Form.Item>
                         </Col>
@@ -388,8 +391,8 @@ function AddBlog() {
                             name="slug"
                             rules={[{ required: true, message: 'Please enter blog slug' }]}
                           >
-                            <Input 
-                              placeholder="blog-post-slug" 
+                            <Input
+                              placeholder="blog-post-slug"
                               className="py-2"
                             />
                           </Form.Item>
@@ -400,9 +403,9 @@ function AddBlog() {
                         <Col span={12}>
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
-                            <Button 
-                              type="link" 
-                              icon={<PlusOutlined />} 
+                            <Button
+                              type="link"
+                              icon={<PlusOutlined />}
                               onClick={() => setCategoryDialogOpen(true)}
                               size="small"
                               className="text-primary"
@@ -413,7 +416,7 @@ function AddBlog() {
                           <Form.Item
                             name="category"
                           >
-                            <Select 
+                            <Select
                               placeholder="Select category"
                               className="w-full"
                               dropdownStyle={{ borderRadius: '6px' }}
@@ -452,9 +455,9 @@ function AddBlog() {
 
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-dark dark:text-white/[.87] font-medium">Tags</span>
-                        <Button 
-                          type="link" 
-                          icon={<PlusOutlined />} 
+                        <Button
+                          type="link"
+                          icon={<PlusOutlined />}
                           onClick={() => setTagDialogOpen(true)}
                           size="small"
                           className="text-primary"
@@ -484,29 +487,26 @@ function AddBlog() {
                       <Row gutter={24}>
                         <Col span={12}>
                           <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
-                            <div 
-                              className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors duration-300"
-                              onClick={() => handleOpenImageDialog('main')}
-                            >
-                              {imageUrl ? (
-                                <div className="relative inline-block group">
-                                  <img 
-                                    src={imageUrl} 
-                                    alt="blog" 
-                                    className="mx-auto h-32 object-contain transition-opacity duration-300" 
-                                  />
-                                  <div className="absolute inset-0 bg-black/20 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded">
-                                    <span className="text-white font-medium">Change Image</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col justify-center items-center h-32">
-                                  <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
-                                  <p className="mt-2 text-gray-500">Upload Featured Image</p>
-                                </div>
-                              )}
-                            </div>
+                            <FirebaseFileUploader
+                              storagePath="tours/images" // Customize storage path
+                              accept="image/*" // Only accept images
+                              maxSizeMB={10} // Adjust max file size
+                              onUploadSuccess={(url) => setImageUrl(url)} // Capture the download URL
+                              onUploadError={(error) => message.error("Image upload failed!")}
+                              disabled={false}
+                            />
+
+                            {imageUrl && (
+                              <div className="mt-2">
+                                <img
+                                  src={imageUrl}
+                                  alt="Preview"
+                                  className="max-h-32 rounded-md border"
+                                />
+                              </div>
+                            )}
                           </Form.Item>
+
                         </Col>
                       </Row>
                     </div>
@@ -514,8 +514,8 @@ function AddBlog() {
                     <div className="mb-8">
                       <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"/>
-                          <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z"/>
+                          <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z" />
+                          <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z" />
                         </svg>
                         Content
                       </h3>
@@ -544,8 +544,8 @@ function AddBlog() {
                     <div className="mb-8">
                       <h3 className="text-base text-primary dark:text-primary mb-4 font-medium flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                          <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                          <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
                         </svg>
                         SEO Information
                       </h3>
@@ -591,42 +591,38 @@ function AddBlog() {
                       </Form.Item>
 
                       <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Image</span>}>
-                        <div 
-                          className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors duration-300"
-                          onClick={() => handleOpenImageDialog('seo')}
-                        >
-                          {seoImageUrl ? (
-                            <div className="relative inline-block group">
-                              <img 
-                                src={seoImageUrl} 
-                                alt="seo" 
-                                className="mx-auto h-32 object-contain transition-opacity duration-300" 
-                              />
-                              <div className="absolute inset-0 bg-black/20 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded">
-                                <span className="text-white font-medium">Change Image</span>
+                      <FirebaseFileUploader
+                              storagePath="blogs(seo)/images" // Customize storage path
+                              accept="image/*" // Only accept images
+                              maxSizeMB={10} // Adjust max file size
+                              onUploadSuccess={(url) => setSeoImageUrl(url)} // Capture the download URL
+                              onUploadError={(error) => message.error("Image upload failed!")}
+                              disabled={false}
+                            />
+
+                            {imageUrl && (
+                              <div className="mt-2">
+                                <img
+                                  src={seoImageUrl}
+                                  alt="seo"
+                                  className="max-h-32 rounded-md border"
+                                />
                               </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col justify-center items-center h-32">
-                              <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
-                              <p className="mt-2 text-gray-500">Upload SEO Image</p>
-                            </div>
-                          )}
-                        </div>
+                            )}
                       </Form.Item>
                     </div>
 
                     <div className="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                       <Space size="middle">
-                        <Button 
-                          className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10" 
+                        <Button
+                          className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
                           onClick={() => router.push('/admin/blogs')}
                         >
                           Cancel
                         </Button>
-                        <Button 
-                          type="primary" 
-                          htmlType="submit" 
+                        <Button
+                          type="primary"
+                          htmlType="submit"
                           className="px-5 h-10 shadow-none bg-primary hover:bg-primary-hbr"
                         >
                           Create Blog
@@ -743,9 +739,9 @@ function AddBlog() {
             </Button>
           </Upload>
         </div>
-        
+
         <Divider>Or Select from Archive</Divider>
-        
+
         <div className="grid grid-cols-4 gap-4 mt-4 max-h-[400px] overflow-y-auto">
           {archive.map((item, index) => (
             <div
@@ -753,10 +749,10 @@ function AddBlog() {
               className="cursor-pointer border p-2 rounded hover:border-primary"
               onClick={() => handleSetArchiveImage(item.ImageUrl)}
             >
-              <img 
-                src={item.ImageUrl} 
-                alt="Archive item" 
-                className="w-full h-24 object-cover" 
+              <img
+                src={item.ImageUrl}
+                alt="Archive item"
+                className="w-full h-24 object-cover"
               />
             </div>
           ))}

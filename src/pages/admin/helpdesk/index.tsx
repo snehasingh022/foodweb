@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Input, 
-  Select, 
-  Table, 
-  Button, 
-  Modal, 
-  Form, 
-  message, 
-  Popconfirm, 
+import TicketHistoryTimeline from '@/components/TicketHistoryTimeline';
+import {
+  Row,
+  Col,
+  Card,
+  Input,
+  Select,
+  Table,
+  Button,
+  Modal,
+  Form,
+  message,
+  Popconfirm,
   Tabs,
   Space,
   Typography,
@@ -19,11 +20,11 @@ import {
   Spin
 } from 'antd';
 import { Buttons } from '../../../components/buttons';
-import { UilPlus, UilEdit, UilTrash, UilSearch,UilEye } from '@iconscout/react-unicons';
+import { UilPlus, UilEdit, UilTrash, UilSearch, UilEye } from '@iconscout/react-unicons';
 import { collection, query, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, limit, orderBy, startAfter, endBefore, limitToLast, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import moment from 'moment';
-import { SearchOutlined, PlusOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import Protected from '../../../components/Protected/Protected';
 
 const { Text } = Typography;
@@ -31,10 +32,11 @@ const { Text } = Typography;
 interface Ticket {
   id: string;
   status: string;
-  customerName: string;
-  email: string;
+  customerName?: string;
+  email?: string;
+  phone?: string;
   category: string;
-  openMessage: string;
+  openMessage?: string;
   createdAt: any;
   updatedAt?: any;
   createdBy?: string;
@@ -43,10 +45,18 @@ interface Ticket {
   description?: string;
   ticketId?: string;
   helpDeskID?: string;
+  userDetails?: {
+    name: string;
+    email: string;
+    phone: string;
+    uid: string;
+    userID: string;
+  };
   responses?: {
     opened?: {
       createdAt: any;
       response?: string;
+      attachmentURL?: string;
     };
     resolved?: {
       createdAt: any;
@@ -104,11 +114,25 @@ function Helpdesk() {
 
   // Format category string
   const formatCategory = (category: string) => {
+    if (!category) return '';
     // Replace underscores with spaces
     let formatted = category.replace(/_/g, ' ');
-    
+
     // Capitalize first letter of each word
     return formatted.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  // Function to normalize status case
+  const normalizeStatus = (status: string): string => {
+    if (!status) return 'Opened';
+
+    // Handle "opened" -> "Opened", "re-opened" -> "Re-Opened", etc.
+    if (status.toLowerCase() === 'opened') return 'Opened';
+    if (status.toLowerCase() === 'resolved') return 'Resolved';
+    if (status.toLowerCase() === 'reopened' || status.toLowerCase() === 're-opened') return 'Re-Opened';
+    if (status.toLowerCase() === 'closed') return 'Closed';
+
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   // Fetch tickets from Firebase
@@ -117,56 +141,60 @@ function Helpdesk() {
     try {
       const ticketsRef = collection(db, 'helpdesk');
       let q = query(
-        ticketsRef, 
+        ticketsRef,
         orderBy('createdAt', 'desc'),
         limit(pageSize)
       );
-      
+
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
         setFirstVisible(querySnapshot.docs[0]);
       }
-      
+
       const ticketList: Ticket[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        const status = data.status || 'Opened';
-        
-        // Filter based on current tab
+        const normalizedStatus = normalizeStatus(data.status);
+
+        // Map the ticket data, accounting for the nested userDetails
+        const ticket: Ticket = {
+          id: doc.id,
+          status: normalizedStatus,
+          customerName: data.userDetails?.name || "Unknown",
+          email: data.userDetails?.email || "",
+          phone: data.userDetails?.phone || "",
+          category: data.category || '',
+          openMessage: data.responses?.opened?.response || '',
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          createdBy: data.createdBy,
+          priority: data.priority,
+          title: data.title,
+          description: data.description,
+          ticketId: data.ticketId,
+          helpDeskID: data.helpdeskID,
+          userDetails: data.userDetails,
+          responses: data.responses || {
+            opened: {
+              createdAt: data.createdAt,
+              response: data.responses?.opened?.response || ''
+            }
+          }
+        };
+
+        // Filter based on the current tab, but include all tickets if searching
+        const tabStatus = currentTab === 'reopened' ? 'Re-Opened' : currentTab.charAt(0).toUpperCase() + currentTab.slice(1);
+
         if (
-          (currentTab === 'opened' && status === 'Opened') ||
-          (currentTab === 'resolved' && status === 'Resolved') ||
-          (currentTab === 'reopened' && status === 'Re-Opened') ||
-          (currentTab === 'closed' && status === 'Closed') ||
+          normalizedStatus === tabStatus ||
           searchText.trim() !== '' // Always include if there's a search
         ) {
-          ticketList.push({
-            id: doc.id,
-            status: status,
-            customerName: data.customerName || '',
-            email: data.email || '',
-            category: data.category || '',
-            openMessage: data.openMessage || '',
-            createdAt: data.createdAt,
-            responses: data.responses || {
-              opened: {
-                createdAt: data.createdAt,
-                response: data.openMessage || ''
-              }
-            },
-            updatedAt: data.updatedAt,
-            createdBy: data.createdBy,
-            priority: data.priority,
-            title: data.title,
-            description: data.description,
-            ticketId: data.ticketId,
-            helpDeskID: data.helpDeskID
-          });
+          ticketList.push(ticket);
         }
       });
-      
+
       setTickets(ticketList);
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -179,7 +207,7 @@ function Helpdesk() {
   // Handle next page
   const handleNextPage = async () => {
     if (!lastVisible) return;
-    
+
     setLoading(true);
     try {
       const ticketsRef = collection(db, 'helpdesk');
@@ -189,42 +217,51 @@ function Helpdesk() {
         startAfter(lastVisible),
         limit(pageSize)
       );
-      
+
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
         setFirstVisible(querySnapshot.docs[0]);
-        
+
         const ticketList: Ticket[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          if (!statusFilter || data.status === statusFilter) {
-            ticketList.push({
-              id: doc.id,
-              status: data.status || 'Opened',
-              customerName: data.customerName || '',
-              email: data.email || '',
-              category: data.category || '',
-              openMessage: data.openMessage || '',
-              createdAt: data.createdAt,
-              responses: data.responses || {
-                opened: {
-                  createdAt: data.createdAt,
-                  response: data.openMessage || ''
-                }
-              },
-              updatedAt: data.updatedAt,
-              createdBy: data.createdBy,
-              priority: data.priority,
-              title: data.title,
-              description: data.description,
-              ticketId: data.ticketId,
-              helpDeskID: data.helpDeskID
-            });
+          const normalizedStatus = normalizeStatus(data.status);
+
+          // Map the ticket data, accounting for the nested userDetails
+          const ticket: Ticket = {
+            id: doc.id,
+            status: normalizedStatus,
+            customerName: data.userDetails?.name || "Unknown",
+            email: data.userDetails?.email || "",
+            phone: data.userDetails?.phone || "",
+            category: data.category || '',
+            openMessage: data.responses?.opened?.response || '',
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            createdBy: data.createdBy,
+            priority: data.priority,
+            title: data.title,
+            description: data.description,
+            ticketId: data.ticketId,
+            helpDeskID: data.helpdeskID,
+            userDetails: data.userDetails,
+            responses: data.responses || {
+              opened: {
+                createdAt: data.createdAt,
+                response: data.responses?.opened?.response || ''
+              }
+            }
+          };
+
+          const tabStatus = currentTab === 'reopened' ? 'Re-Opened' : currentTab.charAt(0).toUpperCase() + currentTab.slice(1);
+
+          if (normalizedStatus === tabStatus || !statusFilter) {
+            ticketList.push(ticket);
           }
         });
-        
+
         setTickets(ticketList);
         setCurrentPage(currentPage + 1);
       }
@@ -239,7 +276,7 @@ function Helpdesk() {
   // Handle previous page
   const handlePrevPage = async () => {
     if (!firstVisible) return;
-    
+
     setLoading(true);
     try {
       const ticketsRef = collection(db, 'helpdesk');
@@ -249,42 +286,51 @@ function Helpdesk() {
         endBefore(firstVisible),
         limitToLast(pageSize)
       );
-      
+
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
         setFirstVisible(querySnapshot.docs[0]);
-        
+
         const ticketList: Ticket[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          if (!statusFilter || data.status === statusFilter) {
-            ticketList.push({
-              id: doc.id,
-              status: data.status || 'Opened',
-              customerName: data.customerName || '',
-              email: data.email || '',
-              category: data.category || '',
-              openMessage: data.openMessage || '',
-              createdAt: data.createdAt,
-              responses: data.responses || {
-                opened: {
-                  createdAt: data.createdAt,
-                  response: data.openMessage || ''
-                }
-              },
-              updatedAt: data.updatedAt,
-              createdBy: data.createdBy,
-              priority: data.priority,
-              title: data.title,
-              description: data.description,
-              ticketId: data.ticketId,
-              helpDeskID: data.helpDeskID
-            });
+          const normalizedStatus = normalizeStatus(data.status);
+
+          // Map the ticket data, accounting for the nested userDetails
+          const ticket: Ticket = {
+            id: doc.id,
+            status: normalizedStatus,
+            customerName: data.userDetails?.name || "Unknown",
+            email: data.userDetails?.email || "",
+            phone: data.userDetails?.phone || "",
+            category: data.category || '',
+            openMessage: data.responses?.opened?.response || '',
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            createdBy: data.createdBy,
+            priority: data.priority,
+            title: data.title,
+            description: data.description,
+            ticketId: data.ticketId,
+            helpDeskID: data.helpdeskID,
+            userDetails: data.userDetails,
+            responses: data.responses || {
+              opened: {
+                createdAt: data.createdAt,
+                response: data.responses?.opened?.response || ''
+              }
+            }
+          };
+
+          const tabStatus = currentTab === 'reopened' ? 'Re-Opened' : currentTab.charAt(0).toUpperCase() + currentTab.slice(1);
+
+          if (normalizedStatus === tabStatus || !statusFilter) {
+            ticketList.push(ticket);
           }
         });
-        
+
         setTickets(ticketList);
         setCurrentPage(currentPage - 1);
       }
@@ -302,21 +348,35 @@ function Helpdesk() {
       const ticketDoc = await getDoc(doc(db, 'helpdesk', ticketId));
       if (ticketDoc.exists()) {
         const data = ticketDoc.data();
-        
+
         // Ensure the opened response always exists
         let responses = data.responses || {};
         if (!responses.opened) {
           responses.opened = {
             createdAt: data.createdAt,
-            response: data.openMessage || ''
+            response: data.responses?.opened?.response || ''
           };
         }
-        
-        setCurrentTicket({ 
-          id: ticketDoc.id, 
-          ...data,
-          responses: responses 
-        } as Ticket);
+
+        setCurrentTicket({
+          id: ticketDoc.id,
+          status: normalizeStatus(data.status),
+          customerName: data.userDetails?.name || "Unknown",
+          email: data.userDetails?.email || "",
+          phone: data.userDetails?.phone || "",
+          category: data.category || '',
+          openMessage: data.responses?.opened?.response || '',
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          createdBy: data.createdBy,
+          priority: data.priority,
+          title: data.title,
+          description: data.description,
+          ticketId: data.ticketId,
+          helpDeskID: data.helpdeskID,
+          userDetails: data.userDetails,
+          responses: responses
+        });
       }
     } catch (error) {
       console.error("Error fetching ticket details:", error);
@@ -346,18 +406,19 @@ function Helpdesk() {
   };
 
   // Filter data based on search text
-  const filteredData = tickets.filter(item => 
+  const filteredData = tickets.filter(item =>
     (item.customerName?.toLowerCase().includes(searchText.toLowerCase()) || false) ||
     item.id.toLowerCase().includes(searchText.toLowerCase()) ||
-    (item.email?.toLowerCase().includes(searchText.toLowerCase()) || false)
+    (item.email?.toLowerCase().includes(searchText.toLowerCase()) || false) ||
+    (item.helpDeskID?.toLowerCase().includes(searchText.toLowerCase()) || false)
   );
 
   // Get action buttons with updated functionality
   const getActionButtons = (record: Ticket) => {
     const actions = [];
-    
+
     // Only show "Resolve" button for Opened tickets
-    if (currentTab === 'opened') {
+    if (record.status === 'Opened') {
       actions.push(
         <Button
           key="resolve"
@@ -373,9 +434,9 @@ function Helpdesk() {
         </Button>
       );
     }
-    
+
     // Only show "Close" button for Resolved and Re-Opened tickets
-    if (currentTab === 'resolved' || currentTab === 'reopened') {
+    if (record.status === 'Resolved' || record.status === 'Re-Opened') {
       actions.push(
         <Button
           key="close"
@@ -391,32 +452,34 @@ function Helpdesk() {
         </Button>
       );
     }
-    
+
     // Always show "View" button
     actions.push(
       <Button
         key="view"
-        type="default"
-        size="small"
-        className="view group hover:text-success"
+        type="text"
+        icon={<EyeOutlined />}
+        className="text-blue-600 hover:text-blue-800"
         onClick={() => {
           fetchTicketDetails(record.id);
           setViewModalVisible(true);
         }}
       >
-        View
       </Button>
     );
-    
+
     return <div className="flex items-center gap-[15px]">{actions}</div>;
   };
 
   const columns = [
     {
       title: 'Ticket ID',
-      dataIndex: 'id',
-      key: 'id',
+      dataIndex: 'helpDeskID',
+      key: 'helpDeskID',
       className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
+      render: (helpDeskID: string, record: Ticket) => (
+        <span className="text-[15px] font-medium">{helpDeskID || record.id}</span>
+      ),
     },
     {
       title: 'Customer Name',
@@ -446,13 +509,12 @@ function Helpdesk() {
       className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
       render: (status: string) => (
         <span
-          className={`text-xs font-medium inline-flex items-center justify-center min-h-[24px] px-3 rounded-[15px] ${
-            status === 'Opened' ? 'text-green-500 bg-green-100' : 
-            status === 'Closed' ? 'text-red-500 bg-red-100' : 
-            status === 'Resolved' ? 'text-blue-500 bg-blue-100' :
-            status === 'Re-Opened' ? 'text-yellow-500 bg-yellow-100' :
-            'text-yellow-500 bg-yellow-100'
-          }`}
+          className={`text-xs font-medium inline-flex items-center justify-center min-h-[24px] px-3 rounded-[15px] ${status === 'Opened' ? 'text-green-500 bg-green-100' :
+            status === 'Closed' ? 'text-red-500 bg-red-100' :
+              status === 'Resolved' ? 'text-blue-500 bg-blue-100' :
+                status === 'Re-Opened' ? 'text-yellow-500 bg-yellow-100' :
+                  'text-yellow-500 bg-yellow-100'
+            }`}
         >
           {status}
         </span>
@@ -469,8 +531,8 @@ function Helpdesk() {
         return (
           <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">
             {jsDate.toLocaleDateString('en-US', {
-              year: 'numeric', 
-              month: 'numeric', 
+              year: 'numeric',
+              month: 'numeric',
               day: 'numeric',
               hour: '2-digit',
               minute: '2-digit',
@@ -507,7 +569,7 @@ function Helpdesk() {
     setNoteSubmitLoading(true);
     try {
       const ticketRef = doc(db, 'helpdesk', currentTicket!.id);
-      
+
       // Create the appropriate response object based on status
       const responseType = values.status.toLowerCase().replace('-', '');
       const responseData = {
@@ -516,7 +578,7 @@ function Helpdesk() {
           response: values.message
         }
       };
-      
+
       await updateDoc(ticketRef, {
         status: values.status,
         responses: {
@@ -525,7 +587,7 @@ function Helpdesk() {
         },
         updatedAt: serverTimestamp()
       });
-      
+
       message.success("Response added successfully");
       setViewModalVisible(false);
       setNoteSubmitLoading(false);
@@ -540,13 +602,13 @@ function Helpdesk() {
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'N/A';
-    
+
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date instanceof Date && !isNaN(date.getTime())
       ? moment(date).format('MMMM D, YYYY h:mm A')
       : 'N/A';
   };
-  
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'opened': return 'green';
@@ -556,9 +618,9 @@ function Helpdesk() {
       default: return 'default';
     }
   };
-  
+
   const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
+    switch (priority?.toLowerCase()) {
       case 'high': return 'red';
       case 'medium': return 'orange';
       case 'low': return 'green';
@@ -576,7 +638,7 @@ function Helpdesk() {
         },
         body: JSON.stringify({ email, subject, message }),
       });
-      
+
       if (response.ok) {
         console.log('Email notification sent successfully');
       } else {
@@ -591,10 +653,10 @@ function Helpdesk() {
   const handleResponseSubmit = async (values: any) => {
     try {
       setSubmitLoading(true);
-      
+
       const ticketRef = doc(db, 'helpdesk', currentTicket!.id);
       const responseType = values.status.toLowerCase().replace('-', '');
-      
+
       // Create response update object
       const responseData = {
         [responseType]: {
@@ -602,21 +664,24 @@ function Helpdesk() {
           response: values.message
         }
       };
-      
+
       await updateDoc(ticketRef, {
-        status: values.status,
+        status: values.status.toLowerCase(),
         responses: {
           ...(currentTicket!.responses || {}),
           ...responseData
         },
         updatedAt: serverTimestamp()
       });
-      
+
       // Send email notification
-      const emailSubject = `Your Ticket ${currentTicket!.id} ${values.status}`;
-      const emailMessage = `Hello ${currentTicket!.customerName},\n\nYour ticket with ID ${currentTicket!.id} has been ${values.status.toLowerCase()}. Here is our response:\n${values.message}\n\nThank you.`;
-      await sendEmailNotification(currentTicket!.email, emailSubject, emailMessage);
-      
+      const emailSubject = `Your Ticket ${currentTicket!.helpDeskID || currentTicket!.id} ${values.status}`;
+      const emailMessage = `Hello ${currentTicket!.customerName},\n\nYour ticket with ID ${currentTicket!.helpDeskID || currentTicket!.id} has been ${values.status.toLowerCase()}. Here is our response:\n${values.message}\n\nThank you.`;
+
+      if (currentTicket!.email) {
+        await sendEmailNotification(currentTicket!.email, emailSubject, emailMessage);
+      }
+
       message.success(`Ticket ${values.status.toLowerCase()} successfully`);
       setResponseModalVisible(false);
       responseForm.resetFields();
@@ -654,26 +719,32 @@ function Helpdesk() {
                   style={{ width: 250 }}
                   className="py-2 text-base font-medium"
                 />
-                <Button 
-                  type="primary" 
-                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
-                  onClick={fetchTickets}
-                >
-                  Refresh
-                </Button>
-                {loading && <Spin />}
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchTickets}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>
         </Row>
-        
+
         <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
           <Col className="mb-4" sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
-                  <Tabs 
-                    defaultActiveKey="opened" 
+                  <Tabs
+                    defaultActiveKey="opened"
+                    activeKey={currentTab}
                     onChange={setCurrentTab}
                     className="mb-6"
                     items={[
@@ -683,18 +754,18 @@ function Helpdesk() {
                       { key: 'closed', label: 'Closed' },
                     ]}
                   />
-                
+
                   <div className="overflow-x-auto">
                     <Table
                       dataSource={filteredData}
                       columns={columns.map(col => ({
                         ...col,
-                        responsive: col.dataIndex === 'id' || col.dataIndex === 'customerName' || col.dataIndex === 'email' || col.dataIndex === 'category' || col.dataIndex === 'status' || col.key === 'action' 
+                        responsive: col.dataIndex === 'helpDeskID' || col.dataIndex === 'customerName' || col.dataIndex === 'email' || col.dataIndex === 'category' || col.dataIndex === 'status' || col.key === 'action'
                           ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
                           : ['sm', 'md', 'lg', 'xl'] as any,
                       }))}
                       loading={loading}
-                      pagination={{ 
+                      pagination={{
                         pageSize: 10,
                         showSizeChanger: false,
                         responsive: true,
@@ -732,7 +803,7 @@ function Helpdesk() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Ticket ID</p>
-                <p className="text-base font-semibold">{currentTicket.id}</p>
+                <p className="text-base font-semibold">{currentTicket.helpDeskID || currentTicket.id}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</p>
@@ -757,84 +828,21 @@ function Helpdesk() {
                 <p className="text-base">{formatCategory(currentTicket.category)}</p>
               </div>
             </div>
-            
+
             <div className="mb-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Message</p>
               <div className="bg-white dark:bg-gray-700 p-3 rounded-md text-gray-800 dark:text-gray-200 whitespace-pre-wrap border border-gray-200 dark:border-gray-600">
                 {currentTicket.openMessage}
               </div>
             </div>
-            
+
             {/* Ticket History Timeline */}
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
               <p className="text-base font-medium mb-4">Ticket History</p>
-              <Timeline>
-                <Timeline.Item color="green">
-                  <div className="flex flex-col">
-                    <div className="flex justify-between items-center flex-wrap gap-2">
-                      <Text strong>Ticket Opened</Text>
-                      <Tag color="green">OPENED</Tag>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatDate(currentTicket.createdAt)}
-                    </div>
-                    <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
-                      {currentTicket.openMessage}
-                    </div>
-                  </div>
-                </Timeline.Item>
-
-                {currentTicket.responses?.resolved && (
-                  <Timeline.Item color="blue">
-                    <div className="flex flex-col">
-                      <div className="flex justify-between items-center flex-wrap gap-2">
-                        <Text strong>Ticket Resolved</Text>
-                        <Tag color="blue">RESOLVED</Tag>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {formatDate(currentTicket.responses.resolved.createdAt)}
-                      </div>
-                      <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
-                        {currentTicket.responses.resolved.response}
-                      </div>
-                    </div>
-                  </Timeline.Item>
-                )}
-
-                {currentTicket.responses?.reopened && (
-                  <Timeline.Item color="yellow">
-                    <div className="flex flex-col">
-                      <div className="flex justify-between items-center flex-wrap gap-2">
-                        <Text strong>Ticket Reopened</Text>
-                        <Tag color="yellow">REOPENED</Tag>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {formatDate(currentTicket.responses.reopened.createdAt)}
-                      </div>
-                      <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
-                        {currentTicket.responses.reopened.response}
-                      </div>
-                    </div>
-                  </Timeline.Item>
-                )}
-
-                {currentTicket.responses?.closed && (
-                  <Timeline.Item color="red">
-                    <div className="flex flex-col">
-                      <div className="flex justify-between items-center flex-wrap gap-2">
-                        <Text strong>Ticket Closed</Text>
-                        <Tag color="red">CLOSED</Tag>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {formatDate(currentTicket.responses.closed.createdAt)}
-                      </div>
-                      <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600">
-                        {currentTicket.responses.closed.response}
-                      </div>
-                    </div>
-                  </Timeline.Item>
-                )}
-              </Timeline>
+              <TicketHistoryTimeline
+                currentTicket={currentTicket}
+                formatDate={formatDate}
+              />
             </div>
           </div>
         )}
@@ -870,15 +878,15 @@ function Helpdesk() {
                 label="Add Response"
                 rules={[{ required: true, message: 'Please enter a response' }]}
               >
-                <Input.TextArea 
-                  rows={4} 
-                  placeholder="Enter your response..." 
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Enter your response..."
                   className="w-full"
                 />
               </Form.Item>
-              
-              <Form.Item 
-                name="status" 
+
+              <Form.Item
+                name="status"
                 label="Update Status"
                 rules={[{ required: true, message: 'Please select a status' }]}
               >
@@ -891,15 +899,15 @@ function Helpdesk() {
                   )}
                 </Select>
               </Form.Item>
-              
+
               <Form.Item className="mb-0 flex justify-end">
                 <Space>
                   <Button onClick={() => setResponseModalVisible(false)}>
                     Cancel
                   </Button>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
+                  <Button
+                    type="primary"
+                    htmlType="submit"
                     loading={submitLoading}
                   >
                     Submit

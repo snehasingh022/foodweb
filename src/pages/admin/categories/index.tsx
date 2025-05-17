@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Input, Table, Button, Modal, Form, Spin, message, Space } from 'antd';
+import { Row, Col, Card, Input, Table, Button, Modal, Form, Spin, message, Space, Tooltip } from 'antd';
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { db } from '../../../authentication/firebase';
-import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,setDoc } from 'firebase/firestore';
 import Protected from '../../../components/Protected/Protected';
 
 interface CategoryType {
@@ -59,8 +59,9 @@ function Categories() {
   const handleAddCategory = async (values: CategoryFormValues) => {
     try {
       setSubmitLoading(true);
+      const categoryId = `CID${Date.now().toString().slice(-6)}`;
       const slug = values.name.toLowerCase().replace(/ /g, '-');
-      await addDoc(collection(db, 'categories'), {
+      await setDoc(doc(db, 'categories', categoryId), {
         name: values.name,
         slug: slug,
         description: values.description,
@@ -122,6 +123,19 @@ function Categories() {
     category.name.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  // Function to truncate description text
+  const truncateDescription = (description: string) => {
+    const words = description.split(' ');
+    if (words.length > 7) {
+      return (
+        <Tooltip title={description}>
+          <span>{words.slice(0, 7).join(' ')}...</span>
+        </Tooltip>
+      );
+    }
+    return description;
+  };
+
   // Table columns
   const columns = [
     {
@@ -145,6 +159,7 @@ function Categories() {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
+      render: (description: string) => truncateDescription(description),
     },
     {
       title: 'Created At',
@@ -159,34 +174,33 @@ function Categories() {
       key: 'actions',
       render: (_: any, record: CategoryType) => (
         <div className="flex gap-2">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            size="small"
-            className="bg-blue-500 hover:bg-blue-600"
-            onClick={() => {
-              setSelectedCategory(record);
-              editForm.setFieldsValue({
-                name: record.name,
-                description: record.description,
-              });
-              setEditMode(true);
-              setModalVisible(true);
-            }}
-          >
-            
-          </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-            onClick={() => {
-              setSelectedCategory(record);
-              setDeleteModalVisible(true);
-            }}
-          >
-            
-          </Button>
+          <Tooltip title="Edit">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              className="text-green-600 hover:text-green-800"
+              onClick={() => {
+                setSelectedCategory(record);
+                editForm.setFieldsValue({
+                  name: record.name,
+                  description: record.description,
+                });
+                setEditMode(true);
+                setModalVisible(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                setSelectedCategory(record);
+                setDeleteModalVisible(true);
+              }}
+              className="text-red-600 hover:text-red-800"
+            />
+          </Tooltip>
         </div>
       ),
     },
@@ -216,8 +230,8 @@ function Categories() {
                   style={{ width: 250 }}
                   className="py-2 text-base font"
                 />
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   onClick={() => setModalVisible(true)}
                   icon={<PlusOutlined />}
                   className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
@@ -229,7 +243,7 @@ function Categories() {
             </div>
           </Col>
         </Row>
-        
+
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
@@ -240,12 +254,12 @@ function Categories() {
                       dataSource={filteredCategories}
                       columns={columns.map(col => ({
                         ...col,
-                        responsive: col.dataIndex === 'name' || col.key === 'action' 
+                        responsive: col.dataIndex === 'name' || col.key === 'action'
                           ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
                           : ['sm', 'md', 'lg', 'xl'] as any,
                       }))}
                       loading={loading}
-                      pagination={{ 
+                      pagination={{
                         pageSize: 10,
                         showSizeChanger: false,
                         responsive: true,
@@ -296,9 +310,9 @@ function Categories() {
               <Button onClick={handleModalCancel}>
                 Cancel
               </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
+              <Button
+                type="primary"
+                htmlType="submit"
                 loading={submitLoading}
               >
                 {editMode ? "Update" : "Add"}
@@ -324,4 +338,4 @@ function Categories() {
   );
 }
 
-export default Protected(Categories, ["admin"]); 
+export default Protected(Categories, ["admin"]);

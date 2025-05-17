@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Table, 
-  Input, 
-  Button, 
-  Space, 
-  Modal, 
+import {
+  Row,
+  Col,
+  Card,
+  Table,
+  Input,
+  Button,
+  Space,
+  Modal,
   message,
-  Spin 
+  Spin,
+  Tooltip
 } from 'antd';
-import { 
-  SearchOutlined, 
-  EditOutlined, 
+import {
+  SearchOutlined,
+  EditOutlined,
   DeleteOutlined,
   EyeOutlined
 } from '@ant-design/icons';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  deleteDoc, 
-  query, 
+import {
+  collection,
+  getDocs,
+  doc,
+  deleteDoc,
+  query,
   orderBy,
   where
 } from 'firebase/firestore';
@@ -57,7 +58,7 @@ function Users() {
     try {
       const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      
+
       const usersData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         key: doc.id,
@@ -69,7 +70,7 @@ function Users() {
         createdAt: doc.data().createdAt,
         updatedAt: doc.data().updatedAt,
       }));
-      
+
       setUsers(usersData);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -86,7 +87,7 @@ function Users() {
   // Delete user
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
-    
+
     try {
       await deleteDoc(doc(db, "users", selectedUser.id));
       message.success("User deleted successfully");
@@ -99,7 +100,7 @@ function Users() {
   };
 
   // Filter users based on search text
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchText.toLowerCase()) ||
     user.email.toLowerCase().includes(searchText.toLowerCase()) ||
     user.phone.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -136,18 +137,18 @@ function Users() {
       render: (createdAt: any) => {
         if (!createdAt) return 'N/A';
         // Check if createdAt is a Firebase timestamp or a regular JS Date
-        return createdAt.toDate ? new Date(createdAt.toDate()).toLocaleString() : 
-               (createdAt.seconds ? new Date(createdAt.seconds * 1000).toLocaleString() : 
-               new Date(createdAt).toLocaleString());
+        return createdAt.toDate ? new Date(createdAt.toDate()).toLocaleString() :
+          (createdAt.seconds ? new Date(createdAt.seconds * 1000).toLocaleString() :
+            new Date(createdAt).toLocaleString());
       },
       sorter: (a: User, b: User) => {
         if (!a.createdAt || !b.createdAt) return 0;
-        const aTime = a.createdAt.toDate ? a.createdAt.toDate().getTime() : 
-                    (a.createdAt.seconds ? a.createdAt.seconds * 1000 : 
-                    new Date(a.createdAt).getTime());
-        const bTime = b.createdAt.toDate ? b.createdAt.toDate().getTime() : 
-                    (b.createdAt.seconds ? b.createdAt.seconds * 1000 : 
-                    new Date(b.createdAt).getTime());
+        const aTime = a.createdAt.toDate ? a.createdAt.toDate().getTime() :
+          (a.createdAt.seconds ? a.createdAt.seconds * 1000 :
+            new Date(a.createdAt).getTime());
+        const bTime = b.createdAt.toDate ? b.createdAt.toDate().getTime() :
+          (b.createdAt.seconds ? b.createdAt.seconds * 1000 :
+            new Date(b.createdAt).getTime());
         return aTime - bTime;
       },
     },
@@ -156,28 +157,28 @@ function Users() {
       key: 'actions',
       render: (_: any, record: User) => (
         <Space size="middle">
-          <Button 
-            type="primary" 
-            icon={<EyeOutlined />} 
-            onClick={() => {
-              setSelectedUser(record);
-              setViewModalVisible(true);
-            }}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            View
-          </Button>
-          <Button 
-            type="primary" 
-            danger 
-            icon={<DeleteOutlined />} 
-            onClick={() => {
-              setSelectedUser(record);
-              setDeleteModalVisible(true);
-            }}
-          >
-            Delete
-          </Button>
+          <Tooltip title="View">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              className="text-blue-600 hover:text-blue-800"
+              onClick={() => {
+                setSelectedUser(record);
+                setViewModalVisible(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                setSelectedUser(record);
+                setDeleteModalVisible(true);
+              }}
+              className="text-red-600 hover:text-red-800"
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -205,16 +206,16 @@ function Users() {
             </div>
           </Col>
         </Row>
-        
+
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
-                    <Table 
-                      dataSource={filteredUsers} 
-                      columns={columns} 
+                    <Table
+                      dataSource={filteredUsers}
+                      columns={columns}
                       pagination={{ pageSize: 10 }}
                       loading={loading}
                     />
@@ -250,21 +251,21 @@ function Users() {
             <p className="mb-3"><strong>User ID:</strong> {selectedUser.userID}</p>
             <p className="mb-3"><strong>UID:</strong> {selectedUser.uid}</p>
             <p className="mb-3"><strong>Created At:</strong> {
-              selectedUser.createdAt 
-                ? (selectedUser.createdAt.toDate 
-                    ? new Date(selectedUser.createdAt.toDate()).toLocaleString() 
-                    : (selectedUser.createdAt.seconds 
-                        ? new Date(selectedUser.createdAt.seconds * 1000).toLocaleString() 
-                        : new Date(selectedUser.createdAt).toLocaleString()))
+              selectedUser.createdAt
+                ? (selectedUser.createdAt.toDate
+                  ? new Date(selectedUser.createdAt.toDate()).toLocaleString()
+                  : (selectedUser.createdAt.seconds
+                    ? new Date(selectedUser.createdAt.seconds * 1000).toLocaleString()
+                    : new Date(selectedUser.createdAt).toLocaleString()))
                 : 'N/A'
             }</p>
             <p className="mb-1"><strong>Updated At:</strong> {
-              selectedUser.updatedAt 
-                ? (selectedUser.updatedAt.toDate 
-                    ? new Date(selectedUser.updatedAt.toDate()).toLocaleString() 
-                    : (selectedUser.updatedAt.seconds 
-                        ? new Date(selectedUser.updatedAt.seconds * 1000).toLocaleString() 
-                        : new Date(selectedUser.updatedAt).toLocaleString()))
+              selectedUser.updatedAt
+                ? (selectedUser.updatedAt.toDate
+                  ? new Date(selectedUser.updatedAt.toDate()).toLocaleString()
+                  : (selectedUser.updatedAt.seconds
+                    ? new Date(selectedUser.updatedAt.seconds * 1000).toLocaleString()
+                    : new Date(selectedUser.updatedAt).toLocaleString()))
                 : 'N/A'
             }</p>
           </div>

@@ -1,12 +1,13 @@
 "use client"
 
 import type React from "react"
+import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 
 import { useState, useEffect } from "react"
 import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload, message, Space, Modal, DatePicker } from "antd"
 import { UploadOutlined, PlusOutlined, ArrowLeftOutlined, PictureOutlined } from "@ant-design/icons"
 import { PageHeaders } from "../../../components/page-headers/index"
-import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore"
+import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, setDoc, doc} from "firebase/firestore"
 import { db, app } from "../../../authentication/firebase"
 import { getDownloadURL, ref, uploadBytes, getStorage } from "firebase/storage"
 import { Editor } from "@tinymce/tinymce-react"
@@ -253,6 +254,8 @@ function AddCruise() {
         if (typeof window === "undefined") return;
 
         try {
+            const cruiseId = `CID${Date.now().toString().slice(-6)}`;
+
             const cruiseData = {
                 title: values.title,
                 slug: values.slug,
@@ -278,7 +281,7 @@ function AddCruise() {
                 updatedAt: serverTimestamp(),
             };
 
-            await addDoc(collection(db, "cruises"), cruiseData);
+            await setDoc(doc(db, "cruises", cruiseId), cruiseData);
             message.success("Cruise created successfully");
             router.push("/admin/cruises");
         } catch (error) {
@@ -479,7 +482,6 @@ function AddCruise() {
                                                         <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
                                                             <Select.Option value="active">Active</Select.Option>
                                                             <Select.Option value="inactive">Inactive</Select.Option>
-                                                            <Select.Option value="draft">Draft</Select.Option>
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
@@ -555,28 +557,23 @@ function AddCruise() {
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Image URL</span>}
                                                     >
-                                                        <div
-                                                            className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors duration-300"
-                                                            onClick={() => handleOpenImageDialog("main")}
-                                                        >
-                                                            {imageUrl ? (
-                                                                <div className="relative inline-block group">
-                                                                    <img
-                                                                        src={imageUrl || "/placeholder.svg"}
-                                                                        alt="cruise"
-                                                                        className="mx-auto h-32 object-contain transition-opacity duration-300"
-                                                                    />
-                                                                    <div className="absolute inset-0 bg-black/20 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded">
-                                                                        <span className="text-white font-medium">Change Image</span>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col justify-center items-center h-32">
-                                                                    <PictureOutlined style={{ fontSize: "32px", color: "#d9d9d9" }} />
-                                                                    <p className="mt-2 text-gray-500">Upload Featured Image</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                        <FirebaseFileUploader
+                                                            storagePath="cruise/images" // Customize storage path
+                                                            accept="image/*" // Only accept images
+                                                            maxSizeMB={10} // Adjust max file size
+                                                            onUploadSuccess={(url) => setImageUrl(url)} // Capture the download URL
+                                                            onUploadError={(error) => message.error("Image upload failed!")}
+                                                            disabled={false}
+                                                        />
+                                                        {imageUrl && (
+                                                            <div className="mt-2">
+                                                                <img
+                                                                    src={imageUrl}
+                                                                    alt="Preview"
+                                                                    className="max-h-32 rounded-md border"
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </Form.Item>
                                                 </Col>
                                             </Row>

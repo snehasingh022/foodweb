@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, Input, Button, Table, Modal, message, Space, Tabs, Tooltip, Divider, Typography, Spin } from 'antd';
 import type { InputRef } from 'antd';
-import { 
-  SearchOutlined, 
+import {
+  SearchOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
   MoreOutlined,
@@ -40,7 +40,7 @@ function Bookings() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
-  
+
   // Responsive detection
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const searchInputRef = useRef<InputRef>(null);
@@ -50,26 +50,26 @@ function Bookings() {
     try {
       setLoading(true);
       console.log("Querying Firestore for bookings...");
-      
+
       // Create a query against the collection
       const bookingsCollection = collection(db, "bookings");
       const bookingsQuery = query(bookingsCollection, orderBy("createdAt", "desc"));
-      
+
       // Get the snapshot
       const snapshot = await getDocs(bookingsQuery);
-      
+
       if (snapshot.empty) {
         console.log("No bookings found in collection");
         setBookings([]);
         setLoading(false);
         return;
       }
-      
+
       // Log the raw data for debugging
       snapshot.docs.forEach(doc => {
         console.log(`Document ${doc.id}:`, doc.data());
       });
-      
+
       // Map the documents to our Booking interface
       const data = snapshot.docs.map((doc) => {
         const docData = doc.data();
@@ -88,7 +88,7 @@ function Bookings() {
           createdAt: docData.createdAt || null,
         };
       });
-      
+
       console.log("Processed bookings:", data);
       setBookings(data);
       setLoading(false);
@@ -106,8 +106,8 @@ function Bookings() {
 
   // Filter data based on search text
   const filteredData = bookings.filter((booking) => {
-    const matchesSearch = 
-      booking.id.toLowerCase().includes(searchText.toLowerCase()) || 
+    const matchesSearch =
+      booking.id.toLowerCase().includes(searchText.toLowerCase()) ||
       booking.name.toLowerCase().includes(searchText.toLowerCase()) ||
       booking.phone.toLowerCase().includes(searchText.toLowerCase()) ||
       booking.tourId.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -153,7 +153,7 @@ function Bookings() {
         responsive: ['md'] as any,
       }
     ];
-    
+
     // Add action column
     baseColumns.push({
       title: 'Actions',
@@ -161,10 +161,10 @@ function Bookings() {
       render: (_: any, record: Booking) => (
         <Space>
           <Tooltip title="Delete">
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               danger
-              size="small" 
+              size="small"
               icon={<DeleteOutlined />}
               onClick={() => showDeleteModal(record)}
             />
@@ -172,7 +172,7 @@ function Bookings() {
         </Space>
       ),
     });
-    
+
     return baseColumns;
   };
 
@@ -206,29 +206,33 @@ function Bookings() {
                 </h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input 
-                  placeholder="Search bookings..." 
-                  prefix={<SearchOutlined />} 
+                <Input
+                  placeholder="Search bookings..."
+                  prefix={<SearchOutlined />}
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   style={{ width: 250 }}
                   className="py-2 text-base font-medium"
                   ref={searchInputRef}
                 />
-                <Button 
-                  type="primary" 
-                  onClick={fetchBookings}
-                  icon={<ReloadOutlined />}
-                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
-                >
-                  {!isMobile && "Refresh"}
-                </Button>
-                {loading && <Spin />}
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchBookings}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>
         </Row>
-        
+
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
@@ -239,7 +243,7 @@ function Bookings() {
                       dataSource={filteredData}
                       columns={getColumns()}
                       loading={loading}
-                      pagination={{ 
+                      pagination={{
                         pageSize: isMobile ? 5 : 10,
                         showSizeChanger: false,
                         responsive: true,
@@ -269,18 +273,18 @@ function Bookings() {
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         footer={[
-          <Button 
-            key="back" 
-            onClick={() => setDeleteModalVisible(false)} 
+          <Button
+            key="back"
+            onClick={() => setDeleteModalVisible(false)}
             size={isMobile ? 'middle' : 'large'}
           >
             Cancel
           </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
-            danger 
-            loading={submitLoading} 
+          <Button
+            key="submit"
+            type="primary"
+            danger
+            loading={submitLoading}
             onClick={confirmDelete}
             size={isMobile ? 'middle' : 'large'}
           >

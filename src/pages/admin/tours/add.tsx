@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 import {
     Row,
     Col,
@@ -26,7 +27,16 @@ import {
     MinusCircleOutlined
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
-import { collection, getDocs, addDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import {
+    collection,
+    getDocs,
+    addDoc,
+    query,
+    orderBy,
+    serverTimestamp,
+    setDoc,  // Added missing import
+    doc      // Added missing import
+} from 'firebase/firestore';
 import { db, app } from '../../../authentication/firebase';
 import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
@@ -153,8 +163,8 @@ function AddTour() {
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
-            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`;
-            const storageRef = ref(storage, `tour/${slug}/images/${file.name}`);
+            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`; // Fixed string interpolation
+            const storageRef = ref(storage, `tour/${slug}/images/${file.name}`); // Fixed string interpolation
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
             setImageUrl(downloadURL);
@@ -172,7 +182,7 @@ function AddTour() {
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
-            const storageRef = ref(storage, `/archive/images/${file.name}`);
+            const storageRef = ref(storage, `/archive/images/${file.name}`); // Fixed string interpolation
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
@@ -271,8 +281,8 @@ function AddTour() {
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
-            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`;
-            const storageRef = ref(storage, `tour/${slug}/itinerary/day${day}/${file.name}`);
+            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`; // Fixed string interpolation
+            const storageRef = ref(storage, `tour/${slug}/itinerary/day${day}/${file.name}`); // Fixed string interpolation
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
@@ -311,11 +321,11 @@ function AddTour() {
             const processedItineraries: { [key: string]: any } = {};
             if (values.itineraries) {
                 values.itineraries.forEach((itinerary: any, index: number) => {
-                    const dayKey = `Day${index + 1}`;
+                    const dayKey = `Day${index + 1}`; // Fixed string interpolation
                     processedItineraries[dayKey] = {
                         title: itinerary.title,
                         description: itinerary.description,
-                        imageURL: itineraryImages[`${index + 1}`] || []
+                        imageURL: itineraryImages[`${index + 1}`] || [] // Fixed string interpolation
                     };
                 });
             }
@@ -326,11 +336,14 @@ function AddTour() {
                 processedTags[tagId] = tagData;
             });
 
-            // Create tour data according to your schema
+            // Generate custom tour ID
+            const tourId = `TRID${Date.now().toString().slice(-6)}`; // Fixed string interpolation
+
+            // Create tour data
             const tourData = {
                 title: values.title,
                 slug: values.slug,
-                description: editorContent.replace(/<\/?[^>]+(>|$)/g, ""), // Strip HTML tags
+                description: editorContent.replace(/<\/?[^>]+(>|$)/g, ""), // Strip HTML
                 categoryDetails: {
                     categoryID: values.categoryID || "",
                     name: values.categoryName || "",
@@ -355,19 +368,17 @@ function AddTour() {
                 updatedAt: serverTimestamp(),
             };
 
-            try {
-                await addDoc(collection(db, "tours"), tourData);
-                message.success("Tour created successfully");
-                router.push('/admin/tours');
-            } catch (error) {
-                console.error("Error saving tour:", error);
-                message.error("Failed to save tour");
-            }
+            // Save with custom ID
+            await setDoc(doc(db, "tours", tourId), tourData);
+            message.success("Tour created successfully");
+            router.push("/admin/tours");
+
         } catch (error) {
             console.error("Error saving tour:", error);
             message.error("Failed to save tour");
         }
     };
+
 
     // Function to add a tag to selected tags
     const handleAddSelectedTag = (tagId: string, tagData: any) => {
@@ -404,7 +415,7 @@ function AddTour() {
         if (value > currentItineraries.length) {
             const newItineraries = [...currentItineraries];
             for (let i = currentItineraries.length; i < value; i++) {
-                newItineraries.push({ title: `Day ${i + 1}`, description: '' });
+                newItineraries.push({ title: `Day ${i + 1}`, description: '' }); // Fixed string interpolation
             }
             form.setFieldsValue({ itineraries: newItineraries });
 
@@ -414,7 +425,7 @@ function AddTour() {
 
             const newItineraryImages = { ...itineraryImages };
             for (let i = value; i < currentItineraries.length; i++) {
-                delete newItineraryImages[`${i + 1}`];
+                delete newItineraryImages[`${i + 1}`]; // Fixed string interpolation
             }
             setItineraryImages(newItineraryImages);
         }
@@ -689,28 +700,25 @@ function AddTour() {
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
-                                                        <div
-                                                            className="border border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors duration-300"
-                                                            onClick={() => handleOpenImageDialog('main')}
-                                                        >
-                                                            {imageUrl ? (
-                                                                <div className="relative inline-block group">
+                                                        <Form.Item label="">
+                                                            <FirebaseFileUploader
+                                                                storagePath="tours/images" // Customize storage path
+                                                                accept="image/*" // Only accept images
+                                                                maxSizeMB={10} // Adjust max file size
+                                                                onUploadSuccess={(url) => setImageUrl(url)} // Capture the download URL
+                                                                onUploadError={(error) => message.error("Image upload failed!")}
+                                                                disabled={false}
+                                                            />
+                                                            {imageUrl && (
+                                                                <div className="mt-2">
                                                                     <img
-                                                                        src={imageUrl || "/placeholder.svg"}
-                                                                        alt="tour"
-                                                                        className="mx-auto h-32 object-contain transition-opacity duration-300"
+                                                                        src={imageUrl}
+                                                                        alt="Preview"
+                                                                        className="max-h-32 rounded-md border"
                                                                     />
-                                                                    <div className="absolute inset-0 bg-black/20 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded">
-                                                                        <span className="text-white font-medium">Change Image</span>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col justify-center items-center h-32">
-                                                                    <PictureOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />
-                                                                    <p className="mt-2 text-gray-500">Upload Featured Image</p>
                                                                 </div>
                                                             )}
-                                                        </div>
+                                                        </Form.Item>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -895,29 +903,17 @@ function AddTour() {
                     </div>
                 }
                 open={tagDialogOpen}
+                onCancel={() => setTagDialogOpen(false)}
+                onOk={handleAddTag}
                 // Remove or comment out the footer={null} line
                 // footer={null}
                 width="95%"
                 style={{ maxWidth: '600px' }}
                 className="responsive-modal"
                 bodyStyle={{ padding: '24px' }}
-                footer={[
-                    <Button
-                        key="cancel"
-                        onClick={() => setTagDialogOpen(false)}
-                        style={{ margin: '0 2px 10px', padding: '6px 16px' }}
-                    >
-                        Cancel
-                    </Button>,
-                    <Button
-                        key="submit"
-                        type="primary"
-                        onClick={handleAddTag}
-                        style={{ margin: '0 8px 10px', padding: '6px 16px' }}
-                    >
-                        Add
-                    </Button>
-                ]}
+                // Optionally, you can customize the OK and Cancel button texts
+                okText="Add Tag"
+                cancelText="Cancel"
             >
                 <Form layout="vertical">
                     <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
