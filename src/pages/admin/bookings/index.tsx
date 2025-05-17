@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Row, Col, Card, Input, Button, Table, Modal, message, Space, Tabs, Tooltip, Divider, Typography, Spin } from 'antd';
+import { Row, Col, Card, Input, Button, Table, Modal, message, Space, Tooltip, Divider, Typography, Spin, Tabs } from 'antd';
 import type { InputRef } from 'antd';
 import {
   SearchOutlined,
   DeleteOutlined,
-  ExclamationCircleOutlined,
-  MoreOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
 import { collection, getDocs, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
@@ -14,20 +12,32 @@ import Protected from '../../../components/Protected/Protected';
 import { useMediaQuery } from 'react-responsive';
 
 const { Title } = Typography;
+const { TabPane } = Tabs;
 
-// Define Booking interface
+// Define Booking interface based on your Firebase schema
 interface Booking {
   id: string;
   key: string;
+  bookingId: string;
   name: string;
   phone: string;
-  tourId: string;
-  tourTitle: string;
-  category?: string;
-  email?: string;
-  message?: string;
-  userId?: string;
-  place?: string;
+  email: string;
+  status: string;
+  bookingType: string; // To determine if it's a tour or cruise
+  tourDetails?: {
+    title?: string;
+    location?: string;
+    tourType?: string;
+    price?: number;
+    numberofDays?: number;
+    numberofNights?: number;
+  };
+  cruiseDetails?: {
+    title?: string;
+    category?: string;
+    duration?: string;
+    price?: string;
+  };
   createdAt: {
     toDate: () => Date;
   } | null;
@@ -40,6 +50,7 @@ function Bookings() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
 
   // Responsive detection
   const isMobile = useMediaQuery({ maxWidth: 767 });
@@ -65,26 +76,37 @@ function Bookings() {
         return;
       }
 
-      // Log the raw data for debugging
-      snapshot.docs.forEach(doc => {
-        console.log(`Document ${doc.id}:`, doc.data());
-      });
-
-      // Map the documents to our Booking interface
+      // Map the documents to our updated Booking interface
       const data = snapshot.docs.map((doc) => {
         const docData = doc.data();
+        
+        // Determine booking type based on document structure
+        // If cruiseDetails exists, it's a cruise booking; otherwise, it's a tour
+        const bookingType = docData.cruiseDetails ? 'cruise' : 'tour';
+        
         return {
           id: doc.id,
           key: doc.id,
-          name: docData.name || '',
-          phone: docData.phone || '',
-          tourId: docData.tourId || '',
-          tourTitle: docData.tourTitle || '',
-          category: docData.category || '',
-          email: docData.email || '',
-          message: docData.message || '',
-          userId: docData.userId || '',
-          place: docData.place || '',
+          bookingId: docData.bookingId || '',
+          name: docData.userDetails?.name || '',
+          phone: docData.userDetails?.phone || '',
+          email: docData.userDetails?.email || '',
+          status: docData.status || '',
+          bookingType: bookingType,
+          tourDetails: bookingType === 'tour' ? {
+            title: docData.tourDetails?.title || '',
+            location: docData.tourDetails?.location || '',
+            tourType: docData.tourDetails?.tourType || '',
+            price: docData.tourDetails?.price || 0,
+            numberofDays: docData.tourDetails?.numberofDays || 0,
+            numberofNights: docData.tourDetails?.numberofNights || 0,
+          } : undefined,
+          cruiseDetails: bookingType === 'cruise' ? {
+            title: docData.cruiseDetails?.title || '',
+            category: docData.cruiseDetails?.category || '',
+            duration: docData.cruiseDetails?.duration || '',
+            price: docData.cruiseDetails?.price || '',
+          } : undefined,
           createdAt: docData.createdAt || null,
         };
       });
@@ -104,14 +126,26 @@ function Bookings() {
     fetchBookings();
   }, []);
 
-  // Filter data based on search text
+  // Filter data based on search text and active tab
   const filteredData = bookings.filter((booking) => {
+    // First filter by tab selection
+    const matchesTab = 
+      activeTab === 'all' || 
+      (activeTab === 'tours' && booking.bookingType === 'tour') ||
+      (activeTab === 'cruises' && booking.bookingType === 'cruise');
+    
+    if (!matchesTab) return false;
+    
+    // Then filter by search text
     const matchesSearch =
-      booking.id.toLowerCase().includes(searchText.toLowerCase()) ||
-      booking.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      booking.phone.toLowerCase().includes(searchText.toLowerCase()) ||
-      booking.tourId.toLowerCase().includes(searchText.toLowerCase()) ||
-      booking.tourTitle.toLowerCase().includes(searchText.toLowerCase());
+      (booking.bookingId?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+      (booking.name?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+      (booking.phone?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+      (booking.email?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+      (booking.status?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+      (booking.tourDetails?.title?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+      (booking.tourDetails?.location?.toLowerCase() || '').includes(searchText.toLowerCase());
+    
     return matchesSearch;
   });
 
@@ -123,11 +157,14 @@ function Bookings() {
 
   // Table columns with responsive adjustments
   const getColumns = () => {
-    const baseColumns: any = [
+    let baseColumns: any = [];
+    
+    // Common columns for all tabs
+    baseColumns = [
       {
         title: 'Booking ID',
-        dataIndex: 'id',
-        key: 'id',
+        dataIndex: 'bookingId',
+        key: 'bookingId',
         render: (text: string) => <span className="font-medium">{text}</span>,
       },
       {
@@ -141,18 +178,85 @@ function Bookings() {
         key: 'phone',
       },
       {
-        title: 'Tour ID',
-        dataIndex: 'tourId',
-        key: 'tourId',
-        responsive: ['sm'] as any,
-      },
-      {
-        title: 'Tour Title',
-        dataIndex: 'tourTitle',
-        key: 'tourTitle',
+        title: 'Email',
+        dataIndex: 'email',
+        key: 'email',
         responsive: ['md'] as any,
-      }
+      },
     ];
+
+    // Add booking type column only for "All" tab
+    if (activeTab === 'all') {
+      baseColumns.splice(4, 0, {
+        title: 'Type',
+        dataIndex: 'bookingType',
+        key: 'bookingType',
+        render: (type: string) => (
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            type === 'cruise' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+          }`}>
+            {type.charAt(0).toUpperCase() + type.slice(1)}
+          </span>
+        ),
+      });
+    }
+
+    // Add specific columns based on the active tab
+    if (activeTab === 'all' || activeTab === 'tours') {
+      if (activeTab === 'tours') {
+        // Insert tour specific columns for Tours tab
+        baseColumns.splice(3, 0, {
+          title: 'Package',
+          key: 'tourTitle',
+          render: (record: Booking) => record.tourDetails?.title || '',
+          responsive: ['md'] as any,
+        });
+        baseColumns.splice(4, 0, {
+          title: 'Location',
+          key: 'tourLocation',
+          render: (record: Booking) => record.tourDetails?.location || '',
+          responsive: ['lg'] as any,
+        });
+        baseColumns.splice(5, 0, {
+          title: 'Price',
+          key: 'tourPrice',
+          render: (record: Booking) => 
+            record.tourDetails?.price ? `₹${record.tourDetails.price.toLocaleString()}` : '',
+          responsive: ['lg'] as any,
+        });
+      }
+    }
+
+    if (activeTab === 'all' || activeTab === 'cruises') {
+      if (activeTab === 'cruises') {
+        // Insert cruise specific columns for Cruises tab
+        baseColumns.splice(3, 0, {
+          title: 'Cruise',
+          key: 'cruiseTitle',
+          render: (record: Booking) => record.cruiseDetails?.title || '',
+          responsive: ['md'] as any,
+        });
+        baseColumns.splice(4, 0, {
+          title: 'Category',
+          key: 'cruiseCategory',
+          render: (record: Booking) => record.cruiseDetails?.category || '',
+          responsive: ['lg'] as any,
+        });
+        baseColumns.splice(5, 0, {
+          title: 'Duration',
+          key: 'cruiseDuration',
+          render: (record: Booking) => record.cruiseDetails?.duration || '',
+          responsive: ['lg'] as any,
+        });
+        baseColumns.splice(6, 0, {
+          title: 'Price',
+          key: 'cruisePrice',
+          render: (record: Booking) => 
+            record.cruiseDetails?.price ? `₹${record.cruiseDetails.price}` : '',
+          responsive: ['lg'] as any,
+        });
+      }
+    }
 
     // Add action column
     baseColumns.push({
@@ -193,6 +297,10 @@ function Bookings() {
     }
   };
 
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+  };
+
   return (
     <>
       <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
@@ -224,7 +332,7 @@ function Bookings() {
                     onClick={fetchBookings}
                     className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
                   >
-                    Refresh
+                    <ReloadOutlined className="mr-1" /> Refresh
                   </Button>
                 )}
               </div>
@@ -237,6 +345,12 @@ function Bookings() {
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
+                  <Tabs activeKey={activeTab} onChange={handleTabChange} className="mb-4">
+                    <TabPane tab="All Bookings" key="all" />
+                    <TabPane tab="Tours" key="tours" />
+                    <TabPane tab="Cruises" key="cruises" />
+                  </Tabs>
+                  
                   <div className="table-responsive">
                     <Table
                       dataSource={filteredData}
@@ -297,7 +411,7 @@ function Bookings() {
       >
         <Divider className="my-2" />
         <div className="p-4 bg-danger-transparent rounded-lg mb-4">
-          <p className="mb-2 font-medium">Are you sure you want to delete the booking <strong>{bookingToDelete?.id}</strong>?</p>
+          <p className="mb-2 font-medium">Are you sure you want to delete the booking <strong>{bookingToDelete?.bookingId}</strong>?</p>
           <p className="text-danger">This action cannot be undone.</p>
         </div>
       </Modal>

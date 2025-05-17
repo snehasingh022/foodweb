@@ -383,7 +383,7 @@ function Tags() {
             <Space size="middle">
               <Button
                 onClick={handleModalCancel}
-                className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
+                className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10 mb-6 mr-6"
               >
                 Cancel
               </Button>
@@ -391,7 +391,7 @@ function Tags() {
                 type="primary"
                 htmlType="submit"
                 loading={loading}
-                className="px-5 h-10 shadow-none"
+                className="px-5 h-10 shadow-none mb-6 mr-6"
               >
                 {editMode ? "Update Tag" : "Add Tag"}
               </Button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Select, message, Spin, Input, Tabs, Space } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
-import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import Protected from '../../../components/Protected/Protected';
 // Import the graphics-specific Firebase configuration
@@ -44,7 +44,7 @@ function Graphics() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [archiveOrUpload, setArchiveOrUpload] = useState('upload');
   const [selectedDestination, setSelectedDestination] = useState('');
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imageUrlInput, setImageUrlInput] = useState(''); // New state for image URL input
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -137,43 +137,23 @@ function Graphics() {
     }
   };
 
-  const handleImageUpload = async (file: File): Promise<string> => {
-    try {
-      // Dynamic import of Storage functions
-      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-      // Continue using graphicsStorage for upload
-      const storageRef = ref(graphicsStorage, `/adminPanel/sliderImages/${carouselName}/${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      throw error;
-    }
-  };
-
-  const handleImageUploadToArchive = async (file: File): Promise<string> => {
+  // Function to add image URL to archive
+  const addImageUrlToArchive = async (imageUrl: string) => {
     try {
       // Dynamic import of functions
-      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-
-      // Continue using graphicsStorage for upload
-      const storageRef = ref(graphicsStorage, `adminPanel/archive/images/${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
 
       // Add to archive collection in the main database
       const archiveRef = collection(db, 'archive');
       await addDoc(archiveRef, {
-        ImageUrl: downloadURL,
+        ImageUrl: imageUrl,
         createdAt: serverTimestamp(),
       });
 
       fetchArchiveImages();
-      return downloadURL;
+      return imageUrl;
     } catch (error) {
-      console.error('Error uploading to archive:', error);
+      console.error('Error adding URL to archive:', error);
       throw error;
     }
   };
@@ -193,17 +173,17 @@ function Graphics() {
       setLoading(true);
 
       let imageURL = '';
-      if (selectedImage) {
-        // Upload to storage and get URL using graphicsStorage
-        imageURL = await handleImageUpload(selectedImage);
+      if (imageUrlInput) {
+        // Use the directly entered image URL
+        imageURL = imageUrlInput;
 
         // Also add to archive for future use
-        await handleImageUploadToArchive(selectedImage);
+        await addImageUrlToArchive(imageURL);
       } else if (imagePreview) {
         // Use selected image from archive
         imageURL = imagePreview;
       } else {
-        message.error('Please select or upload an image');
+        message.error('Please enter an image URL or choose from archive');
         setLoading(false);
         return;
       }
@@ -236,7 +216,7 @@ function Graphics() {
       message.success('Image added successfully');
       setAddImageModalOpen(false);
       setSelectedDestination('');
-      setSelectedImage(null);
+      setImageUrlInput('');
       setImagePreview(null);
       fetchSliderImages();
     } catch (error) {
@@ -301,7 +281,22 @@ function Graphics() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        await handleImageUploadToArchive(file);
+        // Dynamic import of Storage functions
+        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+        // Continue using graphicsStorage for upload
+        const storageRef = ref(graphicsStorage, `adminPanel/archive/images/${file.name}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+
+        // Add to archive collection in the main database
+        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+        const archiveRef = collection(db, 'archive');
+        await addDoc(archiveRef, {
+          ImageUrl: downloadURL,
+          createdAt: serverTimestamp(),
+        });
+
+        fetchArchiveImages();
         message.success('Image saved to archive');
       } catch (error) {
         message.error('Failed to save image to archive');
@@ -311,7 +306,18 @@ function Graphics() {
 
   const handleSetArchiveImage = (url: string) => {
     setImagePreview(url);
+    setImageUrlInput(''); // Clear URL input when selecting from archive
     setUploadDialogOpen(false);
+  };
+
+  // New function to preview entered URL
+  const handlePreviewUrlImage = () => {
+    if (!imageUrlInput) {
+      message.error('Please enter an image URL');
+      return;
+    }
+
+    setImagePreview(imageUrlInput);
   };
 
   // Display loading state if Firebase is not yet initialized
@@ -327,7 +333,6 @@ function Graphics() {
     <>
       <PageHeaders
         className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-
       />
 
       <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
@@ -451,39 +456,46 @@ function Graphics() {
 
       {/* Add Image Modal */}
       <Modal
-        title={<h3 className="text-lg font-semibold px-1">Add Image to Carousel</h3>}
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              Add Image to Carousel
+            </span>
+          </div>
+        }
         open={addImageModalOpen}
         onCancel={() => {
           setAddImageModalOpen(false);
           setSelectedDestination('');
-          setSelectedImage(null);
+          setImageUrlInput('');
           setImagePreview(null);
         }}
         width={650}
         bodyStyle={{ padding: '24px 28px' }}
         footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setAddImageModalOpen(false);
-              setSelectedDestination('');
-              setSelectedImage(null);
-              setImagePreview(null);
-            }}
-            className="border border-gray-200 dark:border-white/10 mx-2"
-          >
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={loading}
-            onClick={handleAddImage}
-            className="bg-primary hover:bg-primary-hbr mx-2"
-            disabled={!selectedDestination || (!imagePreview && !selectedImage)}
-          >
-            Add to Carousel
-          </Button>
+              <Button
+                key="back"
+            size="large"
+                onClick={() => {
+                  setAddImageModalOpen(false);
+                  setSelectedDestination('');
+                  setImageUrlInput('');
+                  setImagePreview(null);
+                }}
+                className="min-w-[100px] font-medium mb-4 "
+              >
+                Cancel
+              </Button>,
+              <Button
+                key="submit"
+                type="primary"
+                loading={loading}
+                className="min-w-[160px] font-medium mb-4 mr-4"
+                onClick={handleAddImage}
+                disabled={!selectedDestination || (!imagePreview && !imageUrlInput)}
+              >
+                Add to Carousel
+              </Button>
         ]}
       >
         <div className="mt-4 px-2">
@@ -523,163 +535,29 @@ function Graphics() {
                 className="absolute top-3 right-3"
                 onClick={() => {
                   setImagePreview(null);
-                  setSelectedImage(null);
+                  setImageUrlInput('');
                 }}
                 shape="circle"
               />
             </div>
           ) : (
-            <div
-              className="w-full bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg flex flex-col items-center justify-center p-10 cursor-pointer transition-colors duration-300 mb-6"
-              onClick={() => setUploadDialogOpen(true)}
-            >
-              <FileImageOutlined className="text-5xl mb-4 text-gray-400" />
-              <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to select an image</p>
-              <p className="text-sm text-gray-500 dark:text-white/60">Upload a new image or choose from archive</p>
-            </div>
-          )}
-
-          {!imagePreview && (
-            <div className="text-center mb-2">
-              <Button
-                type="primary"
-                ghost
-                onClick={() => setUploadDialogOpen(true)}
-                className="mt-3"
-                icon={<CloudUploadOutlined />}
-              >
-                Browse Images
-              </Button>
-            </div>
+            <>
+              {/* Image URL input field */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Input
+                    placeholder="Enter image URL"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    prefix={<LinkOutlined className="text-gray-400" />}
+                    className="flex-1"
+                    size="large"
+                  />
+                </div>
+              </div>
+            </>
           )}
         </div>
-      </Modal>
-
-      {/* Image Upload/Archive Dialog */}
-      <Modal
-        title={<h3 className="text-lg font-semibold px-1">Select Image Source</h3>}
-        open={uploadDialogOpen}
-        onCancel={() => setUploadDialogOpen(false)}
-        footer={null}
-        width={720}
-        bodyStyle={{ padding: '16px 24px 24px' }}
-      >
-        <Tabs
-          defaultActiveKey={archiveOrUpload}
-          onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
-          className="mt-2"
-          items={[
-            {
-              key: 'upload',
-              label: (
-                <span className="flex items-center">
-                  <CloudUploadOutlined className="mr-2" />
-                  Upload New Image
-                </span>
-              ),
-              children: (
-                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
-                  <label htmlFor="image-upload" className="cursor-pointer text-center">
-                    <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
-                    <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
-                    <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
-                    <Button type="primary" icon={<CloudUploadOutlined />} className="bg-primary hover:bg-primary-hbr">
-                      Select File
-                    </Button>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setSelectedImage(e.target.files[0]);
-                          setImagePreview(URL.createObjectURL(e.target.files[0]));
-                          setUploadDialogOpen(false);
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              )
-            },
-            {
-              key: 'archive',
-              label: (
-                <span className="flex items-center">
-                  <FileImageOutlined className="mr-2" />
-                  Choose from Archive
-                </span>
-              ),
-              children: (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-5 px-1">
-                    <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
-                    <label htmlFor="archive-upload" className="cursor-pointer">
-                      <Button
-                        type="primary"
-                        ghost
-                        icon={<PlusOutlined />}
-                        className="flex items-center"
-                      >
-                        Add to Archive
-                      </Button>
-                      <input
-                        id="archive-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageArchiveChange}
-                      />
-                    </label>
-                  </div>
-                  <div className="border border-gray-200 dark:border-white/10 rounded-md">
-                    <Input
-                      placeholder="Search images..."
-                      prefix={<SearchOutlined className="ml-1" />}
-                      className="border-0 border-b border-gray-200 dark:border-white/10 py-2 px-3"
-                    />
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
-                      {imageArchives.length > 0 ? (
-                        imageArchives.map((item, index) => (
-                          <div
-                            key={index}
-                            className="cursor-pointer border border-gray-200 dark:border-white/10 rounded-md p-3 h-24 flex items-center justify-center hover:border-primary transition-colors duration-200"
-                            onClick={() => handleSetArchiveImage(item.ImageUrl)}
-                          >
-                            <img
-                              src={item.ImageUrl}
-                              alt="Archive"
-                              className="max-w-full max-h-20 object-contain"
-                            />
-                          </div>
-                        ))
-                      ) : (
-                        <div className="col-span-4 py-10 text-center text-gray-500 dark:text-white/60">
-                          No images in archive. Upload your first image.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-          ]}
-        />
-      </Modal>
-
-      {/* Image Preview Modal */}
-      <Modal
-        open={previewModalOpen}
-        title="Image Preview"
-        footer={null}
-        onCancel={() => setPreviewModalOpen(false)}
-      >
-        <img
-          src={previewImage}
-          alt="Preview"
-          className="w-full object-contain max-h-[70vh]"
-        />
       </Modal>
     </>
   );
@@ -687,4 +565,4 @@ function Graphics() {
 
 // Wrap the component with dynamic and Protected HOCs
 const DynamicGraphics = dynamic(() => Promise.resolve(Graphics), { ssr: false });
-export default Protected(DynamicGraphics, ["admin"]); 
+export default Protected(DynamicGraphics, ["admin"]);
