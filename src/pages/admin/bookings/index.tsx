@@ -162,11 +162,10 @@ function Bookings() {
         <Space>
           <Tooltip title="Delete">
             <Button
-              type="primary"
-              danger
-              size="small"
+              type="text"
               icon={<DeleteOutlined />}
               onClick={() => showDeleteModal(record)}
+              className="text-red-600 hover:text-red-800"
             />
           </Tooltip>
         </Space>

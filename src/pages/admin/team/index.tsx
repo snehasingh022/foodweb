@@ -1,46 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Table, 
-  Button, 
-  Modal, 
-  Form, 
-  Input, 
-  Select, 
-  Space, 
+import {
+  Row,
+  Col,
+  Card,
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Space,
   Spin,
   Typography,
   Tag
 } from 'antd';
-import { 
-  EditOutlined, 
+import {
+  EditOutlined,
   DeleteOutlined,
   SearchOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import { db, auth } from '../../../authentication/firebase';
 import { useAuth } from '../../../authentication/AuthContext';
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  setDoc, 
-  serverTimestamp, 
-  where, 
+import {
+  collection,
+  query,
+  orderBy,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  setDoc,
+  serverTimestamp,
+  where,
   addDoc,
   DocumentData
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { 
-  UilPlus, 
-  UilEdit, 
-  UilTrash, 
+import {
+  UilPlus,
+  UilEdit,
+  UilTrash,
   UilEye
 } from '@iconscout/react-unicons';
 import type { Breakpoint } from 'antd/es/_util/responsiveObserver';
@@ -109,9 +109,9 @@ function Team() {
       // Use only the admins collection 
       const adminsCollection = collection(db, "admins");
       const usersQuery = query(adminsCollection, orderBy("createdAt", "desc"));
-      
+
       const querySnapshot = await getDocs(usersQuery);
-      
+
       if (!querySnapshot.empty) {
         const adminsList = querySnapshot.docs.map(doc => {
           const data = doc.data() as DocumentData;
@@ -166,11 +166,11 @@ function Team() {
 
   const confirmDelete = async () => {
     if (!selectedUser) return;
-    
+
     setLoading(true);
     try {
       await deleteDoc(doc(db, "admins", selectedUser.id));
-      
+
       // If the user is an author, delete from authors collection
       if (selectedUser.roles.includes('author')) {
         const authorQuery = query(
@@ -182,7 +182,7 @@ function Team() {
           await deleteDoc(authorSnapshot.docs[0].ref);
         }
       }
-      
+
       fetchUsers();
       setDeleteModalVisible(false);
     } catch (error) {
@@ -194,7 +194,7 @@ function Team() {
 
   const handleUpdateUser = async (values: EditUserFormValues) => {
     if (!selectedUser) return;
-    
+
     setLoading(true);
     try {
       const userRef = doc(db, "admins", selectedUser.id);
@@ -211,7 +211,7 @@ function Team() {
           where("name", "==", selectedUser.name)
         );
         const authorSnapshot = await getDocs(authorQuery);
-        
+
         if (authorSnapshot.empty) {
           // Create new author record
           await addDoc(collection(db, "authors"), {
@@ -287,7 +287,7 @@ function Team() {
       fetchUsers();
       setAddModalVisible(false);
       addForm.resetFields();
-      
+
     } catch (error: any) {
       console.error("Error adding user:", error);
       if (error.code === "auth/email-already-in-use") {
@@ -306,7 +306,7 @@ function Team() {
     setSearchText(value);
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.name?.toLowerCase().includes(searchText.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchText.toLowerCase()) ||
     (user.uid ? user.uid.toLowerCase().includes(searchText.toLowerCase()) : false) ||
@@ -340,12 +340,12 @@ function Team() {
       render: (roles: string[]) => (
         <Space size={[0, 8]} wrap>
           {roles?.map(role => (
-            <Tag 
-              key={role} 
+            <Tag
+              key={role}
               color={
-                role === 'admin' ? 'blue' : 
-                role === 'helpdesk' ? 'orange' : 
-                role === 'author' ? 'purple' : 'default'
+                role === 'admin' ? 'blue' :
+                  role === 'helpdesk' ? 'orange' :
+                    role === 'author' ? 'purple' : 'default'
               }
             >
               {role.toUpperCase()}
@@ -376,13 +376,12 @@ function Team() {
             size="small" 
             onClick={() => handleEditUser(record)}
           /> */}
-          <Button 
-                type="primary" 
-                size="small" 
-                icon={<EditOutlined />}
-                onClick={() => handleEditUser(record)}
-                className="bg-primary hover:bg-primary-hbr"
-              />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            className="text-green-600 hover:text-green-800"
+            onClick={() => handleEditUser(record)}
+          />
           {/* <Button 
             type="primary" 
             danger
@@ -390,13 +389,12 @@ function Team() {
             size="small"
             onClick={() => handleDeleteUser(record)}
           /> */}
-          <Button 
-                type="primary" 
-                danger
-                size="small" 
-                icon={<DeleteOutlined />}
-                onClick={() => handleDeleteUser(record)}
-              />
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
+            className="text-red-600 hover:text-red-800"
+            onClick={() => handleDeleteUser(record)}
+          />
         </Space>
       ),
     },
@@ -412,15 +410,15 @@ function Team() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Team Management</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input 
-                  placeholder="Search team members..." 
+                <Input
+                  placeholder="Search team members..."
                   prefix={<SearchOutlined />}
                   onChange={e => handleSearch(e.target.value)}
                   style={{ width: 250 }}
                   className="py-2 text-base font-"
                 />
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   onClick={() => setAddModalVisible(true)}
                   icon={<UilPlus />}
                   className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
@@ -432,7 +430,7 @@ function Team() {
             </div>
           </Col>
         </Row>
-        
+
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
@@ -503,7 +501,7 @@ function Team() {
             noStyle
             shouldUpdate={(prevValues, currentValues) => prevValues.roles !== currentValues.roles}
           >
-            {({ getFieldValue }) => 
+            {({ getFieldValue }) =>
               getFieldValue('roles')?.includes('author') ? (
                 <>
                   <Form.Item
@@ -512,7 +510,7 @@ function Team() {
                   >
                     <Input placeholder="Enter slug" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="authorDescription"
                     label="Author Description"
@@ -610,7 +608,7 @@ function Team() {
             noStyle
             shouldUpdate={(prevValues, currentValues) => prevValues.roles !== currentValues.roles}
           >
-            {({ getFieldValue }) => 
+            {({ getFieldValue }) =>
               getFieldValue('roles')?.includes('author') ? (
                 <>
                   <Form.Item
@@ -619,7 +617,7 @@ function Team() {
                   >
                     <Input placeholder="Enter slug" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="authorDescription"
                     label="Author Description"
@@ -716,6 +714,6 @@ function TeamPage() {
 
   // Only render Team component if user has admin access
   return isAdmin ? <Team /> : null;
-} 
+}
 
 export default Protected(TeamPage, ["admin"]);

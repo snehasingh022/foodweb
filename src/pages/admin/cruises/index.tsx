@@ -239,8 +239,8 @@ function Cruises() {
             <Button 
               type="text" 
               icon={<DeleteOutlined />} 
-              onClick={() => handleDelete(record.id)}
               className="text-red-600 hover:text-red-800"
+              onClick={() => handleDelete(record.id)}
             />
           </Tooltip>
         </Space>

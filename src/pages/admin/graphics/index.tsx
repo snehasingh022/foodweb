@@ -10,10 +10,10 @@ import { graphicsDb, graphicsStorage, graphicsAnalytics } from '../../../authent
 import { db } from '../../../authentication/firebase';
 
 // Import types for TypeScript but not the actual implementation
-import type { 
-  DocumentData, 
-  DocumentReference, 
-  CollectionReference 
+import type {
+  DocumentData,
+  DocumentReference,
+  CollectionReference
 } from 'firebase/firestore';
 
 const { Option } = Select;
@@ -95,7 +95,7 @@ function Graphics() {
 
   const fetchSliderImages = async () => {
     if (!firebaseInitialized) return;
-    
+
     setLoading(true);
     try {
       // Dynamic import of Firestore functions
@@ -120,7 +120,7 @@ function Graphics() {
 
   const fetchArchiveImages = async () => {
     if (!firebaseInitialized) return;
-    
+
     try {
       // Dynamic import of Firestore functions
       const { collection, getDocs } = await import('firebase/firestore');
@@ -157,7 +157,7 @@ function Graphics() {
       // Dynamic import of functions
       const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-      
+
       // Continue using graphicsStorage for upload
       const storageRef = ref(graphicsStorage, `adminPanel/archive/images/${file.name}`);
       await uploadBytes(storageRef, file);
@@ -183,7 +183,7 @@ function Graphics() {
       message.error('Firebase is not initialized yet');
       return;
     }
-    
+
     if (!selectedDestination) {
       message.error('Please select a destination');
       return;
@@ -191,12 +191,12 @@ function Graphics() {
 
     try {
       setLoading(true);
-      
+
       let imageURL = '';
       if (selectedImage) {
         // Upload to storage and get URL using graphicsStorage
         imageURL = await handleImageUpload(selectedImage);
-        
+
         // Also add to archive for future use
         await handleImageUploadToArchive(selectedImage);
       } else if (imagePreview) {
@@ -210,7 +210,7 @@ function Graphics() {
 
       // Dynamic import of Firestore functions
       const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-      
+
       const newImageData = {
         imageUrl: imageURL,
         screenName: selectedDestination,
@@ -252,13 +252,13 @@ function Graphics() {
       message.error('Firebase is not initialized yet');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       // Dynamic import of Firestore functions
       const { doc, getDoc, updateDoc } = await import('firebase/firestore');
-      
+
       // Use the main Firebase database with homeCarousel
       const docRef = doc(db, 'sliderImages', carouselName);
       const docSnapshot = await getDoc(docRef);
@@ -297,7 +297,7 @@ function Graphics() {
       message.error('Firebase is not initialized yet');
       return;
     }
-    
+
     const file = e.target.files?.[0];
     if (file) {
       try {
@@ -327,9 +327,9 @@ function Graphics() {
     <>
       <PageHeaders
         className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        
+
       />
-      
+
       <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
         <Row gutter={25} className="mb-[25px]">
           <Col xs={24}>
@@ -338,7 +338,7 @@ function Graphics() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Home Carousel Images</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Button 
+                <Button
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={() => setAddImageModalOpen(true)}
@@ -382,9 +382,9 @@ function Graphics() {
                       <tr key={index} className="border-b border-gray-200 dark:border-white/10 last:border-0">
                         <td className="px-4 py-5">
                           <div className="flex justify-center">
-                            <img 
-                              src={item.imageUrl} 
-                              alt="Slider" 
+                            <img
+                              src={item.imageUrl}
+                              alt="Slider"
                               className="w-24 h-24 object-cover rounded cursor-pointer"
                               onClick={() => {
                                 setPreviewImage(item.imageUrl);
@@ -399,12 +399,11 @@ function Graphics() {
                         <td className="px-4 py-5">
                           <div className="flex justify-center">
                             <Button
-                              danger
+                              type="text"
                               icon={<DeleteOutlined />}
+                              className="text-red-600 hover:text-red-800"
                               onClick={() => handleDeleteImage(index)}
-                              className="flex items-center gap-1"
                             >
-                              Delete
                             </Button>
                           </div>
                         </td>
@@ -414,7 +413,7 @@ function Graphics() {
               </tbody>
             </table>
           </div>
-          
+
           {/* Pagination */}
           <div className="flex items-center justify-end gap-3 mt-5">
             <Button
@@ -434,8 +433,8 @@ function Graphics() {
             >
               Next
             </Button>
-            <Select 
-              value={rowsPerPage} 
+            <Select
+              value={rowsPerPage}
               onChange={(value) => {
                 setRowsPerPage(value);
                 setPage(0);
@@ -463,8 +462,8 @@ function Graphics() {
         width={650}
         bodyStyle={{ padding: '24px 28px' }}
         footer={[
-          <Button 
-            key="cancel" 
+          <Button
+            key="cancel"
             onClick={() => {
               setAddImageModalOpen(false);
               setSelectedDestination('');
@@ -506,17 +505,17 @@ function Graphics() {
               ))}
             </Select>
           </div>
-          
+
           <div className="mb-3">
             <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Choose Image *</label>
           </div>
-          
+
           {imagePreview ? (
             <div className="relative mb-6 border border-gray-200 dark:border-white/10 rounded-lg p-6">
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
-                className="w-full max-h-56 object-contain mx-auto" 
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-full max-h-56 object-contain mx-auto"
               />
               <Button
                 icon={<DeleteOutlined />}
@@ -530,8 +529,8 @@ function Graphics() {
               />
             </div>
           ) : (
-            <div 
-              className="w-full bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg flex flex-col items-center justify-center p-10 cursor-pointer transition-colors duration-300 mb-6" 
+            <div
+              className="w-full bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg flex flex-col items-center justify-center p-10 cursor-pointer transition-colors duration-300 mb-6"
               onClick={() => setUploadDialogOpen(true)}
             >
               <FileImageOutlined className="text-5xl mb-4 text-gray-400" />
@@ -539,11 +538,11 @@ function Graphics() {
               <p className="text-sm text-gray-500 dark:text-white/60">Upload a new image or choose from archive</p>
             </div>
           )}
-          
+
           {!imagePreview && (
             <div className="text-center mb-2">
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 ghost
                 onClick={() => setUploadDialogOpen(true)}
                 className="mt-3"
@@ -565,7 +564,7 @@ function Graphics() {
         width={720}
         bodyStyle={{ padding: '16px 24px 24px' }}
       >
-        <Tabs 
+        <Tabs
           defaultActiveKey={archiveOrUpload}
           onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
           className="mt-2"
@@ -617,9 +616,9 @@ function Graphics() {
                   <div className="flex items-center justify-between mb-5 px-1">
                     <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
                     <label htmlFor="archive-upload" className="cursor-pointer">
-                      <Button 
-                        type="primary" 
-                        ghost 
+                      <Button
+                        type="primary"
+                        ghost
                         icon={<PlusOutlined />}
                         className="flex items-center"
                       >
@@ -643,15 +642,15 @@ function Graphics() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
                       {imageArchives.length > 0 ? (
                         imageArchives.map((item, index) => (
-                          <div 
+                          <div
                             key={index}
                             className="cursor-pointer border border-gray-200 dark:border-white/10 rounded-md p-3 h-24 flex items-center justify-center hover:border-primary transition-colors duration-200"
                             onClick={() => handleSetArchiveImage(item.ImageUrl)}
                           >
-                            <img 
-                              src={item.ImageUrl} 
+                            <img
+                              src={item.ImageUrl}
                               alt="Archive"
-                              className="max-w-full max-h-20 object-contain" 
+                              className="max-w-full max-h-20 object-contain"
                             />
                           </div>
                         ))
@@ -676,10 +675,10 @@ function Graphics() {
         footer={null}
         onCancel={() => setPreviewModalOpen(false)}
       >
-        <img 
-          src={previewImage} 
-          alt="Preview" 
-          className="w-full object-contain max-h-[70vh]" 
+        <img
+          src={previewImage}
+          alt="Preview"
+          className="w-full object-contain max-h-[70vh]"
         />
       </Modal>
     </>

@@ -10,7 +10,8 @@ import {
   Modal,
   Form,
   message,
-  Spin
+  Spin,
+  Tooltip
 } from 'antd';
 import {
   SearchOutlined,
@@ -210,34 +211,34 @@ function Tags() {
       key: 'actions',
       render: (text: string, record: Tag) => (
         <Space size="middle">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => {
-              setSelectedTag(record);
-              editForm.setFieldsValue({
-                name: record.name,
-                slug: record.slug,
-                description: record.description,
-              });
-              setEditMode(true);
-              setModalVisible(true);
-            }}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            Edit
-          </Button>
-          <Button
-            type="primary"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => {
-              setSelectedTag(record);
-              setDeleteModalVisible(true);
-            }}
-          >
-            Delete
-          </Button>
+          <Tooltip title="Edit">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              className="text-green-600 hover:text-green-800"
+              onClick={() => {
+                setSelectedTag(record);
+                editForm.setFieldsValue({
+                  name: record.name,
+                  slug: record.slug,
+                  description: record.description,
+                });
+                setEditMode(true);
+                setModalVisible(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                setSelectedTag(record);
+                setDeleteModalVisible(true);
+              }}
+              className="text-red-600 hover:text-red-800"
+            />
+          </Tooltip>
         </Space>
       ),
     },
