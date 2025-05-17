@@ -27,7 +27,8 @@ import {
   updateDoc,
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import Protected from '../../../components/Protected/Protected';
@@ -103,7 +104,8 @@ function Tags() {
   // Add new tag
   const handleAddTag = async (values: any) => {
     try {
-      await addDoc(collection(db, "tags"), {
+      const tagId = `TID${Date.now().toString().slice(-6)}`;
+      await setDoc(doc(db, "tags", tagId), {
         name: values.name,
         slug: values.slug,
         description: values.description,
@@ -163,11 +165,19 @@ function Tags() {
   const filteredTags = tags.filter(tag =>
     tag.name.toLowerCase().includes(searchText.toLowerCase()) ||
     tag.slug.toLowerCase().includes(searchText.toLowerCase()) ||
-    tag.description.toLowerCase().includes(searchText.toLowerCase())
+    tag.description.toLowerCase().includes(searchText.toLowerCase()) ||
+    tag.id.toLowerCase().includes(searchText.toLowerCase())
   );
 
   // Table columns
   const columns = [
+    {
+      title: 'Tag ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: '200px',
+      ellipsis: true,
+    },
     {
       title: 'Tag Name',
       dataIndex: 'name',
@@ -404,4 +414,4 @@ function Tags() {
   );
 }
 
-export default Protected(Tags, ["admin"]); 
+export default Protected(Tags, ["admin"]);
