@@ -503,24 +503,6 @@ function Helpdesk() {
       render: (text: string) => <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">{formatCategory(text)}</span>,
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (status: string) => (
-        <span
-          className={`text-xs font-medium inline-flex items-center justify-center min-h-[24px] px-3 rounded-[15px] ${status === 'Opened' ? 'text-green-500 bg-green-100' :
-            status === 'Closed' ? 'text-red-500 bg-red-100' :
-              status === 'Resolved' ? 'text-blue-500 bg-blue-100' :
-                status === 'Re-Opened' ? 'text-yellow-500 bg-yellow-100' :
-                  'text-yellow-500 bg-yellow-100'
-            }`}
-        >
-          {status}
-        </span>
-      ),
-    },
-    {
       title: 'Updated Date',
       dataIndex: 'updatedAt',
       key: 'updatedAt',

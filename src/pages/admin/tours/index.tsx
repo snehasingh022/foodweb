@@ -15,7 +15,8 @@ import {
   Tag,
   InputRef,
   Dropdown,
-  MenuProps
+  MenuProps,
+  Typography
 } from 'antd';
 import { 
   SearchOutlined, 
@@ -25,14 +26,18 @@ import {
   EyeOutlined,
   MoreOutlined,
   ReloadOutlined,
-  FilterOutlined
+  FilterOutlined,
+  CheckCircleOutlined,
+  PaperClipOutlined
 } from '@ant-design/icons';
-import { collection, getDocs, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, query, orderBy, where, getDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import Protected from '../../../components/Protected/Protected';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useMediaQuery } from 'react-responsive';
+
+const { Text } = Typography;
 
 // Tour interface
 interface Tour {
@@ -58,6 +63,15 @@ interface Tour {
   featured?: boolean;
   maxGroupSize?: number;
   title?: string;
+  flightIncluded?: boolean;
+  numberofDays?: number;
+  numberofNights?: number;
+  isFeatured?: boolean;
+  isStartDate?: boolean;
+  startDate?: string | null;
+  imageURL?: string;
+  itenaries?: Record<string, any>;
+  tourType?: string;
 }
 
 function Tours() {
@@ -69,6 +83,11 @@ function Tours() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [tourToDelete, setTourToDelete] = useState<Tour | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
+  
+  // Added for View Details Modal
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [currentTour, setCurrentTour] = useState<Tour | null>(null);
+  const [tourDetailLoading, setTourDetailLoading] = useState(false);
   
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const searchInputRef = useRef<InputRef>(null);
@@ -109,14 +128,23 @@ function Tours() {
           price: docData.price || 0,
           duration: docData.duration || '',
           image: docData.image || '',
+          imageURL: docData.imageURL || '',
           status: (docData.status as string) || 'inactive',
           createdAt: docData.createdAt || null,
           updatedAt: docData.updatedAt || null,
           inclusions: docData.inclusions || [],
           exclusions: docData.exclusions || [],
           itinerary: docData.itinerary || [],
+          itenaries: docData.itenaries || {},
           featured: docData.featured || false,
           maxGroupSize: docData.maxGroupSize || 0,
+          flightIncluded: docData.flightIncluded || false,
+          numberofDays: docData.numberofDays || 0,
+          numberofNights: docData.numberofNights || 0,
+          isFeatured: docData.isFeatured || false,
+          isStartDate: docData.isStartDate || false,
+          startDate: docData.startDate || null,
+          tourType: docData.tourType || '',
         };
       });
       
@@ -189,7 +217,7 @@ function Tours() {
           key: '1',
           label: 'View',
           icon: <EyeOutlined />,
-          onClick: () => router.push(`/admin/tours/view/${record.id}`),
+          onClick: () => handleViewDetails(record),
         },
         {
           key: '2',
@@ -209,26 +237,26 @@ function Tours() {
   };
 
   const handleDelete = async (id: string) => {
-      if (typeof window === "undefined") return;
-  
-      Modal.confirm({
-        title: 'Are you sure you want to delete this cruise?',
-        content: 'This action cannot be undone',
-        okText: 'Yes, delete it',
-        okType: 'danger',
-        cancelText: 'Cancel',
-        onOk: async () => {
-          try {
-            await deleteDoc(doc(db, "cruises", id));
-            message.success("Cruise deleted successfully");
-            fetchTours();
-          } catch (error) {
-            console.error("Error deleting cruise:", error);
-            message.error("Failed to delete cruise");
-          }
+    if (typeof window === "undefined") return;
+
+    Modal.confirm({
+      title: 'Are you sure you want to delete this tour?',
+      content: 'This action cannot be undone',
+      okText: 'Yes, delete it',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await deleteDoc(doc(db, "tours", id));
+          message.success("Tour deleted successfully");
+          fetchTours();
+        } catch (error) {
+          console.error("Error deleting tour:", error);
+          message.error("Failed to delete tour");
         }
-      });
-    };
+      }
+    });
+  };
 
   // Handle edit button click
   const handleEdit = (record: Tour) => {
@@ -286,37 +314,37 @@ function Tours() {
             : 'N/A',
       },
       {
-            title: 'Actions',
-            key: 'actions',
-            render: (_: any, record: Tour) => (
-              <Space size="middle">
-                <Tooltip title="View">
-                  <Button 
-                    type="text" 
-                    icon={<EyeOutlined />} 
-                    className="text-blue-600 hover:text-blue-800"
-                    onClick={() => router.push(`/admin/cruises/view/${record.id}`)}
-                  />
-                </Tooltip>
-                <Tooltip title="Edit">
-                  <Button 
-                    type="text" 
-                    icon={<EditOutlined />} 
-                    onClick={() => handleEdit(record)}
-                    className="text-green-600 hover:text-green-800"
-                  />
-                </Tooltip>
-                <Tooltip title="Delete">
-                  <Button 
-                    type="text" 
-                    icon={<DeleteOutlined />} 
-                    onClick={() => handleDelete(record.id)}
-                    className="text-red-600 hover:text-red-800"
-                  />
-                </Tooltip>
-              </Space>
-            ),
-          },
+        title: 'Actions',
+        key: 'actions',
+        render: (_: any, record: Tour) => (
+          <Space size="middle">
+            <Tooltip title="View">
+              <Button 
+                type="text" 
+                icon={<EyeOutlined />} 
+                className="text-blue-600 hover:text-blue-800"
+                onClick={() => handleViewDetails(record)}
+              />
+            </Tooltip>
+            <Tooltip title="Edit">
+              <Button 
+                type="text" 
+                icon={<EditOutlined />} 
+                onClick={() => handleEdit(record)}
+                className="text-green-600 hover:text-green-800"
+              />
+            </Tooltip>
+            <Tooltip title="Delete">
+              <Button 
+                type="text" 
+                icon={<DeleteOutlined />} 
+                onClick={() => handleDelete(record.id)}
+                className="text-red-600 hover:text-red-800"
+              />
+            </Tooltip>
+          </Space>
+        ),
+      },
     ];
     
     return baseColumns;
@@ -337,6 +365,83 @@ function Tours() {
       label: 'Inactive',
     },
   ];
+
+  // Function to get itinerary details
+  const getItineraryPreview = () => {
+    if (!currentTour || !currentTour.itenaries) return "No itinerary available";
+    
+    const days = Object.keys(currentTour.itenaries).sort();
+    if (days.length === 0) return "No itinerary available";
+    
+    // Return the first day's title only
+    const firstDay = days[0];
+    return currentTour.itenaries[firstDay]?.title || "Itinerary available";
+  };
+
+  const handleViewDetails = async (record: Tour) => {
+    try {
+      setTourDetailLoading(true);
+      setCurrentTour(record);
+      
+      // For detailed view, we fetch the complete document with all data
+      const tourRef = doc(db, "tours", record.id);
+      const tourSnap = await getDoc(tourRef);
+      
+      if (tourSnap.exists()) {
+        const tourData = tourSnap.data() as Tour;
+        
+        // Process the data to ensure all properties are properly set
+        const processedTour = {
+          ...record,
+          ...tourData,
+          id: record.id,
+          key: record.id,
+          title: tourData.title || tourData.name || record.title || record.name,
+          // Ensure we have proper formatted data for itineraries
+          itenaries: processItineraries(tourData.itenaries || {}),
+          // Process tags if they exist
+          tags: processTags(tourData.tags || {})
+        };
+        
+        setCurrentTour(processedTour);
+      }
+      
+      setDetailModalVisible(true);
+      setTourDetailLoading(false);
+    } catch (error) {
+      console.error("Error fetching tour details:", error);
+      message.error("Failed to fetch tour details");
+      setTourDetailLoading(false);
+    }
+  };
+  
+  // Helper function to process itineraries data
+  const processItineraries = (itenaries: Record<string, any>) => {
+    const processed: Record<string, any> = {};
+    
+    // Process each day's data
+    Object.keys(itenaries).forEach(day => {
+      const dayData = itenaries[day];
+      
+      processed[day] = {
+        ...dayData,
+        // Ensure imageURL is always an array
+        imageURL: Array.isArray(dayData.imageURL) ? dayData.imageURL : 
+                  (dayData.imageURL ? [dayData.imageURL] : [])
+      };
+    });
+    
+    return processed;
+  };
+  
+  // Helper function to process tags data
+  const processTags = (tags: Record<string, any>) => {
+    // If tags is empty, return empty object
+    if (!tags || Object.keys(tags).length === 0) return {};
+    
+    // Return as is if it's already in the correct format
+    return tags;
+  };
 
   return (
     <>
@@ -451,6 +556,246 @@ function Tours() {
           <p className="text-danger">This action cannot be undone.</p>
         </div>
       </Modal>
+
+      {/* Tour Details Modal */}
+<Modal
+  title={
+    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+        Tour Details
+        {currentTour && (
+          <Text copyable={{ text: currentTour.id }} className="ml-2">
+            ID: {currentTour.id}
+          </Text>
+        )}
+      </span>
+    </div>
+  }
+  open={detailModalVisible && currentTour !== null}
+  onCancel={() => setDetailModalVisible(false)}
+  footer={[
+    <Button
+      key="back"
+      size="large"
+      onClick={() => setDetailModalVisible(false)}
+      className="min-w-[100px] font-medium mb-4"
+    >
+      Close
+    </Button>,
+    <Button
+      key="edit"
+      type="primary"
+      size="large"
+      icon={<EditOutlined />}
+      onClick={() => currentTour && router.push(`/admin/tours/edit/${currentTour.id}`)}
+      className="min-w-[120px] font-medium mb-4 mr-4"
+    >
+      Edit Tour
+    </Button>,
+  ]}
+  width={800}
+  className="tour-detail-modal"
+  bodyStyle={{ padding: '20px 24px' }}
+  maskClosable={false}
+  destroyOnClose={true}
+>
+  {currentTour ? (
+    <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
+      <Spin spinning={tourDetailLoading}>
+        {/* Tour Image Preview */}
+        {currentTour.imageURL && (
+          <div className="mb-6 rounded-lg overflow-hidden">
+            <img 
+              src={currentTour.imageURL} 
+              alt={currentTour.title || "Tour image"} 
+              className="w-full h-auto object-cover"
+              style={{ maxHeight: '200px' }}
+            />
+          </div>
+        )}
+        
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Title:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">{currentTour.title || currentTour.name || 'N/A'}</Text>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Location:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">{currentTour.location || 'N/A'}</Text>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Price:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">
+                {currentTour.price ? `₹${currentTour.price.toLocaleString()}` : 'N/A'}
+              </Text>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Duration:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">
+                {currentTour.numberofDays && currentTour.numberofNights ? 
+                  `${currentTour.numberofNights} Nights / ${currentTour.numberofDays} Days` : 
+                  currentTour.duration || 'N/A'}
+              </Text>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Status:</Text>
+            <div className="mt-1">
+              <Tag color={currentTour.status === 'active' ? 'green' : 'red'}>
+                {currentTour.status || 'inactive'}
+              </Tag>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Tour Type:</Text>
+            <div className="mt-1">
+              <Tag color="blue">
+                {currentTour.tourType ? currentTour.tourType.charAt(0).toUpperCase() + currentTour.tourType.slice(1) : 'N/A'}
+              </Tag>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Flight Included:</Text>
+            <div className="mt-1">
+              <Tag color={currentTour.flightIncluded ? 'blue' : 'default'}>
+                {currentTour.flightIncluded ? 'Yes' : 'No'}
+              </Tag>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Featured:</Text>
+            <div className="mt-1">
+              <Tag color={currentTour.isFeatured || currentTour.featured ? 'purple' : 'default'}>
+                {currentTour.isFeatured || currentTour.featured ? 'Yes' : 'No'}
+              </Tag>
+            </div>
+          </div>
+          {currentTour.isStartDate && currentTour.startDate && (
+            <div className="border-b pb-2 col-span-2">
+              <Text type="secondary" className="text-sm">Start Date:</Text>
+              <div className="mt-1">
+                <Text strong className="text-base">{currentTour.startDate}</Text>
+              </div>
+            </div>
+          )}
+          <div className="border-b pb-2 col-span-2">
+            <Text type="secondary" className="text-sm">Slug:</Text>
+            <div className="mt-1">
+              <Text copyable className="text-base">{currentTour.slug || 'N/A'}</Text>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-6 border-b pb-4">
+          <Text type="secondary" className="text-sm">Description:</Text>
+          <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
+            <Text className="text-base whitespace-pre-line">{currentTour.description || 'No description available.'}</Text>
+          </div>
+        </div>
+
+        {/* Itinerary Section */}
+        {currentTour.itenaries && Object.keys(currentTour.itenaries).length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <PaperClipOutlined />
+              <Text strong className="text-lg">Itinerary Details</Text>
+            </div>
+            
+            <Tabs
+              defaultActiveKey="Day1"
+              type="card"
+              items={Object.keys(currentTour.itenaries)
+                .sort((a, b) => {
+                  // Extract numbers from Day1, Day2, etc.
+                  const numA = parseInt(a.replace('Day', ''));
+                  const numB = parseInt(b.replace('Day', ''));
+                  return numA - numB;
+                })
+                .map(day => ({
+                  key: day,
+                  label: `Day ${day.replace('Day', '')}`,
+                  children: (
+                    <div className="border p-4 rounded-md bg-white/50 dark:bg-gray-800/50">
+                      <div className="mb-3">
+                        <Text strong className="text-base">{currentTour.itenaries[day].title || 'Day Activity'}</Text>
+                      </div>
+                      <div className="mb-4">
+                        <Text className="text-sm whitespace-pre-line">{currentTour.itenaries[day].description || 'No description available'}</Text>
+                      </div>
+                      
+                      {/* Day Images */}
+                      {currentTour.itenaries[day].imageURL && currentTour.itenaries[day].imageURL.length > 0 && (
+                        <div>
+                          <Text type="secondary" className="text-sm mb-2 block">Day Images:</Text>
+                          <div className="grid grid-cols-3 gap-2">
+                            {currentTour.itenaries[day].imageURL.map((img, index) => (
+                              <div key={index} className="relative rounded-md overflow-hidden h-24">
+                                <img 
+                                  src={img} 
+                                  alt={`Day ${day.replace('Day', '')} - Image ${index+1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }))
+              }
+            />
+          </div>
+        )}
+
+        {/* Additional Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Created & Updated Information */}
+          <Card size="small" title="Timestamps" className="w-full">
+            <div className="flex flex-col gap-2">
+              <div>
+                <Text type="secondary" className="text-xs">Created:</Text>
+                <div>
+                  {currentTour.createdAt && typeof currentTour.createdAt.toDate === 'function' ? 
+                    new Date(currentTour.createdAt.toDate()).toLocaleString() : 'N/A'}
+                </div>
+              </div>
+              <div>
+                <Text type="secondary" className="text-xs">Updated:</Text>
+                <div>
+                  {currentTour.updatedAt && typeof currentTour.updatedAt.toDate === 'function' ? 
+                    new Date(currentTour.updatedAt.toDate()).toLocaleString() : 'N/A'}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Tags Information if available */}
+          {currentTour.tags && Object.keys(currentTour.tags).length > 0 && (
+            <Card size="small" title="Tags" className="w-full">
+              <div className="flex flex-wrap gap-2">
+                {Object.values(currentTour.tags).map((tag: any, index: number) => (
+                  <Tag key={index} color="blue">{tag.name || 'Unnamed Tag'}</Tag>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+      </Spin>
+    </div>
+  ) : (
+    <div className="flex justify-center items-center p-10">
+      <Spin size="large" />
+    </div>
+  )}
+</Modal>
     </>
   );
 }

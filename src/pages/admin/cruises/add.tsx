@@ -254,7 +254,7 @@ function AddCruise() {
         if (typeof window === "undefined") return;
 
         try {
-            const cruiseId = `CID${Date.now().toString().slice(-6)}`;
+            const cruiseId = `CRID${Date.now().toString().slice(-6)}`;
 
             const cruiseData = {
                 title: values.title,
