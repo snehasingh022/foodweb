@@ -367,13 +367,6 @@ function Cruises() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Cruise Management</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Search cruises..."
-                  prefix={<SearchOutlined />}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 250 }}
-                  className="py-2 text-base font-medium"
-                />
                 <Link href="/admin/cruises/add">
                   <Button
                     type="primary"
@@ -383,12 +376,26 @@ function Cruises() {
                     {!isMobile && "Add Cruise"}
                   </Button>
                 </Link>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={fetchCruises}
-                  loading={loading}
-                  className="h-10"
+                <Input
+                  placeholder="Search cruises..."
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
                 />
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchCruises}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>
@@ -437,7 +444,7 @@ function Cruises() {
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
-            {currentCruise && <Text copyable strong className="text-base mt-10 ml-2">{currentCruise.id}</Text>}
+              {currentCruise && <Text copyable strong className="text-base mt-10 ml-2">{currentCruise.id}</Text>}
             </span>
           </div>
 

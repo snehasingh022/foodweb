@@ -453,6 +453,15 @@ function Tours() {
                 </h1>
               </div>
               <div className="flex items-center gap-2">
+                <Link href="/admin/tours/add">
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    {!isMobile && "Add Tour"}
+                  </Button>
+                </Link>
                 <Input
                   placeholder="Search tours..."
                   prefix={<SearchOutlined />}
@@ -463,15 +472,19 @@ function Tours() {
                   ref={searchInputRef}
                   allowClear
                 />
-                <Link href="/admin/tours/add">
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
                   <Button
                     type="primary"
-                    icon={<PlusOutlined />}
+                    onClick={fetchTours}
                     className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
                   >
-                    {!isMobile && "Add Tour"}
+                    Refresh
                   </Button>
-                </Link>
+                )}
               </div>
             </div>
           </Col>

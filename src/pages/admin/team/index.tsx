@@ -410,13 +410,6 @@ function Team() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Team Management</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Search team members..."
-                  prefix={<SearchOutlined />}
-                  onChange={e => handleSearch(e.target.value)}
-                  style={{ width: 250 }}
-                  className="py-2 text-base font-"
-                />
                 <Button
                   type="primary"
                   onClick={() => setAddModalVisible(true)}
@@ -425,7 +418,26 @@ function Team() {
                 >
                   Add User
                 </Button>
-                {loading && <Spin />}
+                <Input
+                  placeholder="Search team members..."
+                  prefix={<SearchOutlined />}
+                  onChange={e => handleSearch(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-"
+                />
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchUsers}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>

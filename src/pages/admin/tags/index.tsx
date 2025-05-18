@@ -269,13 +269,6 @@ function Tags() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Tag Management</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Search tags..."
-                  prefix={<SearchOutlined />}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 250 }}
-                  className="py-2 text-base font-medium"
-                />
                 <Button
                   type="primary"
                   onClick={() => setModalVisible(true)}
@@ -284,7 +277,26 @@ function Tags() {
                 >
                   Add Tag
                 </Button>
-                {loading && <Spin />}
+                <Input
+                  placeholder="Search tags..."
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                />
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchTags}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>

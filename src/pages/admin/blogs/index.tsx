@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Input, 
-  Button, 
-  Table, 
-  Space, 
-  Modal, 
-  message, 
+import {
+  Row,
+  Col,
+  Card,
+  Input,
+  Button,
+  Table,
+  Space,
+  Modal,
+  message,
   Tooltip,
   Typography,
   Form,
@@ -19,11 +19,11 @@ import {
   Spin,
   Checkbox
 } from 'antd';
-import { 
-  SearchOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
+import {
+  SearchOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
   EyeOutlined,
   UploadOutlined,
   LoadingOutlined,
@@ -85,7 +85,7 @@ function Blogs() {
 
   const fetchBlogs = async () => {
     if (typeof window === "undefined") return;
-    
+
     setLoading(true);
     try {
       const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
@@ -150,9 +150,9 @@ function Blogs() {
       render: (text: string, record: Blog) => (
         <div className="flex items-center">
           {record.image && (
-            <img 
-              src={record.image} 
-              alt={text} 
+            <img
+              src={record.image}
+              alt={text}
               className="w-10 h-10 object-cover rounded mr-3"
             />
           )}
@@ -183,24 +183,24 @@ function Blogs() {
       render: (_: any, record: Blog) => (
         <Space size="middle">
           <Tooltip title="View">
-            <Button 
-              type="text" 
-              icon={<EyeOutlined />} 
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
               className="text-blue-600 hover:text-blue-800"
             />
           </Tooltip>
           <Tooltip title="Edit">
-            <Button 
-              type="text" 
-              icon={<EditOutlined />} 
+            <Button
+              type="text"
+              icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
               className="text-green-600 hover:text-green-800"
             />
           </Tooltip>
           <Tooltip title="Delete">
-            <Button 
-              type="text" 
-              icon={<DeleteOutlined />} 
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
               onClick={() => handleDelete(record.id)}
               className="text-red-600 hover:text-red-800"
             />
@@ -210,7 +210,7 @@ function Blogs() {
     },
   ];
 
-  const filteredBlogs = blogs.filter(blog => 
+  const filteredBlogs = blogs.filter(blog =>
     blog.title.toLowerCase().includes(searchText.toLowerCase()) ||
     blog.slug.toLowerCase().includes(searchText.toLowerCase()) ||
     blog.summary?.toLowerCase().includes(searchText.toLowerCase())
@@ -226,37 +226,50 @@ function Blogs() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Blog Management</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input 
-                  placeholder="Search blogs..." 
-                  prefix={<SearchOutlined />}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 250 }}
-                  className="py-2 text-base font-medium"
-                />
                 <Link href="/admin/blogs/add">
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     icon={<PlusOutlined />}
                     className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
                   >
                     Add Blog
                   </Button>
                 </Link>
-                {loading && <Spin />}
+                <Input
+                  placeholder="Search blogs..."
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                />
+
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchBlogs}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>
         </Row>
-        
+
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
-                    <Table 
-                      dataSource={filteredBlogs} 
-                      columns={columns} 
+                    <Table
+                      dataSource={filteredBlogs}
+                      columns={columns}
                       pagination={{ pageSize: 10 }}
                       loading={loading}
                       rowKey="id"

@@ -402,15 +402,6 @@ function Coupons() {
                 </h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Search coupons..."
-                  prefix={<SearchOutlined />}
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 250 }}
-                  className="py-2 text-base font-medium"
-                  ref={searchInputRef}
-                />
                 <Button
                   type="primary"
                   onClick={() => {
@@ -422,7 +413,28 @@ function Coupons() {
                 >
                   {!isMobile && "Add Coupon"}
                 </Button>
-                {loading && <Spin />}
+                <Input
+                  placeholder="Search coupons..."
+                  prefix={<SearchOutlined />}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                  ref={searchInputRef}
+                />
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchCoupons}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>

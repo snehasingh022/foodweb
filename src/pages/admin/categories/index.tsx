@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Input, Table, Button, Modal, Form, Spin, message, Space, Tooltip } from 'antd';
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { db } from '../../../authentication/firebase';
-import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import Protected from '../../../components/Protected/Protected';
 
 interface CategoryType {
@@ -223,13 +223,6 @@ function Categories() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Category Management</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Search categories..."
-                  prefix={<SearchOutlined />}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 250 }}
-                  className="py-2 text-base font"
-                />
                 <Button
                   type="primary"
                   onClick={() => setModalVisible(true)}
@@ -238,7 +231,26 @@ function Categories() {
                 >
                   Add Category
                 </Button>
-                {loading && <Spin />}
+                <Input
+                  placeholder="Search categories..."
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font"
+                />
+                {loading ? (
+                  <div className="h-10 flex items-center justify-center">
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={fetchCategories}
+                    className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </div>
             </div>
           </Col>
