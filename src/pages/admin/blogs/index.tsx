@@ -28,7 +28,8 @@ import {
   UploadOutlined,
   LoadingOutlined,
   CloudUploadOutlined,
-  PictureOutlined
+  PictureOutlined,
+  PaperClipOutlined
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { collection, getDocs, doc, deleteDoc, query, orderBy, addDoc, updateDoc, serverTimestamp, FieldValue, where } from 'firebase/firestore';
@@ -47,7 +48,7 @@ if (typeof window !== "undefined") {
 }
 
 const { TextArea } = Input;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 // Blog interface
@@ -75,6 +76,8 @@ function Blogs() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [currentBlog, setCurrentBlog] = useState<Blog | null>(null);
 
   useEffect(() => {
     // Only fetch data on the client side
@@ -130,8 +133,13 @@ function Blogs() {
     router.push(`/admin/blogs/edit/${blog.id}`);
   };
 
-  const handleAdd = () => {
-    router.push('/admin/blogs/add');
+  const handleView = (blog: Blog) => {
+    setCurrentBlog(blog);
+    setDetailModalVisible(true);
+  };
+
+  const handleOpenImage = (imageUrl: string) => {
+    window.open(imageUrl, '_blank');
   };
 
   const columns = [
@@ -186,6 +194,7 @@ function Blogs() {
             <Button
               type="text"
               icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
               className="text-blue-600 hover:text-blue-800"
             />
           </Tooltip>
@@ -282,8 +291,187 @@ function Blogs() {
           </Col>
         </Row>
       </main>
+
+      {/* Blog Detail Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                <Text strong className="text-base mt-10 ml-2">Blog Details</Text>
+            </span>
+          </div>
+        }
+        open={detailModalVisible && currentBlog !== null}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={[
+          <Button
+            key="back"
+            size="large"
+            onClick={() => setDetailModalVisible(false)}
+            className="min-w-[100px] font-medium mb-4"
+          >
+            Close
+          </Button>,
+          <Button
+            key="edit"
+            type="primary"
+            size="large"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setDetailModalVisible(false);
+              if (currentBlog) handleEdit(currentBlog);
+            }}
+            className="min-w-[160px] font-medium mb-4 mr-4"
+          >
+            Edit Blog
+          </Button>
+        ]}
+        width={800}
+        className="blog-detail-modal"
+        bodyStyle={{ padding: '20px 24px' }}
+        maskClosable={false}
+      >
+        {currentBlog ? (
+          <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
+            <div className="mb-6">
+              {currentBlog.image && (
+                <div className="mb-6 flex justify-center">
+                  <div className="relative" style={{ maxWidth: '100%', maxHeight: '300px', overflow: 'hidden' }}>
+                    <img
+                      src={currentBlog.image}
+                      alt={currentBlog.title}
+                      className="object-contain max-h-80 rounded-lg cursor-pointer"
+                      onClick={() => handleOpenImage(currentBlog.image || '')}
+                    />
+                    <Tooltip title="View Full Image">
+                      <Button
+                        icon={<EyeOutlined />}
+                        className="absolute bottom-2 right-2 bg-white/80 hover:bg-white"
+                        onClick={() => handleOpenImage(currentBlog.image || '')}
+                      />
+                    </Tooltip>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Title:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentBlog.title}</Text>
+                  </div>
+                </div>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Slug:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentBlog.slug}</Text>
+                  </div>
+                </div>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Category:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentBlog.category || 'N/A'}</Text>
+                  </div>
+                </div>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Featured:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentBlog.isFeatured || 'No'}</Text>
+                  </div>
+                </div>
+              </div>
+              {currentBlog.tags && currentBlog.tags.length > 0 && (
+                <div className="mb-6 border-b pb-4">
+                  <Text type="secondary" className="text-sm">Tags:</Text>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {currentBlog.tags.map((tag, index) => (
+                      <Tag key={index} color="blue">{tag}</Tag>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-6 border-b pb-4">
+                <Text type="secondary" className="text-sm">Summary:</Text>
+                <div className="mt-2 p-3 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
+                  <Text className="text-base whitespace-pre-line">{currentBlog.summary || 'No summary available'}</Text>
+                </div>
+              </div>
+
+              {/* SEO Section */}
+              <div className="mb-6">
+                <Text type="secondary" className="text-sm font-medium">SEO Information:</Text>
+                <div className="grid grid-cols-2 gap-6 mt-3">
+                  <div className="border-b pb-2">
+                    <Text type="secondary" className="text-sm">SEO Title:</Text>
+                    <div className="mt-1">
+                      <Text strong className="text-base">{currentBlog.seoTitle || 'N/A'}</Text>
+                    </div>
+                  </div>
+                  <div className="border-b pb-2">
+                    <Text type="secondary" className="text-sm">SEO Description:</Text>
+                    <div className="mt-1">
+                      <Text strong className="text-base">{currentBlog.seoDescription || 'N/A'}</Text>
+                    </div>
+                  </div>
+                </div>
+
+                {currentBlog.seoKeywords && currentBlog.seoKeywords.length > 0 && (
+                  <div className="mt-4 border-b pb-4">
+                    <Text type="secondary" className="text-sm">SEO Keywords:</Text>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {currentBlog.seoKeywords.map((keyword, index) => (
+                        <Tag key={index} color="green">{keyword}</Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {currentBlog.seoImage && (
+                  <div className="mt-4 border-b pb-4">
+                    <Text type="secondary" className="text-sm">SEO Image:</Text>
+                    <div className="mt-2 flex justify-start">
+                      <div className="relative" style={{ maxWidth: '100%', maxHeight: '150px', overflow: 'hidden' }}>
+                        <img
+                          src={currentBlog.seoImage}
+                          alt="SEO Image"
+                          className="object-contain max-h-40 rounded-lg cursor-pointer"
+                          onClick={() => handleOpenImage(currentBlog.seoImage || '')}
+                        />
+                        <Tooltip title="View Full Image">
+                          <Button
+                            icon={<EyeOutlined />}
+                            className="absolute bottom-2 right-2 bg-white/80 hover:bg-white"
+                            onClick={() => handleOpenImage(currentBlog.seoImage || '')}
+                          />
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {currentBlog.content && (
+                <div>
+                  <Text type="secondary" className="text-sm">Content:</Text>
+                  <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700 overflow-auto max-h-96">
+                    <div
+                      className="blog-content text-base"
+                      dangerouslySetInnerHTML={{ __html: currentBlog.content }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center items-center p-10">
+            <Spin size="large" />
+          </div>
+        )}
+      </Modal>
     </>
   );
 }
 
-export default Protected(Blogs, ["admin"]); 
+export default Protected(Blogs, ["admin"]);
