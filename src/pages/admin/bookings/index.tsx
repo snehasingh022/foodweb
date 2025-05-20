@@ -641,12 +641,12 @@ function Bookings() {
               <Descriptions.Item
                 label={<span className="text-gray-600 dark:text-gray-400">Payment Method</span>}
               >
-                <span>{selectedBooking.paymentMethod || 'N/A'}</span>
+                <span>{(selectedBooking as any).paymentMethod || 'N/A'}</span>
               </Descriptions.Item>
               <Descriptions.Item
                 label={<span className="text-gray-600 dark:text-gray-400">Payment ID</span>}
               >
-                <span className="font-mono text-sm">{selectedBooking.paymentId || 'N/A'}</span>
+                <span className="font-mono text-sm">{(selectedBooking as any).paymentId || 'N/A'}</span>
               </Descriptions.Item>
             </Descriptions>
 
@@ -755,12 +755,17 @@ function Bookings() {
               <>
                 <Divider orientation="left">Tour Itinerary</Divider>
                 <div className="itinerary-container bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                  {Object.entries(selectedBooking.tourDetails.itenaries).map(([key, day]) => (
+                  {Object.entries(selectedBooking.tourDetails.itenaries as Record<string, {
+                    day: number;
+                    title: string;
+                    description: string;
+                  }>).map(([key, day]) => (
                     <div key={key} className="day-item mb-4 border-l-4 border-blue-400 pl-4">
                       <h4 className="text-lg font-medium mb-2">Day {day.day}: {day.title}</h4>
                       <p className="text-gray-600 dark:text-gray-300">{day.description}</p>
                     </div>
                   ))}
+
                 </div>
               </>
             )}

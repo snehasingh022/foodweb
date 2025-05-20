@@ -275,34 +275,27 @@ function AddTour() {
         setImageDialogOpen(true);
     };
 
-    const handleItineraryImageUpload = async (day: string, file: File) => {
+    const handleItineraryImageUpload = async (day: string, imageUrl: string) => {
         try {
             setImageLoading(true);
-            if (!storage) {
-                throw new Error("Firebase Storage is not available");
-            }
-            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`;
-            const storageRef = ref(storage, `tour/${slug}/itinerary/day${day}/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-
             setItineraryImages(prev => {
                 const dayImages = prev[day] || [];
                 return {
                     ...prev,
-                    [day]: [...dayImages, downloadURL]
+                    [day]: [...dayImages, imageUrl]
                 };
             });
 
             message.success("Itinerary image uploaded successfully");
-            return downloadURL;
+            return imageUrl;
         } catch (error) {
-            console.error("Error uploading itinerary image:", error);
-            message.error("Failed to upload itinerary image");
+            console.error("Error saving itinerary image:", error);
+            message.error("Failed to save itinerary image");
         } finally {
             setImageLoading(false);
         }
     };
+
 
     const handleSlugGeneration = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value;
@@ -794,7 +787,7 @@ function AddTour() {
                                                                     {...restField}
                                                                     name={[name, 'title']}
                                                                     label="Title"
-                                                                    rules={[{ required: true, message: 'Please enter day title' }]}
+                                                                    rules={[{ message: 'Please enter day title' }]}
                                                                 >
                                                                     <Input placeholder={`Day ${index + 1} title`} />
                                                                 </Form.Item>
@@ -848,9 +841,7 @@ function AddTour() {
                                                                         storagePath={`tours/itinerary/day${index + 1}`}
                                                                         accept="image/*"
                                                                         maxSizeMB={5}
-                                                                        onUploadSuccess={(url) => handleItineraryImageUpload(`${index + 1}`, { name: `day${index + 1}-img-${Date.now()}` })}
-                                                                        buttonText="Add Image"
-                                                                        buttonProps={{ icon: <PictureOutlined /> }}
+                                                                        onUploadSuccess={(url) => handleItineraryImageUpload(`${index + 1}`, url)}
                                                                     />
                                                                 </div>
                                                             </div>
