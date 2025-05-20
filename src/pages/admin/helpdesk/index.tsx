@@ -833,10 +833,10 @@ function Helpdesk() {
       {/* Response Modal (Replaces Resolve and Close dialogs) */}
       <Modal
         title={
-          <div className="px-2 py-1">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              {currentTicket?.status === 'Opened' ? 'Resolve Ticket' : 'Close Ticket'}
-            </h3>
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              Resolve Ticket
+            </span>
           </div>
         }
         open={responseModalVisible}

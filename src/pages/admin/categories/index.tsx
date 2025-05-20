@@ -24,10 +24,8 @@ function Categories() {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>('');
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
   const [form] = Form.useForm();
-  const [editForm] = Form.useForm();
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
@@ -74,6 +72,7 @@ function Categories() {
     } catch (error) {
       console.error('Error adding category:', error);
       message.error('Failed to add category');
+    } finally {
       setSubmitLoading(false);
     }
   };
@@ -92,12 +91,15 @@ function Categories() {
         updatedAt: serverTimestamp(),
       });
       message.success('Category updated successfully');
-      editForm.resetFields();
-      setEditModalVisible(false);
+      form.resetFields();
+      setModalVisible(false);
+      setEditMode(false);
+      setSelectedCategory(null);
       fetchCategories();
     } catch (error) {
       console.error('Error updating category:', error);
       message.error('Failed to update category');
+    } finally {
       setSubmitLoading(false);
     }
   };
@@ -110,10 +112,12 @@ function Categories() {
       await deleteDoc(doc(db, 'categories', selectedCategory.id));
       message.success('Category deleted successfully');
       setDeleteModalVisible(false);
+      setSelectedCategory(null);
       fetchCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
       message.error('Failed to delete category');
+    } finally {
       setSubmitLoading(false);
     }
   };
@@ -134,6 +138,26 @@ function Categories() {
       );
     }
     return description;
+  };
+
+  // Handle edit button click
+  const handleEditClick = (record: CategoryType) => {
+    setSelectedCategory(record);
+    setEditMode(true);
+    // Set form fields with the selected category data
+    form.setFieldsValue({
+      name: record.name,
+      description: record.description,
+    });
+    setModalVisible(true);
+  };
+
+  // Handle add button click
+  const handleAddClick = () => {
+    setEditMode(false);
+    setSelectedCategory(null);
+    form.resetFields(); // Clear form for new category
+    setModalVisible(true);
   };
 
   // Table columns
@@ -179,15 +203,7 @@ function Categories() {
               type="text"
               icon={<EditOutlined />}
               className="text-green-600 hover:text-green-800"
-              onClick={() => {
-                setSelectedCategory(record);
-                editForm.setFieldsValue({
-                  name: record.name,
-                  description: record.description,
-                });
-                setEditMode(true);
-                setModalVisible(true);
-              }}
+              onClick={() => handleEditClick(record)}
             />
           </Tooltip>
           <Tooltip title="Delete">
@@ -209,6 +225,8 @@ function Categories() {
   const handleModalCancel = () => {
     setModalVisible(false);
     setEditMode(false);
+    setSelectedCategory(null);
+    form.resetFields();
   };
 
   const handleSubmit = editMode ? handleUpdateCategory : handleAddCategory;
@@ -225,7 +243,7 @@ function Categories() {
               <div className="flex items-center gap-2">
                 <Button
                   type="primary"
-                  onClick={() => setModalVisible(true)}
+                  onClick={handleAddClick}
                   icon={<PlusOutlined />}
                   className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
                 >
@@ -289,63 +307,68 @@ function Categories() {
 
       {/* Add/Edit Category Modal */}
       <Modal
-        title={editMode ? "Edit Category" : "Add New Category"}
-        open={modalVisible}
-        onCancel={handleModalCancel}
-        footer={null}
-        width="95%"
-        style={{ maxWidth: '600px' }}
-        className="responsive-modal"
+        title={<div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+            {editMode ? "Edit Category" : "Add New Category"}
+          </span>
+        </div>}
+      open={modalVisible}
+      onCancel={handleModalCancel}
+      footer={null}
+      width="95%"
+      style={{ maxWidth: '600px' }}
+      className="responsive-modal"
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          className="p-2"
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        className="p-6"
+      >
+        <Form.Item
+          name="name"
+          label="Category Name"
+          rules={[{ required: true, message: 'Please enter category name' }]}
         >
-          <Form.Item
-            name="name"
-            label="Category Name"
-            rules={[{ required: true, message: 'Please enter category name' }]}
-          >
-            <Input placeholder="Enter category name" />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Description"
-            rules={[{ required: true, message: 'Please enter description' }]}
-          >
-            <Input.TextArea rows={4} placeholder="Enter description" />
-          </Form.Item>
-          <Form.Item className="mb-0 flex justify-end mt-4">
-            <Space>
-              <Button onClick={handleModalCancel}>
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitLoading}
-              >
-                {editMode ? "Update" : "Add"}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+          <Input placeholder="Enter category name" />
+        </Form.Item>
+        <Form.Item
+          name="description"
+          label="Description"
+          rules={[{ required: true, message: 'Please enter description' }]}
+        >
+          <Input.TextArea rows={4} placeholder="Enter description" />
+        </Form.Item>
+        <Form.Item className="mb-0 flex justify-end mt-4">
+          <Space>
+            <Button onClick={handleModalCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitLoading}
+            >
+              {editMode ? "Update" : "Add"}
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Modal >
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        title="Delete Category"
-        open={deleteModalVisible}
-        onCancel={() => setDeleteModalVisible(false)}
-        onOk={handleDeleteCategory}
-        okText="Delete"
-        okButtonProps={{ danger: true, loading: submitLoading }}
+      {/* Delete Confirmation Modal */ }
+      < Modal
+  title = "Delete Category"
+  open = { deleteModalVisible }
+  onCancel = {() => setDeleteModalVisible(false)
+}
+onOk = { handleDeleteCategory }
+okText = "Delete"
+okButtonProps = {{ danger: true, loading: submitLoading }}
       >
         <p>Are you sure you want to delete this category?</p>
         <p className="text-red-500 mt-2">This action cannot be undone.</p>
-      </Modal>
+      </Modal >
     </>
   );
 }

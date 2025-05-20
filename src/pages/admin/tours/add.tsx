@@ -34,8 +34,8 @@ import {
     query,
     orderBy,
     serverTimestamp,
-    setDoc,  // Added missing import
-    doc      // Added missing import
+    setDoc,
+    doc
 } from 'firebase/firestore';
 import { db, app } from '../../../authentication/firebase';
 import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
@@ -63,6 +63,7 @@ function AddTour() {
     const [imageLoading, setImageLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState('');
     const [editorContent, setEditorContent] = useState('');
+    const [itineraryEditorContent, setItineraryEditorContent] = useState<{ [key: string]: string }>({});
     const [keywordInput, setKeywordInput] = useState('');
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [newCategory, setNewCategory] = useState('');
@@ -163,8 +164,8 @@ function AddTour() {
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
-            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`; // Fixed string interpolation
-            const storageRef = ref(storage, `tour/${slug}/images/${file.name}`); // Fixed string interpolation
+            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`;
+            const storageRef = ref(storage, `tour/${slug}/images/${file.name}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
             setImageUrl(downloadURL);
@@ -182,7 +183,7 @@ function AddTour() {
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
-            const storageRef = ref(storage, `/archive/images/${file.name}`); // Fixed string interpolation
+            const storageRef = ref(storage, `/archive/images/${file.name}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
@@ -274,15 +275,14 @@ function AddTour() {
         setImageDialogOpen(true);
     };
 
-    // Modified handleItineraryImageUpload function
     const handleItineraryImageUpload = async (day: string, file: File) => {
         try {
             setImageLoading(true);
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
-            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`; // Fixed string interpolation
-            const storageRef = ref(storage, `tour/${slug}/itinerary/day${day}/${file.name}`); // Fixed string interpolation
+            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`;
+            const storageRef = ref(storage, `tour/${slug}/itinerary/day${day}/${file.name}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
@@ -321,11 +321,11 @@ function AddTour() {
             const processedItineraries: { [key: string]: any } = {};
             if (values.itineraries) {
                 values.itineraries.forEach((itinerary: any, index: number) => {
-                    const dayKey = `Day${index + 1}`; // Fixed string interpolation
+                    const dayKey = `Day${index + 1}`;
                     processedItineraries[dayKey] = {
                         title: itinerary.title,
-                        description: itinerary.description,
-                        imageURL: itineraryImages[`${index + 1}`] || [] // Fixed string interpolation
+                        description: itineraryEditorContent[`day-${index + 1}`] || itinerary.description, // Use rich editor content
+                        imageURL: itineraryImages[`${index + 1}`] || []
                     };
                 });
             }
@@ -337,7 +337,7 @@ function AddTour() {
             });
 
             // Generate custom tour ID
-            const tourId = `TRID${Date.now().toString().slice(-6)}`; // Fixed string interpolation
+            const tourId = `TRID${Date.now().toString().slice(-6)}`;
 
             // Create tour data
             const tourData = {
@@ -379,7 +379,6 @@ function AddTour() {
         }
     };
 
-
     // Function to add a tag to selected tags
     const handleAddSelectedTag = (tagId: string, tagData: any) => {
         setSelectedTags(prev => ({
@@ -415,7 +414,7 @@ function AddTour() {
         if (value > currentItineraries.length) {
             const newItineraries = [...currentItineraries];
             for (let i = currentItineraries.length; i < value; i++) {
-                newItineraries.push({ title: `Day ${i + 1}`, description: '' }); // Fixed string interpolation
+                newItineraries.push({ title: `Day ${i + 1}`, description: '' });
             }
             form.setFieldsValue({ itineraries: newItineraries });
 
@@ -423,14 +422,36 @@ function AddTour() {
             const newItineraries = currentItineraries.slice(0, value);
             form.setFieldsValue({ itineraries: newItineraries });
 
+            // Clean up itinerary editor content for removed days
+            const newItineraryEditorContent = { ...itineraryEditorContent };
+            for (let i = value; i < currentItineraries.length; i++) {
+                delete newItineraryEditorContent[`day-${i + 1}`];
+            }
+            setItineraryEditorContent(newItineraryEditorContent);
+
+            // Clean up itinerary images for removed days
             const newItineraryImages = { ...itineraryImages };
             for (let i = value; i < currentItineraries.length; i++) {
-                delete newItineraryImages[`${i + 1}`]; // Fixed string interpolation
+                delete newItineraryImages[`${i + 1}`];
             }
             setItineraryImages(newItineraryImages);
         }
     };
 
+    const handleItineraryEditorChange = (content: string, index: number) => {
+        // Update the editor content state
+        setItineraryEditorContent(prev => ({
+            ...prev,
+            [`day-${index + 1}`]: content
+        }));
+
+        // Also update the form field value
+        const itineraries = form.getFieldValue('itineraries');
+        if (itineraries && itineraries[index]) {
+            itineraries[index].description = content;
+            form.setFieldsValue({ itineraries });
+        }
+    };
 
 
     return (
@@ -630,7 +651,21 @@ function AddTour() {
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
+                                                        label={
+                                                            <div className="flex items-center mb-2" style={{ gap: '440px' }}>
+                                                                <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
+                                                                <Button
+                                                                    type="link"
+                                                                    onClick={() => setCategoryDialogOpen(true)}
+                                                                    size="small"
+                                                                    className="text-primary"
+                                                                    icon={<PlusOutlined />}
+                                                                >
+                                                                    Add New
+                                                                </Button>
+                                                            </div>
+
+                                                        }
                                                         name="categoryID"
                                                         rules={[{ required: true, message: "Please select a category" }]}
                                                     >
@@ -646,6 +681,8 @@ function AddTour() {
                                                             ))}
                                                         </Select>
                                                     </Form.Item>
+
+                                                    {/* Hidden Inputs */}
                                                     <Form.Item name="categoryName" hidden>
                                                         <Input />
                                                     </Form.Item>
@@ -657,6 +694,7 @@ function AddTour() {
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
+
 
                                             <Row gutter={24}>
                                                 <Col span={24}>
@@ -742,92 +780,95 @@ function AddTour() {
                                                 {(fields, { add, remove }) => (
                                                     <>
                                                         {fields.map(({ key, name, ...restField }, index) => (
-                                                            <div key={key} className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg relative">
+                                                            <div key={key} className="border border-gray-200 p-4 rounded-md mb-4">
+                                                                <div className="flex justify-between items-center mb-2">
+                                                                    <h4 className="font-medium">Day {index + 1}</h4>
+                                                                    <Button
+                                                                        type="text"
+                                                                        onClick={() => remove(name)}
+                                                                        icon={<MinusCircleOutlined />}
+                                                                        danger
+                                                                    />
+                                                                </div>
+                                                                <Form.Item
+                                                                    {...restField}
+                                                                    name={[name, 'title']}
+                                                                    label="Title"
+                                                                    rules={[{ required: true, message: 'Please enter day title' }]}
+                                                                >
+                                                                    <Input placeholder={`Day ${index + 1} title`} />
+                                                                </Form.Item>
 
-                                                                <h4 className="text-dark dark:text-white/[.87] font-medium mb-3">Day {index + 1}</h4>
-                                                                <Row gutter={24}>
-                                                                    <Col span={24}>
-                                                                        <Form.Item
-                                                                            {...restField}
-                                                                            name={[name, 'title']}
-                                                                            label={<span className="text-dark dark:text-white/[.87] font-medium">Title</span>}
-                                                                            rules={[{ required: true, message: 'Please enter day title' }]}
-                                                                        >
-                                                                            <Input placeholder="Enter day title" />
-                                                                        </Form.Item>
-                                                                    </Col>
-                                                                </Row>
-                                                                <Row gutter={24}>
-                                                                    <Col span={24}>
-                                                                        <Form.Item
-                                                                            {...restField}
-                                                                            name={[name, 'description']}
-                                                                            label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
-                                                                            rules={[{ required: true, message: 'Please enter day description' }]}
-                                                                        >
-                                                                            <Input.TextArea rows={3} placeholder="Enter day description" />
-                                                                        </Form.Item>
-                                                                    </Col>
-                                                                </Row>
-                                                                <Row gutter={24}>
-                                                                    <Col span={24}>
-                                                                        <div className="mb-2">
-                                                                            <span className="text-dark dark:text-white/[.87] font-medium">Images</span>
-                                                                        </div>
-                                                                        <div className="flex flex-wrap gap-4">
-                                                                            {/* Display existing images */}
-                                                                            {(itineraryImages[`${index + 1}`] || []).map((url, imgIndex) => (
-                                                                                <div
-                                                                                    key={imgIndex}
-                                                                                    className="relative w-32 h-32 border border-gray-200 rounded-md overflow-hidden group"
-                                                                                >
-                                                                                    <img
-                                                                                        src={url || "/placeholder.svg"}
-                                                                                        alt={`Day ${index + 1} image ${imgIndex + 1}`}
-                                                                                        className="w-full h-full object-cover"
-                                                                                    />
-                                                                                    <div
-                                                                                        className="absolute inset-0 bg-black/50 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                                                                        onClick={() => {
-                                                                                            const newImages = { ...itineraryImages };
-                                                                                            const dayImages = [...(newImages[`${index + 1}`] || [])];
-                                                                                            dayImages.splice(imgIndex, 1);
-                                                                                            newImages[`${index + 1}`] = dayImages;
-                                                                                            setItineraryImages(newImages);
-                                                                                        }}
-                                                                                    >
-                                                                                        <MinusCircleOutlined style={{ fontSize: '20px', color: 'white' }} />
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
+                                                                <div className="mb-4">
+                                                                    <label className="block text-dark dark:text-white/[.87] font-medium mb-2">
+                                                                        Description
+                                                                    </label>
+                                                                    <Editor
+                                                                        apiKey="cluzl6f3pdaveewms6exdzpvcygpa23rgrx0whym6svjop94"
+                                                                        value={itineraryEditorContent[`day-${index + 1}`] || ''}
+                                                                        init={{
+                                                                            height: 300,
+                                                                            menubar: false,
+                                                                            plugins: [
+                                                                                'advlist autolink lists link image charmap print preview anchor',
+                                                                                'searchreplace visualblocks code fullscreen',
+                                                                                'insertdatetime media table paste code help wordcount'
+                                                                            ],
+                                                                            toolbar: 'undo redo | formatselect | bold italic backcolor | ' +
+                                                                                'alignleft aligncenter alignright alignjustify | ' +
+                                                                                'bullist numlist outdent indent | removeformat | help'
+                                                                        }}
+                                                                        onEditorChange={(content) => handleItineraryEditorChange(content, index)}
+                                                                    />
+                                                                    <Form.Item
+                                                                        {...restField}
+                                                                        name={[name, 'description']}
+                                                                        hidden
+                                                                    >
+                                                                        <Input />
+                                                                    </Form.Item>
+                                                                </div>
 
-                                                                            {/* Upload new image button */}
-                                                                            <div
-                                                                                className="w-32 h-32 border border-dashed border-gray-300 rounded-md p-2 text-center cursor-pointer hover:border-primary transition-colors duration-300 flex flex-col justify-center items-center"
-                                                                                onClick={() => {
-                                                                                    // Create a hidden file input and trigger it
-                                                                                    const input = document.createElement('input');
-                                                                                    input.type = 'file';
-                                                                                    input.accept = 'image/*';
-                                                                                    input.onchange = (e) => {
-                                                                                        const target = e.target as HTMLInputElement;
-                                                                                        const file = target.files?.[0];
-                                                                                        if (file) {
-                                                                                            handleItineraryImageUpload(`${index + 1}`, file);
-                                                                                        }
-                                                                                    };
-                                                                                    input.click();
-                                                                                }}
-                                                                            >
-                                                                                <PictureOutlined style={{ fontSize: '24px', color: '#d9d9d9' }} />
-                                                                                <p className="mt-2 text-gray-500 text-sm">Add Image</p>
+                                                                <div className="mb-4">
+                                                                    <label className="block text-dark dark:text-white/[.87] font-medium mb-2">
+                                                                        Images
+                                                                    </label>
+                                                                    <div className="flex flex-wrap gap-2 mb-2">
+                                                                        {(itineraryImages[`${index + 1}`] || []).map((imgUrl, imgIndex) => (
+                                                                            <div key={imgIndex} className="relative">
+                                                                                <img
+                                                                                    src={imgUrl}
+                                                                                    alt={`Day ${index + 1} image ${imgIndex + 1}`}
+                                                                                    className="w-24 h-24 object-cover rounded-md"
+                                                                                />
                                                                             </div>
-                                                                        </div>
-                                                                    </Col>
-                                                                </Row>
+                                                                        ))}
+                                                                    </div>
+                                                                    <FirebaseFileUploader
+                                                                        storagePath={`tours/itinerary/day${index + 1}`}
+                                                                        accept="image/*"
+                                                                        maxSizeMB={5}
+                                                                        onUploadSuccess={(url) => handleItineraryImageUpload(`${index + 1}`, { name: `day${index + 1}-img-${Date.now()}` })}
+                                                                        buttonText="Add Image"
+                                                                        buttonProps={{ icon: <PictureOutlined /> }}
+                                                                    />
+                                                                </div>
                                                             </div>
                                                         ))}
 
+                                                        <Form.Item>
+                                                            <Button
+                                                                type="dashed"
+                                                                onClick={() => {
+                                                                    const currentLength = form.getFieldValue('itineraries')?.length || 0;
+                                                                    add({ title: `Day ${currentLength + 1}`, description: '' });
+                                                                }}
+                                                                block
+                                                                icon={<PlusOutlined />}
+                                                            >
+                                                                Add Day
+                                                            </Button>
+                                                        </Form.Item>
                                                     </>
                                                 )}
                                             </Form.List>
@@ -859,30 +900,43 @@ function AddTour() {
 
             {/* Category Dialog */}
             <Modal
-                title="Add New Category"
+                title={
+                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                            {"Add New Category"}
+                        </span>
+                    </div>
+                }
                 open={categoryDialogOpen}
                 onCancel={() => setCategoryDialogOpen(false)}
-                onOk={handleAddCategory}
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                        <Button type="primary" onClick={handleAddCategory}>
+                            OK
+                        </Button>
+                    </div>
+                }
                 width="95%"
                 style={{ maxWidth: '500px' }}
                 className="responsive-modal"
             >
-                <Form layout="vertical">
-                    <Form.Item label="Category Name" required>
+                <Form layout="vertical" className="p-2">
+                    <Form.Item label="Category Name" required className="p-2">
                         <Input
                             value={newCategory}
                             onChange={(e) => setNewCategory(e.target.value)}
                             placeholder="Enter category name"
                         />
                     </Form.Item>
-                    <Form.Item label="Slug">
+                    <Form.Item label="Slug" className="p-2">
                         <Input
                             value={categorySlug}
                             onChange={(e) => setCategorySlug(e.target.value)}
                             placeholder="category-slug"
                         />
                     </Form.Item>
-                    <Form.Item label="Description">
+                    <Form.Item label="Description" className="p-2">
                         <Input.TextArea
                             value={categoryDescription}
                             onChange={(e) => setCategoryDescription(e.target.value)}
@@ -905,17 +959,19 @@ function AddTour() {
                 open={tagDialogOpen}
                 onCancel={() => setTagDialogOpen(false)}
                 onOk={handleAddTag}
-                // Remove or comment out the footer={null} line
-                // footer={null}
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                        <Button type="primary" onClick={handleAddCategory}>
+                            OK
+                        </Button>
+                    </div>
+                }
                 width="95%"
-                style={{ maxWidth: '600px' }}
+                style={{ maxWidth: '500px' }}
                 className="responsive-modal"
-                bodyStyle={{ padding: '24px' }}
-                // Optionally, you can customize the OK and Cancel button texts
-                okText="Add Tag"
-                cancelText="Cancel"
             >
-                <Form layout="vertical">
+                <Form layout="vertical" className='p-3'>
                     <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
                         name="name"
                         rules={[{ required: true, message: 'Please enter tag name!' }]} required>

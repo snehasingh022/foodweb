@@ -64,6 +64,7 @@ function AddBlog() {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageType, setImageType] = useState(''); // 'main' or 'seo'
   const [archive, setArchive] = useState<any[]>([]);
+  const [itineraryContent, setItineraryContent] = useState({});
 
   const PageRoutes = [
     {
@@ -307,7 +308,7 @@ function AddBlog() {
     if (typeof window === "undefined") return;
 
     try {
-      const blogId = `CID${Date.now().toString().slice(-6)}`;
+      const blogId = `BLID${Date.now().toString().slice(-6)}`;
 
       const blogData = {
         title: values.title,
@@ -591,24 +592,24 @@ function AddBlog() {
                       </Form.Item>
 
                       <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Image</span>}>
-                      <FirebaseFileUploader
-                              storagePath="blogs(seo)/images" // Customize storage path
-                              accept="image/*" // Only accept images
-                              maxSizeMB={10} // Adjust max file size
-                              onUploadSuccess={(url) => setSeoImageUrl(url)} // Capture the download URL
-                              onUploadError={(error) => message.error("Image upload failed!")}
-                              disabled={false}
-                            />
+                        <FirebaseFileUploader
+                          storagePath="blogs(seo)/images" // Customize storage path
+                          accept="image/*" // Only accept images
+                          maxSizeMB={10} // Adjust max file size
+                          onUploadSuccess={(url) => setSeoImageUrl(url)} // Capture the download URL
+                          onUploadError={(error) => message.error("Image upload failed!")}
+                          disabled={false}
+                        />
 
-                            {imageUrl && (
-                              <div className="mt-2">
-                                <img
-                                  src={seoImageUrl}
-                                  alt="seo"
-                                  className="max-h-32 rounded-md border"
-                                />
-                              </div>
-                            )}
+                        {imageUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={seoImageUrl}
+                              alt="seo"
+                              className="max-h-32 rounded-md border"
+                            />
+                          </div>
+                        )}
                       </Form.Item>
                     </div>
 
@@ -639,30 +640,44 @@ function AddBlog() {
 
       {/* Category Dialog */}
       <Modal
-        title="Add New Category"
+        title={
+          <div className="flex items-center gap-2 px-2 py-1">
+            <span className="text-lg font-medium">Add New Category</span>
+          </div>
+        }
         open={categoryDialogOpen}
         onCancel={() => setCategoryDialogOpen(false)}
-        onOk={handleAddCategory}
+        footer={
+          <div className="flex justify-end gap-2 pr-6 pb-4">
+            <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+            <Button type="primary" onClick={handleAddCategory}>
+              OK
+            </Button>
+          </div>
+        }
         width="95%"
         style={{ maxWidth: '500px' }}
         className="responsive-modal"
       >
-        <Form layout="vertical">
-          <Form.Item label="Category Name" required>
+
+        <Divider className="my-2" />
+
+        <Form layout="vertical" className="p-2">
+          <Form.Item label="Category Name" required className="p-2">
             <Input
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               placeholder="Enter category name"
             />
           </Form.Item>
-          <Form.Item label="Slug">
+          <Form.Item label="Slug" className="p-2">
             <Input
               value={categorySlug}
               onChange={(e) => setCategorySlug(e.target.value)}
               placeholder="category-slug"
             />
           </Form.Item>
-          <Form.Item label="Description">
+          <Form.Item label="Description" className="p-2">
             <Input.TextArea
               value={categoryDescription}
               onChange={(e) => setCategoryDescription(e.target.value)}
@@ -675,30 +690,43 @@ function AddBlog() {
 
       {/* Tag Dialog */}
       <Modal
-        title="Add New Tag"
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              {"Add New Tag"}
+            </span>
+          </div>
+        }
         open={tagDialogOpen}
         onCancel={() => setTagDialogOpen(false)}
         onOk={handleAddTag}
+        footer={
+          <div className="flex justify-end gap-2 pr-6 pb-4">
+            <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+            <Button type="primary" onClick={handleAddCategory}>
+              OK
+            </Button>
+          </div>
+        }
         width="95%"
         style={{ maxWidth: '500px' }}
         className="responsive-modal"
       >
-        <Form layout="vertical">
-          <Form.Item label="Tag Name" required>
-            <Input
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Enter tag name"
-            />
+        <Form layout="vertical" className='p-3'>
+          <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
+            name="name"
+            rules={[{ required: true, message: 'Please enter tag name!' }]} required>
+            <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Enter tag name" />
           </Form.Item>
-          <Form.Item label="Slug">
-            <Input
-              value={tagSlug}
-              onChange={(e) => setTagSlug(e.target.value)}
-              placeholder="tag-slug"
-            />
+          <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
+            name="slug"
+            rules={[{ required: true, message: 'Please enter tag slug!' }]}
+            tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens.">
+            <Input value={tagSlug} onChange={(e) => setTagSlug(e.target.value)} placeholder="tag-slug" />
           </Form.Item>
-          <Form.Item label="Description">
+          <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+            name="description"
+            rules={[{ required: true, message: 'Please enter tag description!' }]}>
             <Input.TextArea
               value={tagDescription}
               onChange={(e) => setTagDescription(e.target.value)}

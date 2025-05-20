@@ -50,13 +50,10 @@ function Tags() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>('');
-  const [addModalVisible, setAddModalVisible] = useState<boolean>(false);
   const [editMode, setEditMode] = useState<boolean>(false);
-  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [form] = Form.useForm();
-  const [editForm] = Form.useForm();
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   // Fetch tags from Firestore
@@ -96,12 +93,6 @@ function Tags() {
     form.setFieldsValue({ slug });
   };
 
-  const handleEditNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.value;
-    const slug = name.toLowerCase().replace(/\s+/g, '-');
-    editForm.setFieldsValue({ slug });
-  };
-
   // Add new tag
   const handleAddTag = async (values: any) => {
     try {
@@ -115,7 +106,7 @@ function Tags() {
       });
 
       message.success("Tag added successfully");
-      setAddModalVisible(false);
+      setModalVisible(false);
       form.resetFields();
       fetchTags();
     } catch (error) {
@@ -138,8 +129,8 @@ function Tags() {
       });
 
       message.success("Tag updated successfully");
-      setEditModalVisible(false);
-      editForm.resetFields();
+      setModalVisible(false);
+      form.resetFields();
       fetchTags();
     } catch (error) {
       console.error("Error updating tag:", error);
@@ -218,12 +209,13 @@ function Tags() {
               className="text-green-600 hover:text-green-800"
               onClick={() => {
                 setSelectedTag(record);
-                editForm.setFieldsValue({
+                setEditMode(true);
+                // Populate form with the selected tag data
+                form.setFieldsValue({
                   name: record.name,
                   slug: record.slug,
                   description: record.description,
                 });
-                setEditMode(true);
                 setModalVisible(true);
               }}
             />
@@ -256,7 +248,13 @@ function Tags() {
     } else {
       await handleAddTag(values);
     }
-    setModalVisible(false);
+    setEditMode(false);
+  };
+
+  const openAddModal = () => {
+    setEditMode(false);
+    form.resetFields();
+    setModalVisible(true);
   };
 
   return (
@@ -271,7 +269,7 @@ function Tags() {
               <div className="flex items-center gap-2">
                 <Button
                   type="primary"
-                  onClick={() => setModalVisible(true)}
+                  onClick={openAddModal}
                   icon={<PlusOutlined />}
                   className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
                 >

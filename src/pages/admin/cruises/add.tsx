@@ -7,7 +7,7 @@ import { useState, useEffect } from "react"
 import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload, message, Space, Modal, DatePicker } from "antd"
 import { UploadOutlined, PlusOutlined, ArrowLeftOutlined, PictureOutlined } from "@ant-design/icons"
 import { PageHeaders } from "../../../components/page-headers/index"
-import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, setDoc, doc} from "firebase/firestore"
+import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, setDoc, doc } from "firebase/firestore"
 import { db, app } from "../../../authentication/firebase"
 import { getDownloadURL, ref, uploadBytes, getStorage } from "firebase/storage"
 import { Editor } from "@tinymce/tinymce-react"
@@ -490,7 +490,18 @@ function AddCruise() {
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
+                                                        label={<div className="flex items-center mb-2" style={{ gap: '440px' }}>
+                                                            <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
+                                                            <Button
+                                                                type="link"
+                                                                onClick={() => setCategoryDialogOpen(true)}
+                                                                size="small"
+                                                                className="text-primary"
+                                                                icon={<PlusOutlined />}
+                                                            >
+                                                                Add New
+                                                            </Button>
+                                                        </div>}
                                                         name="categoryID"
                                                         rules={[{ required: true, message: "Please select a category" }]}
                                                     >
@@ -515,6 +526,7 @@ function AddCruise() {
                                                     <Form.Item name="categoryDescription" hidden>
                                                         <Input />
                                                     </Form.Item>
+
                                                 </Col>
                                                 <Col span={12}>
                                                     <div className="flex justify-between items-center mb-2">
@@ -642,26 +654,39 @@ function AddCruise() {
 
             {/* Category Dialog */}
             <Modal
-                title="Add New Category"
+                title={
+                    <div className="flex items-center gap-2 px-2 py-1">
+                        <span className="text-lg font-medium">Add New Category</span>
+                    </div>
+                }
                 open={categoryDialogOpen}
                 onCancel={() => setCategoryDialogOpen(false)}
-                onOk={handleAddCategory}
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                        <Button type="primary" onClick={handleAddCategory}>
+                            OK
+                        </Button>
+                    </div>
+                }
                 width="95%"
-                style={{ maxWidth: "500px" }}
+                style={{ maxWidth: '500px' }}
                 className="responsive-modal"
             >
-                <Form layout="vertical">
-                    <Form.Item label="Category Name" required>
+                <Divider className="my-2" />
+
+                <Form layout="vertical" className="p-3">
+                    <Form.Item label="Category Name" required className="p-2">
                         <Input
                             value={newCategory}
                             onChange={(e) => setNewCategory(e.target.value)}
                             placeholder="Enter category name"
                         />
                     </Form.Item>
-                    <Form.Item label="Slug">
+                    <Form.Item label="Slug" className="p-2">
                         <Input value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)} placeholder="category-slug" />
                     </Form.Item>
-                    <Form.Item label="Description">
+                    <Form.Item label="Description" className="p-2">
                         <Input.TextArea
                             value={categoryDescription}
                             onChange={(e) => setCategoryDescription(e.target.value)}
@@ -682,29 +707,21 @@ function AddCruise() {
                     </div>
                 }
                 open={tagDialogOpen}
+                onCancel={() => setTagDialogOpen(false)}
+                onOk={handleAddTag}
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                        <Button type="primary" onClick={handleAddCategory}>
+                            OK
+                        </Button>
+                    </div>
+                }
                 width="95%"
-                style={{ maxWidth: '600px' }}
+                style={{ maxWidth: '500px' }}
                 className="responsive-modal"
-                bodyStyle={{ padding: '24px' }}
-                footer={[
-                    <Button
-                        key="cancel"
-                        onClick={() => setTagDialogOpen(false)}
-                        style={{ margin: '0 2px 10px', padding: '6px 16px' }}
-                    >
-                        Cancel
-                    </Button>,
-                    <Button
-                        key="submit"
-                        type="primary"
-                        onClick={handleAddTag}
-                        style={{ margin: '0 8px 10px', padding: '6px 16px' }}
-                    >
-                        Add
-                    </Button>
-                ]}
             >
-                <Form layout="vertical">
+                <Form layout="vertical" className='p-3'>
                     <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
                         name="name"
                         rules={[{ required: true, message: 'Please enter tag name!' }]} required>
