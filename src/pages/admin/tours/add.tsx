@@ -797,7 +797,7 @@ function AddTour() {
                                                                         Description
                                                                     </label>
                                                                     <Editor
-                                                                        apiKey="cluzl6f3pdaveewms6exdzpvcygpa23rgrx0whym6svjop94"
+                                                                        apiKey="vk693p6lgtcyd2xpc283y9knpg1zphq39p5uqwd5y4coapxo"
                                                                         value={itineraryEditorContent[`day-${index + 1}`] || ''}
                                                                         init={{
                                                                             height: 300,
