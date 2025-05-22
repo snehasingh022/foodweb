@@ -144,6 +144,12 @@ function Blogs() {
 
   const columns = [
     {
+      title: 'Blog ID',
+      dataIndex: 'id',
+      key: 'id',
+      render: (text: string) => <span className="text-sm text-gray-600">{text}</span>,
+    },
+    {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
@@ -155,29 +161,38 @@ function Blogs() {
           (record.category?.toLowerCase() || '').includes(String(value).toLowerCase())
         );
       },
-      render: (text: string, record: Blog) => (
+      render: (text: string, record: any) => (
         <div className="flex items-center">
-          {record.image && (
+          {record.imageURL && (
             <img
-              src={record.image}
+              src={record.imageURL}
               alt={text}
               className="w-10 h-10 object-cover rounded mr-3"
             />
           )}
-          <span className="font-medium">{text}</span>
+          <div>
+            <span className="font-medium">{text}</span>
+          </div>
         </div>
       ),
     },
     {
       title: 'Category',
-      dataIndex: 'category',
+      dataIndex: 'categoryDetails',
       key: 'category',
+      render: (categoryDetails: any) => categoryDetails?.name || 'No Category',
     },
     {
       title: 'Featured',
       dataIndex: 'isFeatured',
       key: 'isFeatured',
-      render: (text: string) => text || 'No'
+      render: (isFeatured: boolean) => (
+        <span className={`px-2 py-1 rounded text-xs font-medium ${
+          isFeatured ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+        }`}>
+          {isFeatured ? 'Yes' : 'No'}
+        </span>
+      ),
     },
     {
       title: 'Created',

@@ -13,7 +13,8 @@ import {
   Upload,
   message,
   Space,
-  Modal
+  Modal,
+  Switch
 } from 'antd';
 import {
   UploadOutlined,
@@ -46,13 +47,16 @@ function AddBlog() {
   // State variables
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<{ [key: string]: any }>({});
   const [imageLoading, setImageLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [editorContent, setEditorContent] = useState('');
   const [seoKeywords, setSeoKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
   const [seoImageUrl, setSeoImageUrl] = useState('');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDescription, setSeoDescription] = useState('');
+  const [isFeatured, setIsFeatured] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [categorySlug, setCategorySlug] = useState('');
@@ -64,7 +68,7 @@ function AddBlog() {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageType, setImageType] = useState(''); // 'main' or 'seo'
   const [archive, setArchive] = useState<any[]>([]);
-  const [itineraryContent, setItineraryContent] = useState({});
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
 
   const PageRoutes = [
     {
@@ -209,17 +213,35 @@ function AddBlog() {
     if (typeof window === "undefined" || newCategory.trim() === "") return;
 
     try {
-      const categoriesRef = collection(db, "categories");
-      const docRef = await addDoc(categoriesRef, {
+      const categoryId = `CID${Date.now().toString().slice(-6)}`;
+      const categoriesRef = doc(db, "categories", categoryId);
+
+      const categoryData = {
+        categoryID: categoryId,
         name: newCategory,
         slug: categorySlug,
         description: categoryDescription,
+        content: "", // Empty content initially
+        imageURL: "", // Empty image URL initially
+        isFeatured: false,
+        seoDetails: {
+          title: "",
+          description: "",
+          keywords: [""],
+          imageURL: ""
+        },
+        tags: {},
         createdAt: serverTimestamp(),
-      });
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(categoriesRef, categoryData);
+
       setCategories([
         ...categories,
         {
-          id: docRef.id,
+          id: categoryId,
+          categoryID: categoryId,
           name: newCategory,
           slug: categorySlug,
           description: categoryDescription,
@@ -240,17 +262,22 @@ function AddBlog() {
     if (typeof window === "undefined" || newTag.trim() === "") return;
 
     try {
-      const tagsRef = collection(db, "tags");
-      const docRef = await addDoc(tagsRef, {
+      const tagId = `TID${Date.now().toString().slice(-6)}`;
+      const tagsRef = doc(db, "tags", tagId);
+
+      const tagData = {
         name: newTag,
         slug: tagSlug,
         description: tagDescription,
         createdAt: serverTimestamp(),
-      });
+      };
+
+      await setDoc(tagsRef, tagData);
+
       setTags([
         ...tags,
         {
-          id: docRef.id,
+          id: tagId,
           name: newTag,
           slug: tagSlug,
           description: tagDescription,
@@ -304,25 +331,59 @@ function AddBlog() {
     form.setFieldsValue({ slug });
   };
 
+  const handleCategoryChange = (categoryName: string) => {
+    const category = categories.find(cat => cat.name === categoryName);
+    setSelectedCategory(category);
+  };
+
+  const handleTagsChange = (selectedTagNames: string[]) => {
+    const tagsMap: { [key: string]: any } = {};
+    selectedTagNames.forEach(tagName => {
+      const tag = tags.find(t => t.name === tagName);
+      if (tag) {
+        tagsMap[tag.id] = {
+          name: tag.name,
+          slug: tag.slug,
+          description: tag.description
+        };
+      }
+    });
+    setSelectedTags(tagsMap);
+  };
+
   const handleSubmit = async (values: any) => {
+    const selectedCategoryName = form.getFieldValue('category');
+    const category = categories.find(cat => cat.name === selectedCategoryName);
+    setSelectedCategory(category);
     if (typeof window === "undefined") return;
 
     try {
       const blogId = `BLID${Date.now().toString().slice(-6)}`;
 
+      // Prepare category details
+      const categoryDetails = selectedCategory ? {
+        categoryID: selectedCategory.categoryID || selectedCategory.id,
+        name: selectedCategory.name,
+        slug: selectedCategory.slug,
+        description: selectedCategory.description,
+        createdAt: selectedCategory.createdAt,
+      } : null;
+
       const blogData = {
         title: values.title,
         slug: values.slug,
-        summary: values.summary,
+        description: values.summary || "", // Using summary as description
         content: editorContent,
-        category: values.category,
-        image: imageUrl,
-        isFeatured: values.isFeatured || 'No',
-        tags: selectedTags,
-        seoTitle: values.seoTitle || "",
-        seoDescription: values.seoDescription || "",
-        seoKeywords: seoKeywords,
-        seoImage: seoImageUrl,
+        categoryDetails: categoryDetails,
+        imageURL: imageUrl,
+        isFeatured: isFeatured,
+        seoDetails: {
+          title: seoTitle || values.title, // Use seoTitle or fallback to main title
+          description: seoDescription,
+          keywords: seoKeywords.length > 0 ? seoKeywords : [""],
+          imageURL: seoImageUrl
+        },        
+        tags: selectedCategory.tags || {},
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -470,8 +531,8 @@ function AddBlog() {
                         <Select
                           mode="multiple"
                           placeholder="Select tags"
-                          value={selectedTags}
-                          onChange={setSelectedTags}
+                          value={Object.values(selectedTags).map(tag => tag.name)}
+                          onChange={handleTagsChange}
                           style={{ width: '100%' }}
                           optionLabelProp="label"
                           className="w-full"
@@ -702,8 +763,8 @@ function AddBlog() {
         onOk={handleAddTag}
         footer={
           <div className="flex justify-end gap-2 pr-6 pb-4">
-            <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
-            <Button type="primary" onClick={handleAddCategory}>
+            <Button onClick={() => setTagDialogOpen(false)}>Cancel</Button>
+            <Button type="primary" onClick={handleAddTag}>
               OK
             </Button>
           </div>
