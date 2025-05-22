@@ -16,6 +16,7 @@ interface CategoryType {
 
 interface CategoryFormValues {
   name: string;
+  slug: string;
   description: string;
 }
 
@@ -53,15 +54,31 @@ function Categories() {
     fetchCategories();
   }, []);
 
+  // Generate slug from name
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .trim();
+  };
+
+  // Handle name change to auto-generate slug
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    const slug = generateSlug(name);
+    form.setFieldsValue({ slug });
+  };
+
   // Handle add category
   const handleAddCategory = async (values: CategoryFormValues) => {
     try {
       setSubmitLoading(true);
       const categoryId = `CID${Date.now().toString().slice(-6)}`;
-      const slug = values.name.toLowerCase().replace(/ /g, '-');
       await setDoc(doc(db, 'categories', categoryId), {
         name: values.name,
-        slug: slug,
+        slug: values.slug,
         description: values.description,
         createdAt: serverTimestamp(),
       });
@@ -82,11 +99,10 @@ function Categories() {
     if (!selectedCategory) return;
     try {
       setSubmitLoading(true);
-      const slug = values.name.toLowerCase().replace(/ /g, '-');
       const categoryRef = doc(db, 'categories', selectedCategory.id);
       await updateDoc(categoryRef, {
         name: values.name,
-        slug: slug,
+        slug: values.slug,
         description: values.description,
         updatedAt: serverTimestamp(),
       });
@@ -124,7 +140,8 @@ function Categories() {
 
   // Filter categories based on search text
   const filteredCategories = categories.filter((category) =>
-    category.name.toLowerCase().includes(searchText.toLowerCase())
+    category.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    category.slug.toLowerCase().includes(searchText.toLowerCase())
   );
 
   // Function to truncate description text
@@ -147,6 +164,7 @@ function Categories() {
     // Set form fields with the selected category data
     form.setFieldsValue({
       name: record.name,
+      slug: record.slug,
       description: record.description,
     });
     setModalVisible(true);
@@ -312,63 +330,83 @@ function Categories() {
             {editMode ? "Edit Category" : "Add New Category"}
           </span>
         </div>}
-      open={modalVisible}
-      onCancel={handleModalCancel}
-      footer={null}
-      width="95%"
-      style={{ maxWidth: '600px' }}
-      className="responsive-modal"
+        open={modalVisible}
+        onCancel={handleModalCancel}
+        footer={null}
+        width="95%"
+        style={{ maxWidth: '600px' }}
+        className="responsive-modal"
       >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        className="p-6"
-      >
-        <Form.Item
-          name="name"
-          label="Category Name"
-          rules={[{ required: true, message: 'Please enter category name' }]}
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="p-6"
         >
-          <Input placeholder="Enter category name" />
-        </Form.Item>
-        <Form.Item
-          name="description"
-          label="Description"
-          rules={[{ required: true, message: 'Please enter description' }]}
-        >
-          <Input.TextArea rows={4} placeholder="Enter description" />
-        </Form.Item>
-        <Form.Item className="mb-0 flex justify-end mt-4">
-          <Space>
-            <Button onClick={handleModalCancel}>
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={submitLoading}
-            >
-              {editMode ? "Update" : "Add"}
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-    </Modal >
+          <Form.Item
+            name="name"
+            label="Category Name"
+            rules={[{ required: true, message: 'Please enter category name' }]}
+          >
+            <Input 
+              placeholder="Enter category name" 
+              onChange={handleNameChange}
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name="slug"
+            label="Slug"
+            rules={[
+              { required: true, message: 'Please enter slug' },
+              { 
+                pattern: /^[a-z0-9-]+$/, 
+                message: 'Slug can only contain lowercase letters, numbers, and hyphens' 
+              }
+            ]}
+          >
+            <Input 
+              placeholder="Enter slug "
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name="description"
+            label="Description"
+            rules={[{ required: true, message: 'Please enter description' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Enter description" />
+          </Form.Item>
+          
+          <Form.Item className="mb-0 flex justify-end mt-4">
+            <Space>
+              <Button onClick={handleModalCancel}>
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={submitLoading}
+              >
+                {editMode ? "Update" : "Add"}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
 
-      {/* Delete Confirmation Modal */ }
-      < Modal
-  title = "Delete Category"
-  open = { deleteModalVisible }
-  onCancel = {() => setDeleteModalVisible(false)
-}
-onOk = { handleDeleteCategory }
-okText = "Delete"
-okButtonProps = {{ danger: true, loading: submitLoading }}
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Delete Category"
+        open={deleteModalVisible}
+        onCancel={() => setDeleteModalVisible(false)}
+        onOk={handleDeleteCategory}
+        okText="Delete"
+        okButtonProps={{ danger: true, loading: submitLoading }}
       >
         <p>Are you sure you want to delete this category?</p>
         <p className="text-red-500 mt-2">This action cannot be undone.</p>
-      </Modal >
+      </Modal>
     </>
   );
 }
