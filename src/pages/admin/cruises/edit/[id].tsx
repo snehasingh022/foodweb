@@ -232,8 +232,10 @@ function EditCruise() {
         if (typeof window === "undefined" || newCategory.trim() === "") return
 
         try {
+            const categoryId = `CID${Date.now().toString().slice(-6)}`;
+
             const categoriesRef = collection(db, "categories")
-            const docRef = await addDoc(categoriesRef, {
+            const docRef =  await setDoc(doc(db, 'categories', categoryId), {
                 name: newCategory,
                 slug: categorySlug,
                 description: categoryDescription,
@@ -242,7 +244,6 @@ function EditCruise() {
             setCategories([
                 ...categories,
                 {
-                    id: docRef.id,
                     name: newCategory,
                     slug: categorySlug,
                     description: categoryDescription,
@@ -263,8 +264,10 @@ function EditCruise() {
         if (typeof window === "undefined" || newTag.trim() === "") return
 
         try {
+        const tagId = `TID${Date.now().toString().slice(-6)}`;
+
             const tagsRef = collection(db, "tags")
-            const docRef = await addDoc(tagsRef, {
+            const docRef = await setDoc(doc(db, "tags", tagId), {
                 name: newTag,
                 slug: tagSlug,
                 description: tagDescription,
@@ -273,7 +276,6 @@ function EditCruise() {
             setTags([
                 ...tags,
                 {
-                    id: docRef.id,
                     name: newTag,
                     slug: tagSlug,
                     description: tagDescription,
@@ -554,8 +556,21 @@ function EditCruise() {
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <label className="text-dark dark:text-white/[.87] font-medium">
+                                                            Category
+                                                        </label>
+                                                        <Button
+                                                            type="link"
+                                                            onClick={() => setCategoryDialogOpen(true)}
+                                                            size="small"
+                                                            className="text-primary"
+                                                            icon={<PlusOutlined />}
+                                                        >
+                                                            Add New
+                                                        </Button>
+                                                    </div>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
                                                         name="categoryID"
                                                         rules={[{ required: true, message: "Please select a category" }]}
                                                     >
@@ -705,79 +720,145 @@ function EditCruise() {
 
             {/* Category Dialog */}
             <Modal
-                title="Add New Category"
+                title={
+                    <div className="flex items-center gap-2 px-2 py-1">
+                        <span className="text-lg font-medium">Add New Category</span>
+                    </div>
+                }
                 open={categoryDialogOpen}
-                onOk={handleAddCategory}
                 onCancel={() => setCategoryDialogOpen(false)}
-                okText="Add"
-                cancelText="Cancel"
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            type="primary"
+                            onClick={handleAddCategory}
+                            disabled={!newCategory.trim()}
+                        >
+                            Add
+                        </Button>
+                    </div>
+                }
+                width="95%"
+                style={{ maxWidth: '500px' }}
+                className="responsive-modal"
             >
-                <Form layout="vertical">
+                <Divider className="my-2" />
+
+                <Form layout="vertical" className="p-3">
                     <Form.Item
                         label="Category Name"
+                        required
+                        className="p-2"
                         rules={[{ required: true, message: "Please enter category name" }]}
                     >
                         <Input
-                            placeholder="Enter category name"
                             value={newCategory}
                             onChange={(e) => setNewCategory(e.target.value)}
+                            placeholder="Enter category name"
                         />
                     </Form.Item>
-                    <Form.Item label="Category Slug">
+                    <Form.Item label="Slug" className="p-2">
                         <Input
-                            placeholder="category-slug"
                             value={categorySlug}
                             onChange={(e) => setCategorySlug(e.target.value)}
+                            placeholder="category-slug"
                         />
                     </Form.Item>
-                    <Form.Item label="Description">
+                    <Form.Item label="Description" className="p-2">
                         <Input.TextArea
-                            rows={4}
-                            placeholder="Enter category description"
                             value={categoryDescription}
                             onChange={(e) => setCategoryDescription(e.target.value)}
+                            placeholder="Category description"
+                            rows={3}
                         />
                     </Form.Item>
                 </Form>
             </Modal>
 
+
             {/* Tag Dialog */}
             <Modal
-                title="Add New Tag"
+                title={
+                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                            Add New Tag
+                        </span>
+                    </div>
+                }
                 open={tagDialogOpen}
-                onOk={handleAddTag}
                 onCancel={() => setTagDialogOpen(false)}
-                okText="Add"
-                cancelText="Cancel"
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setTagDialogOpen(false)}>Cancel</Button>
+                        <Button type="primary" onClick={handleAddTag}>
+                            Add
+                        </Button>
+                    </div>
+                }
+                width="95%"
+                style={{ maxWidth: "500px" }}
+                className="responsive-modal"
             >
-                <Form layout="vertical">
+                <Form layout="vertical" className="p-3">
                     <Form.Item
-                        label="Tag Name"
-                        rules={[{ required: true, message: "Please enter tag name" }]}
+                        label={
+                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                Tag Name
+                            </span>
+                        }
+                        name="name"
+                        rules={[{ required: true, message: "Please enter tag name!" }]}
+                        required
                     >
                         <Input
-                            placeholder="Enter tag name"
                             value={newTag}
                             onChange={(e) => setNewTag(e.target.value)}
+                            placeholder="Enter tag name"
                         />
                     </Form.Item>
-                    <Form.Item label="Tag Slug">
+
+                    <Form.Item
+                        label={
+                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                Slug
+                            </span>
+                        }
+                        name="slug"
+                        rules={[
+                            {
+                                required: true,
+                                message: "Please enter tag slug!",
+                            },
+                        ]}
+                        tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens."
+                    >
                         <Input
-                            placeholder="tag-slug"
                             value={tagSlug}
                             onChange={(e) => setTagSlug(e.target.value)}
+                            placeholder="tag-slug"
                         />
                     </Form.Item>
-                    <Form.Item label="Description">
+
+                    <Form.Item
+                        label={
+                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                Description
+                            </span>
+                        }
+                        name="description"
+                        rules={[{ required: true, message: "Please enter tag description!" }]}
+                    >
                         <Input.TextArea
-                            rows={4}
-                            placeholder="Enter tag description"
                             value={tagDescription}
                             onChange={(e) => setTagDescription(e.target.value)}
+                            placeholder="Tag description"
+                            rows={3}
                         />
                     </Form.Item>
                 </Form>
             </Modal>
+
 
             {/* Archive Images Dialog */}
             <Modal

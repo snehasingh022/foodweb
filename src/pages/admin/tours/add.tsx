@@ -77,6 +77,7 @@ function AddTour() {
     const [imageType, setImageType] = useState(''); // 'main' or 'seo'
     const [archive, setArchive] = useState<any[]>([]);
     const [itineraryImages, setItineraryImages] = useState<{ [key: string]: string[] }>({});
+    const [tagForm] = Form.useForm();
 
     const PageRoutes = [
         {
@@ -232,30 +233,46 @@ function AddTour() {
         }
     };
 
-    const handleAddTag = async () => {
-        if (typeof window === "undefined" || newTag.trim() === "") return;
+    const handleAddTag = async (values: any) => {
+        if (typeof window === "undefined") return;
 
         try {
+            const tagId = `TID${Date.now().toString().slice(-6)}`;
+
+            // Check if tag with same name or slug already exists
+            const existingTag = tags.find(tag =>
+                tag.name.toLowerCase() === values.name.toLowerCase() ||
+                tag.slug === values.slug
+            );
+
+            if (existingTag) {
+                message.error("A tag with this name or slug already exists!");
+                return;
+            }
+
             const tagsRef = collection(db, "tags");
-            const docRef = await addDoc(tagsRef, {
-                name: newTag,
-                slug: tagSlug,
-                description: tagDescription,
+            const docRef = await setDoc(doc(db, "tags", tagId), {
+                name: values.name.trim(),
+                slug: values.slug.trim(),
+                description: values.description.trim(),
                 createdAt: serverTimestamp(),
             });
-            setTags([
-                ...tags,
-                {
-                    id: docRef.id,
-                    name: newTag,
-                    slug: tagSlug,
-                    description: tagDescription,
-                },
-            ]);
+
+            const newTagData = {
+                name: values.name.trim(),
+                slug: values.slug.trim(),
+                description: values.description.trim(),
+            };
+
+            setTags([newTagData, ...tags]);
+
+            // Reset form and close modal
             setNewTag("");
             setTagSlug("");
             setTagDescription("");
+            tagForm.resetFields();
             setTagDialogOpen(false);
+
             message.success("Tag added successfully!");
         } catch (error) {
             console.error("Error adding tag:", error);
@@ -643,22 +660,22 @@ function AddTour() {
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
-                                                    <Form.Item
-                                                        label={
-                                                            <div className="flex items-center mb-2" style={{ gap: '440px' }}>
-                                                                <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
-                                                                <Button
-                                                                    type="link"
-                                                                    onClick={() => setCategoryDialogOpen(true)}
-                                                                    size="small"
-                                                                    className="text-primary"
-                                                                    icon={<PlusOutlined />}
-                                                                >
-                                                                    Add New
-                                                                </Button>
-                                                            </div>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <label className="text-dark dark:text-white/[.87] font-medium">
+                                                            Category
+                                                        </label>
+                                                        <Button
+                                                            type="link"
+                                                            onClick={() => setCategoryDialogOpen(true)}
+                                                            size="small"
+                                                            className="text-primary"
+                                                            icon={<PlusOutlined />}
+                                                        >
+                                                            Add New
+                                                        </Button>
+                                                    </div>
 
-                                                        }
+                                                    <Form.Item
                                                         name="categoryID"
                                                         rules={[{ required: true, message: "Please select a category" }]}
                                                     >
@@ -943,18 +960,37 @@ function AddTour() {
                 title={
                     <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
-                            {"Add New Tag"}
+                            Add New Tag
                         </span>
                     </div>
                 }
                 open={tagDialogOpen}
-                onCancel={() => setTagDialogOpen(false)}
-                onOk={handleAddTag}
+                onCancel={() => {
+                    setTagDialogOpen(false);
+                    // Reset form fields when modal is closed
+                    setNewTag('');
+                    setTagSlug('');
+                    setTagDescription('');
+                    tagForm.resetFields();
+                }}
                 footer={
                     <div className="flex justify-end gap-2 pr-6 pb-4">
-                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
-                        <Button type="primary" onClick={handleAddCategory}>
-                            OK
+                        <Button onClick={() => {
+                            setTagDialogOpen(false);
+                            // Reset form fields when cancelled
+                            setNewTag('');
+                            setTagSlug('');
+                            setTagDescription('');
+                            tagForm.resetFields();
+                        }}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="primary"
+                            onClick={() => tagForm.submit()}
+                            loading={false} // You can add loading state if needed
+                        >
+                            Add Tag
                         </Button>
                     </div>
                 }
@@ -962,26 +998,80 @@ function AddTour() {
                 style={{ maxWidth: '500px' }}
                 className="responsive-modal"
             >
-                <Form layout="vertical" className='p-3'>
-                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
+                <Form
+                    form={tagForm}
+                    layout="vertical"
+                    className='p-3'
+                    onFinish={handleAddTag}
+                    initialValues={{
+                        name: newTag,
+                        slug: tagSlug,
+                        description: tagDescription
+                    }}
+                >
+                    <Form.Item
+                        label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
                         name="name"
-                        rules={[{ required: true, message: 'Please enter tag name!' }]} required>
-                        <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Enter tag name" />
+                        rules={[
+                            { required: true, message: 'Please enter tag name!' },
+                            { min: 2, message: 'Tag name must be at least 2 characters!' }
+                        ]}
+                    >
+                        <Input
+                            value={newTag}
+                            onChange={(e) => {
+                                setNewTag(e.target.value);
+                                // Auto-generate slug from name
+                                const slug = e.target.value
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9]+/g, '-')
+                                    .replace(/(^-|-$)/g, '');
+                                setTagSlug(slug);
+                                tagForm.setFieldsValue({ slug: slug });
+                            }}
+                            placeholder="Enter tag name"
+                        />
                     </Form.Item>
-                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
+
+                    <Form.Item
+                        label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
                         name="slug"
-                        rules={[{ required: true, message: 'Please enter tag slug!' }]}
-                        tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens.">
-                        <Input value={tagSlug} onChange={(e) => setTagSlug(e.target.value)} placeholder="tag-slug" />
+                        rules={[
+                            { required: true, message: 'Please enter tag slug!' },
+                            {
+                                pattern: /^[a-z0-9-]+$/,
+                                message: 'Slug can only contain lowercase letters, numbers, and hyphens!'
+                            }
+                        ]}
+                        tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens."
+                    >
+                        <Input
+                            value={tagSlug}
+                            onChange={(e) => {
+                                const slug = e.target.value
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9-]/g, '');
+                                setTagSlug(slug);
+                            }}
+                            placeholder="tag-slug"
+                        />
                     </Form.Item>
-                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
+
+                    <Form.Item
+                        label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
                         name="description"
-                        rules={[{ required: true, message: 'Please enter tag description!' }]}>
+                        rules={[
+                            { required: true, message: 'Please enter tag description!' },
+                            { min: 10, message: 'Description must be at least 10 characters!' }
+                        ]}
+                    >
                         <Input.TextArea
                             value={tagDescription}
                             onChange={(e) => setTagDescription(e.target.value)}
-                            placeholder="Tag description"
+                            placeholder="Enter a brief description for this tag"
                             rows={3}
+                            maxLength={500}
+                            showCount
                         />
                     </Form.Item>
                 </Form>

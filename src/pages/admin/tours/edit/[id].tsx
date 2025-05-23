@@ -293,8 +293,10 @@ function EditTour() {
         if (typeof window === "undefined" || newCategory.trim() === "") return;
 
         try {
+            const categoryId = `CID${Date.now().toString().slice(-6)}`;
+
             const categoriesRef = collection(db, "categories");
-            const docRef = await addDoc(categoriesRef, {
+            const docRef = await setDoc(doc(db, 'categories', categoryId), {
                 name: newCategory,
                 slug: categorySlug,
                 description: categoryDescription,
@@ -303,7 +305,6 @@ function EditTour() {
             setCategories([
                 ...categories,
                 {
-                    id: docRef.id,
                     name: newCategory,
                     slug: categorySlug,
                     description: categoryDescription,
@@ -324,8 +325,10 @@ function EditTour() {
         if (typeof window === "undefined" || newTag.trim() === "") return;
 
         try {
+        const tagId = `TID${Date.now().toString().slice(-6)}`;
+
             const tagsRef = collection(db, "tags");
-            const docRef = await addDoc(tagsRef, {
+            const docRef = await setDoc(doc(db, "tags", tagId), {
                 name: newTag,
                 slug: tagSlug,
                 description: tagDescription,
@@ -334,7 +337,6 @@ function EditTour() {
             setTags([
                 ...tags,
                 {
-                    id: docRef.id,
                     name: newTag,
                     slug: tagSlug,
                     description: tagDescription,
@@ -727,8 +729,22 @@ function EditTour() {
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <label className="text-dark dark:text-white/[.87] font-medium">
+                                                            Category
+                                                        </label>
+                                                        <Button
+                                                            type="link"
+                                                            onClick={() => setCategoryDialogOpen(true)}
+                                                            size="small"
+                                                            className="text-primary"
+                                                            icon={<PlusOutlined />}
+                                                        >
+                                                            Add New
+                                                        </Button>
+                                                    </div>
+
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Category</span>}
                                                         name="categoryID"
                                                         rules={[{ required: true, message: "Please select a category" }]}
                                                     >
@@ -744,6 +760,7 @@ function EditTour() {
                                                             ))}
                                                         </Select>
                                                     </Form.Item>
+
                                                     <Form.Item name="categoryName" hidden>
                                                         <Input />
                                                     </Form.Item>
@@ -756,10 +773,26 @@ function EditTour() {
                                                 </Col>
                                             </Row>
 
+
                                             <Row gutter={24}>
                                                 <Col span={24}>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <label className="text-dark dark:text-white/[.87] font-medium">
+                                                            Tags
+                                                        </label>
+                                                        <Button
+                                                            type="link"
+                                                            onClick={() => setTagDialogOpen(true)}
+                                                            size="small"
+                                                            className="text-primary"
+                                                            icon={<PlusOutlined />}
+                                                        >
+                                                            Add New
+                                                        </Button>
+                                                    </div>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Tags</span>}
+                                                        name="tagID"
+                                                        rules={[{ required: true, message: "Please select a tag" }]}
                                                     >
                                                         <div className="flex flex-wrap gap-2 mb-2">
                                                             {Object.entries(selectedTags).map(([tagId, tagData]: [string, any]) => (
@@ -802,7 +835,7 @@ function EditTour() {
                                                             icon={<PlusOutlined />}
                                                             className="p-0 mt-2"
                                                         >
-                                                            Add New Tag
+                                                            Add New
                                                         </Button>
                                                     </Form.Item>
                                                 </Col>
@@ -1028,78 +1061,94 @@ function EditTour() {
 
             {/* Add New Category Modal */}
             <Modal
-                title="Add New Category"
+                title={
+                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                            Add New Category
+                        </span>
+                    </div>
+                }
                 open={categoryDialogOpen}
                 onCancel={() => setCategoryDialogOpen(false)}
-                footer={[
-                    <Button key="cancel" onClick={() => setCategoryDialogOpen(false)}>
-                        Cancel
-                    </Button>,
-                    <Button
-                        key="submit"
-                        type="primary"
-                        onClick={handleAddCategory}
-                        disabled={!newCategory.trim()}
-                    >
-                        Add Category
-                    </Button>,
-                ]}
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            type="primary"
+                            onClick={handleAddCategory}
+                            disabled={!newCategory.trim()}
+                        >
+                            Add Category
+                        </Button>
+                    </div>
+                }
+                width="95%"
+                style={{ maxWidth: '500px' }}
+                className="responsive-modal"
             >
-                <Form layout="vertical">
-                    <Form.Item
-                        label="Category Name"
-                        required
-                    >
+                <Form layout="vertical" className="p-2">
+                    <Form.Item label="Category Name" required className="p-2">
                         <Input
                             value={newCategory}
                             onChange={(e) => setNewCategory(e.target.value)}
                             placeholder="Enter category name"
                         />
                     </Form.Item>
-                    <Form.Item
-                        label="Slug"
-                    >
+                    <Form.Item label="Slug" className="p-2">
                         <Input
                             value={categorySlug}
                             onChange={(e) => setCategorySlug(e.target.value)}
                             placeholder="category-slug"
                         />
                     </Form.Item>
-                    <Form.Item
-                        label="Description"
-                    >
+                    <Form.Item label="Description" className="p-2">
                         <Input.TextArea
                             value={categoryDescription}
                             onChange={(e) => setCategoryDescription(e.target.value)}
-                            placeholder="Enter category description"
+                            placeholder="Category description"
                             rows={3}
                         />
                     </Form.Item>
                 </Form>
             </Modal>
 
+
             {/* Add New Tag Modal */}
             <Modal
-                title="Add New Tag"
+                title={
+                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                            Add New Tag
+                        </span>
+                    </div>
+                }
                 open={tagDialogOpen}
                 onCancel={() => setTagDialogOpen(false)}
-                footer={[
-                    <Button key="cancel" onClick={() => setTagDialogOpen(false)}>
-                        Cancel
-                    </Button>,
-                    <Button
-                        key="submit"
-                        type="primary"
-                        onClick={handleAddTag}
-                        disabled={!newTag.trim()}
-                    >
-                        Add Tag
-                    </Button>,
-                ]}
+                footer={
+                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                        <Button onClick={() => setTagDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            type="primary"
+                            onClick={handleAddTag}
+                            disabled={!newTag.trim()}
+                        >
+                            Add Tag
+                        </Button>
+                    </div>
+                }
+                width="95%"
+                style={{ maxWidth: '500px' }}
+                className="responsive-modal"
             >
-                <Form layout="vertical">
+                <Form layout="vertical" className="p-3">
                     <Form.Item
-                        label="Tag Name"
+                        label={
+                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                Tag Name
+                            </span>
+                        }
+                        name="name"
+                        rules={[{ required: true, message: 'Please enter tag name!' }]}
                         required
                     >
                         <Input
@@ -1109,7 +1158,14 @@ function EditTour() {
                         />
                     </Form.Item>
                     <Form.Item
-                        label="Slug"
+                        label={
+                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                Slug
+                            </span>
+                        }
+                        name="slug"
+                        rules={[{ required: true, message: 'Please enter tag slug!' }]}
+                        tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens."
                     >
                         <Input
                             value={tagSlug}
@@ -1118,7 +1174,13 @@ function EditTour() {
                         />
                     </Form.Item>
                     <Form.Item
-                        label="Description"
+                        label={
+                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                Description
+                            </span>
+                        }
+                        name="description"
+                        rules={[{ required: true, message: 'Please enter tag description!' }]}
                     >
                         <Input.TextArea
                             value={tagDescription}
@@ -1129,6 +1191,7 @@ function EditTour() {
                     </Form.Item>
                 </Form>
             </Modal>
+
 
             {/* Select Image from Archive Modal */}
             <Modal

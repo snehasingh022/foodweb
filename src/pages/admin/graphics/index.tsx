@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Modal, Select, message, Spin, Input, Tabs, Space } from 'antd';
+import { Row, Col, Card, Button, Modal, Select, message, Spin, Tabs, Space } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
-import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import Protected from '../../../components/Protected/Protected';
+import FirebaseFileUploader from '../../../components/FirebaseFileUploader'; // Adjust path as needed
 // Import the graphics-specific Firebase configuration
 import { graphicsDb, graphicsStorage, graphicsAnalytics } from '../../../authentication/firebase-graphics';
 // Import the main Firebase database
 import { db } from '../../../authentication/firebase';
+// Import the secondary Firebase storage
+import { storage as secondaryStorage } from '../../../lib/firebase-secondary';
 
 // Import types for TypeScript but not the actual implementation
 import type {
@@ -44,8 +47,7 @@ function Graphics() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [archiveOrUpload, setArchiveOrUpload] = useState('upload');
   const [selectedDestination, setSelectedDestination] = useState('');
-  const [imageUrlInput, setImageUrlInput] = useState(''); // New state for image URL input
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>(''); // Changed from imageUrlInput and imagePreview
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [firebaseInitialized, setFirebaseInitialized] = useState(true);
@@ -57,6 +59,7 @@ function Graphics() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [graphicToDelete, setGraphicToDelete] = useState<SliderImage | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [fileUploading, setFileUploading] = useState(false);
 
   const PageRoutes = [
     {
@@ -157,75 +160,103 @@ function Graphics() {
       throw error;
     }
   };
+// Also update the handleUploadSuccess function to provide better feedback
+const handleUploadSuccess = async (downloadUrl: string, fileType: string) => {
+  try {
+    setUploadedImageUrl(downloadUrl);
+    setFileUploading(false);
+    
+    // Also add to archive for future use
+    await addImageUrlToArchive(downloadUrl);
+    
+    message.success('Image uploaded successfully! You can now add it to the carousel.');
+  } catch (error) {
+    console.error('Error adding to archive:', error);
+    setUploadedImageUrl(downloadUrl); // Still set the URL even if archive fails
+    setFileUploading(false);
+    message.warning('Image uploaded but failed to add to archive. You can still proceed.');
+  }
+};
 
-  const handleAddImage = async () => {
-    if (!firebaseInitialized) {
-      message.error('Firebase is not initialized yet');
-      return;
-    }
-
-    if (!selectedDestination) {
-      message.error('Please select a destination');
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      let imageURL = '';
-      if (imageUrlInput) {
-        // Use the directly entered image URL
-        imageURL = imageUrlInput;
-
-        // Also add to archive for future use
-        await addImageUrlToArchive(imageURL);
-      } else if (imagePreview) {
-        // Use selected image from archive
-        imageURL = imagePreview;
-      } else {
-        message.error('Please enter an image URL or choose from archive');
-        setLoading(false);
-        return;
-      }
-
-      // Dynamic import of Firestore functions
-      const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-
-      const newImageData = {
-        imageUrl: imageURL,
-        screenName: selectedDestination,
-      };
-
-      // Store data in the main Firebase database for homeCarousel
-      const docRef = doc(db, 'sliderImages', carouselName);
-      const docSnapshot = await getDoc(docRef);
-
-      if (docSnapshot.exists()) {
-        const currentData = docSnapshot.data();
-        const updatedArray = [...(currentData.images || []), newImageData];
-
-        await updateDoc(docRef, {
-          images: updatedArray,
-        });
-      } else {
-        await setDoc(docRef, {
-          images: [newImageData],
-        });
-      }
-
-      message.success('Image added successfully');
-      setAddImageModalOpen(false);
-      setSelectedDestination('');
-      setImageUrlInput('');
-      setImagePreview(null);
-      fetchSliderImages();
-    } catch (error) {
-      console.error('Error adding image:', error);
-      message.error('Failed to add image');
-    } finally {
-      setLoading(false);
-    }
+  // Handle upload start
+  const handleUploadStart = () => {
+    setFileUploading(true);
   };
+
+  // Handle upload error
+  const handleUploadError = (error: Error) => {
+    setFileUploading(false);
+    message.error(`Upload failed: ${error.message}`);
+  };
+
+  
+const handleAddImage = async () => {
+  if (!firebaseInitialized) {
+    message.error('Firebase is not initialized yet');
+    return;
+  }
+
+  if (!selectedDestination) {
+    message.error('Please select a destination');
+    return;
+  }
+
+  if (!uploadedImageUrl) {
+    message.error('Please upload an image first');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // Dynamic import of Firestore functions
+    const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+
+    const newImageData = {
+      imageUrl: uploadedImageUrl,
+      screenName: selectedDestination,
+    };
+
+    // Store data in the main Firebase database for homeCarousel
+    const docRef = doc(db, 'sliderImages', carouselName);
+    const docSnapshot = await getDoc(docRef);
+
+    if (docSnapshot.exists()) {
+      const currentData = docSnapshot.data();
+      const updatedArray = [...(currentData.images || []), newImageData];
+
+      await updateDoc(docRef, {
+        images: updatedArray,
+      });
+    } else {
+      await setDoc(docRef, {
+        images: [newImageData],
+      });
+    }
+
+    // Success: Close modal and show notification
+    message.success('Image added successfully to carousel');
+    
+    // Close the modal
+    setAddImageModalOpen(false);
+    
+    // Reset form state
+    setSelectedDestination('');
+    setUploadedImageUrl('');
+    setFileUploading(false);
+    
+    // Refresh the data
+    await fetchSliderImages();
+    
+  } catch (error) {
+    console.error('Error adding image:', error);
+    message.error('Failed to add image. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const handleDeleteImage = async (index: number) => {
     if (!firebaseInitialized) {
@@ -270,54 +301,6 @@ function Graphics() {
     if (!camelCase) return '';
     const result = camelCase.replace(/([A-Z])/g, ' $1');
     return result.charAt(0).toUpperCase() + result.slice(1);
-  };
-
-  const handleImageArchiveChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!firebaseInitialized) {
-      message.error('Firebase is not initialized yet');
-      return;
-    }
-
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        // Dynamic import of Storage functions
-        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-        // Continue using graphicsStorage for upload
-        const storageRef = ref(graphicsStorage, `adminPanel/archive/images/${file.name}`);
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-
-        // Add to archive collection in the main database
-        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-        const archiveRef = collection(db, 'archive');
-        await addDoc(archiveRef, {
-          ImageUrl: downloadURL,
-          createdAt: serverTimestamp(),
-        });
-
-        fetchArchiveImages();
-        message.success('Image saved to archive');
-      } catch (error) {
-        message.error('Failed to save image to archive');
-      }
-    }
-  };
-
-  const handleSetArchiveImage = (url: string) => {
-    setImagePreview(url);
-    setImageUrlInput(''); // Clear URL input when selecting from archive
-    setUploadDialogOpen(false);
-  };
-
-  // New function to preview entered URL
-  const handlePreviewUrlImage = () => {
-    if (!imageUrlInput) {
-      message.error('Please enter an image URL');
-      return;
-    }
-
-    setImagePreview(imageUrlInput);
   };
 
   // Display loading state if Firebase is not yet initialized
@@ -467,8 +450,8 @@ function Graphics() {
         onCancel={() => {
           setAddImageModalOpen(false);
           setSelectedDestination('');
-          setImageUrlInput('');
-          setImagePreview(null);
+          setUploadedImageUrl('');
+          setFileUploading(false);
         }}
         width={650}
         bodyStyle={{ padding: '24px 28px' }}
@@ -479,8 +462,8 @@ function Graphics() {
                 onClick={() => {
                   setAddImageModalOpen(false);
                   setSelectedDestination('');
-                  setImageUrlInput('');
-                  setImagePreview(null);
+                  setUploadedImageUrl('');
+                  setFileUploading(false);
                 }}
                 className="min-w-[100px] font-medium mb-4 "
               >
@@ -492,7 +475,7 @@ function Graphics() {
                 loading={loading}
                 className="min-w-[160px] font-medium mb-4 mr-4"
                 onClick={handleAddImage}
-                disabled={!selectedDestination || (!imagePreview && !imageUrlInput)}
+                disabled={!selectedDestination || !uploadedImageUrl || fileUploading}
               >
                 Add to Carousel
               </Button>
@@ -519,45 +502,37 @@ function Graphics() {
           </div>
 
           <div className="mb-3">
-            <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Choose Image *</label>
+            <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Upload Image *</label>
           </div>
 
-          {imagePreview ? (
-            <div className="relative mb-6 border border-gray-200 dark:border-white/10 rounded-lg p-6">
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="w-full max-h-56 object-contain mx-auto"
-              />
-              <Button
-                icon={<DeleteOutlined />}
-                danger
-                className="absolute top-3 right-3"
-                onClick={() => {
-                  setImagePreview(null);
-                  setImageUrlInput('');
-                }}
-                shape="circle"
-              />
-            </div>
-          ) : (
-            <>
-              {/* Image URL input field */}
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Input
-                    placeholder="Enter image URL"
-                    value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                    prefix={<LinkOutlined className="text-gray-400" />}
-                    className="flex-1"
-                    size="large"
-                  />
-                </div>
-              </div>
-            </>
-          )}
+          {/* File Uploader Component */}
+          <div className="mb-6">
+            <FirebaseFileUploader
+              storagePath="graphics/images"
+              accept="image/*"
+              maxSizeMB={5}
+              onUploadSuccess={handleUploadSuccess}
+              onUploadStart={handleUploadStart}
+              onUploadError={handleUploadError}
+              disabled={fileUploading}
+            />
+          </div>
         </div>
+      </Modal>
+
+      {/* Preview Image Modal */}
+      <Modal
+        open={previewModalOpen}
+        onCancel={() => setPreviewModalOpen(false)}
+        footer={null}
+        width={800}
+        centered
+      >
+        <img
+          src={previewImage}
+          alt="Preview"
+          className="w-full h-auto max-h-[80vh] object-contain"
+        />
       </Modal>
     </>
   );

@@ -489,19 +489,22 @@ function AddCruise() {
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                        <label className="text-dark dark:text-white/[.87] font-medium">
+                                                            Category
+                                                        </label>
+                                                        <Button
+                                                            type="link"
+                                                            onClick={() => setCategoryDialogOpen(true)}
+                                                            size="small"
+                                                            className="text-primary"
+                                                            icon={<PlusOutlined />}
+                                                        >
+                                                            Add New
+                                                        </Button>
+                                                    </div>
+
                                                     <Form.Item
-                                                        label={<div className="flex items-center mb-2" style={{ gap: '440px' }}>
-                                                            <span className="text-dark dark:text-white/[.87] font-medium">Category</span>
-                                                            <Button
-                                                                type="link"
-                                                                onClick={() => setCategoryDialogOpen(true)}
-                                                                size="small"
-                                                                className="text-primary"
-                                                                icon={<PlusOutlined />}
-                                                            >
-                                                                Add New
-                                                            </Button>
-                                                        </div>}
                                                         name="categoryID"
                                                         rules={[{ required: true, message: "Please select a category" }]}
                                                     >
