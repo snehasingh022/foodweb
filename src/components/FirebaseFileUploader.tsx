@@ -100,16 +100,19 @@ export const FirebaseFileUploader = ({
     }
   }, [file]);
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return '🖼️';
-    if (fileType.startsWith('video/')) return '🎬';
-    if (fileType.startsWith('audio/')) return '🎵';
-    if (fileType.includes('pdf')) return '📄';
-    if (fileType.includes('word')) return '📝';
-    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
-    if (fileType.includes('zip') || fileType.includes('compressed')) return '🗜️';
-    return '📁';
-  };
+  // In your FirebaseFileUploader component:
+const getFileIcon = (fileType: string) => {
+  if (!fileType) return '📁';
+  if (fileType.startsWith('image/')) return '🖼️';
+  if (fileType.startsWith('video/')) return '🎬';
+  if (fileType.startsWith('audio/')) return '🎵';
+  if (fileType.includes('pdf')) return '📄';
+  if (fileType.includes('word') || fileType.includes('msword')) return '📝';
+  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
+  if (fileType.includes('zip') || fileType.includes('compressed')) return '🗜️';
+  if (fileType.includes('text')) return '📝';
+  return '📁';
+};
 
   return (
     <div className="w-full max-w-md space-y-3 p-4 border rounded-md shadow-sm bg-white">

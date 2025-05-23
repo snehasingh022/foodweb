@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TicketHistoryTimeline from '@/components/TicketHistoryTimeline';
+import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 import {
   Row,
   Col,
@@ -361,19 +362,19 @@ function Helpdesk() {
         setCurrentTicket({
           id: ticketDoc.id,
           status: normalizeStatus(data.status),
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          category: data.category || '',
+          helpDeskID: data.helpdeskID,
           customerName: data.userDetails?.name || "Unknown",
           email: data.userDetails?.email || "",
           phone: data.userDetails?.phone || "",
-          category: data.category || '',
           openMessage: data.responses?.opened?.response || '',
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
           createdBy: data.createdBy,
           priority: data.priority,
           title: data.title,
           description: data.description,
           ticketId: data.ticketId,
-          helpDeskID: data.helpdeskID,
           userDetails: data.userDetails,
           responses: responses
         });
@@ -414,6 +415,7 @@ function Helpdesk() {
   );
 
   // Get action buttons with updated functionality
+  // In your getActionButtons function:
   const getActionButtons = (record: Ticket) => {
     const actions = [];
 
@@ -427,7 +429,11 @@ function Helpdesk() {
           onClick={() => {
             setCurrentTicket(record);
             setResponseModalVisible(true);
-            responseForm.setFieldsValue({ status: 'Resolved' });
+            responseForm.setFieldsValue({
+              status: 'Resolved',
+              message: '',
+              attachmentURL: ''
+            });
           }}
         >
           Resolve
@@ -445,7 +451,11 @@ function Helpdesk() {
           onClick={() => {
             setCurrentTicket(record);
             setResponseModalVisible(true);
-            responseForm.setFieldsValue({ status: 'Closed' });
+            responseForm.setFieldsValue({
+              status: 'Closed',
+              message: '',
+              attachmentURL: ''
+            });
           }}
         >
           Close
@@ -643,7 +653,8 @@ function Helpdesk() {
       const responseData = {
         [responseType]: {
           createdAt: serverTimestamp(),
-          response: values.message
+          response: values.message,
+          ...(values.attachmentURL && { attachmentURL: values.attachmentURL })
         }
       };
 
@@ -765,80 +776,80 @@ function Helpdesk() {
 
       {/* View Ticket Modal - Simplified to only show details */}
       <Modal
-  title={
-    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-      <h3 className="text-xl font-semibold text-dark dark:text-white/[.87]">
-      {currentTicket?.helpDeskID || currentTicket?.id }
-      </h3>
-    </div>
-  }
-  open={viewModalVisible}
-  onCancel={() => setViewModalVisible(false)}
-  footer={[
-    <Button
-      key="close"
-      size="large"
-      onClick={() => setViewModalVisible(false)}
-      className="min-w-[100px] font-medium mb-4"
-    >
-      Close
-    </Button>
-  ]}
-  width={700}
-  className="ticket-detail-modal"
-  bodyStyle={{ padding: "20px 24px" }}
-  maskClosable={false}
->
-  {currentTicket ? (
-    <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
-        <div className="grid grid-cols-2 gap-6 mb-6">
-          <div className="border-b pb-2">
-            <Text type="secondary" className="text-sm">Created At:</Text>
-            <div className="mt-1">
-              <Text strong className="text-base">{formatDate(currentTicket.createdAt)}</Text>
-            </div>
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              {currentTicket?.helpDeskID || currentTicket?.id}
+            </h3>
           </div>
-          <div className="border-b pb-2">
-            <Text type="secondary" className="text-sm">Customer Name:</Text>
-            <div className="mt-1">
-              <Text strong className="text-base">{currentTicket.customerName}</Text>
+        }
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={[
+          <Button
+            key="close"
+            size="large"
+            onClick={() => setViewModalVisible(false)}
+            className="min-w-[100px] font-medium mb-4"
+          >
+            Close
+          </Button>
+        ]}
+        width={700}
+        className="ticket-detail-modal"
+        bodyStyle={{ padding: "20px 24px" }}
+        maskClosable={false}
+      >
+        {currentTicket ? (
+          <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="border-b pb-2">
+                <Text type="secondary" className="text-sm">Created At:</Text>
+                <div className="mt-1">
+                  <Text strong className="text-base">{formatDate(currentTicket.createdAt)}</Text>
+                </div>
+              </div>
+              <div className="border-b pb-2">
+                <Text type="secondary" className="text-sm">Customer Name:</Text>
+                <div className="mt-1">
+                  <Text strong className="text-base">{currentTicket.customerName}</Text>
+                </div>
+              </div>
+              <div className="border-b pb-2">
+                <Text type="secondary" className="text-sm">Email:</Text>
+                <div className="mt-1">
+                  <Text strong className="text-base">{currentTicket.email}</Text>
+                </div>
+              </div>
+              <div className="border-b pb-2">
+                <Text type="secondary" className="text-sm">Category:</Text>
+                <div className="mt-1">
+                  <Text strong className="text-base">{formatCategory(currentTicket.category)}</Text>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="border-b pb-2">
-            <Text type="secondary" className="text-sm">Email:</Text>
-            <div className="mt-1">
-              <Text strong className="text-base">{currentTicket.email}</Text>
-            </div>
-          </div>
-          <div className="border-b pb-2">
-            <Text type="secondary" className="text-sm">Category:</Text>
-            <div className="mt-1">
-              <Text strong className="text-base">{formatCategory(currentTicket.category)}</Text>
-            </div>
-          </div>
-        </div>
 
-        <div className="mb-6 border-b pb-2">
-          <Text type="secondary" className="text-sm">Message:</Text>
-          <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
-            <Text className="text-base whitespace-pre-line">{currentTicket.openMessage}</Text>
-          </div>
-        </div>
+            <div className="mb-6 border-b pb-2">
+              <Text type="secondary" className="text-sm">Message:</Text>
+              <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
+                <Text className="text-base whitespace-pre-line">{currentTicket.openMessage}</Text>
+              </div>
+            </div>
 
-        <div className="bg-regularBG dark:bg-[#323440] p-4 rounded-lg border border-gray-100 dark:border-gray-700">
-          <Text strong className="text-base block mb-4">Ticket History</Text>
-          <TicketHistoryTimeline
-            currentTicket={currentTicket}
-            formatDate={formatDate}
-          />
-        </div>
-    </div>
-  ) : (
-    <div className="flex justify-center items-center p-10">
-      <Spin size="large" />
-    </div>
-  )}
-</Modal>
+            <div className="bg-regularBG dark:bg-[#323440] p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+              <Text strong className="text-base block mb-4">Ticket History</Text>
+              <TicketHistoryTimeline
+                currentTicket={currentTicket}
+                formatDate={formatDate}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center items-center p-10">
+            <Spin size="large" />
+          </div>
+        )}
+      </Modal>
 
 
       {/* Response Modal (Replaces Resolve and Close dialogs) */}
@@ -846,7 +857,7 @@ function Helpdesk() {
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
-              Resolve Ticket
+              {responseForm.getFieldValue('status') === 'Resolved' ? 'Resolve Ticket' : 'Close Ticket'}
             </span>
           </div>
         }
@@ -856,7 +867,7 @@ function Helpdesk() {
           responseForm.resetFields();
         }}
         footer={null}
-        width={500}
+        width={650}
         className="helpdesk-response-modal"
       >
         <div className="p-4">
@@ -868,7 +879,7 @@ function Helpdesk() {
             >
               <Form.Item
                 name="message"
-                label="Add Response"
+                label="Response Message"
                 rules={[{ required: true, message: 'Please enter a response' }]}
               >
                 <Input.TextArea
@@ -879,18 +890,29 @@ function Helpdesk() {
               </Form.Item>
 
               <Form.Item
-                name="status"
-                label="Update Status"
-                rules={[{ required: true, message: 'Please select a status' }]}
+                label="Attachment"
+                name="attachment"
+                extra="Optional - Upload any relevant files"
               >
-                <Select className="w-full">
-                  {currentTicket.status === 'Opened' && (
-                    <Select.Option value="Resolved">Resolved</Select.Option>
-                  )}
-                  {(currentTicket.status === 'Resolved' || currentTicket.status === 'Re-Opened') && (
-                    <Select.Option value="Closed">Closed</Select.Option>
-                  )}
-                </Select>
+                <FirebaseFileUploader
+                  storagePath="helpdesk/attachments"
+                  accept="*"
+                  maxSizeMB={10}
+                  onUploadSuccess={(url) => {
+                    responseForm.setFieldsValue({ attachmentURL: url });
+                  }}
+                  onUploadStart={() => {
+                    responseForm.setFieldsValue({ attachmentURL: '' });
+                  }}
+                  onUploadError={(error) => {
+                    console.error('Upload error:', error);
+                    message.error('Failed to upload attachment');
+                  }}
+                />
+              </Form.Item>
+
+              <Form.Item name="attachmentURL" hidden>
+                <Input />
               </Form.Item>
 
               <Form.Item className="mb-0 flex justify-end">
@@ -903,7 +925,7 @@ function Helpdesk() {
                     htmlType="submit"
                     loading={submitLoading}
                   >
-                    Submit
+                    {responseForm.getFieldValue('status') === 'Resolved' ? 'Resolve' : 'Close'}
                   </Button>
                 </Space>
               </Form.Item>

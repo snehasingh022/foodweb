@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Modal, Select, message, Spin, Tabs, Space } from 'antd';
+import { Row, Col, Card, Button, Modal, Select, Input, message, Spin, Tabs, Space } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import Protected from '../../../components/Protected/Protected';
-import FirebaseFileUploader from '../../../components/FirebaseFileUploader'; // Adjust path as needed
+import FirebaseFileUploader from '../../../components/FirebaseFileUploader'; // Adjust path as needed\
+
 // Import the graphics-specific Firebase configuration
 import { graphicsDb, graphicsStorage, graphicsAnalytics } from '../../../authentication/firebase-graphics';
 // Import the main Firebase database
@@ -29,12 +30,8 @@ interface ArchiveImage {
 
 interface SliderImage {
   imageUrl: string;
-  screenName: string;
+  redirectionURL: string;
   createdAt?: any;
-}
-
-type ScreenOptions = {
-  [key: string]: string;
 }
 
 function Graphics() {
@@ -44,21 +41,11 @@ function Graphics() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
   const [imageArchives, setImageArchives] = useState<ArchiveImage[]>([]);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [archiveOrUpload, setArchiveOrUpload] = useState('upload');
-  const [selectedDestination, setSelectedDestination] = useState('');
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>(''); // Changed from imageUrlInput and imagePreview
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+  const [redirectionUrl, setRedirectionUrl] = useState<string>('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [firebaseInitialized, setFirebaseInitialized] = useState(true);
-  const [searchText, setSearchText] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [selectedGraphic, setSelectedGraphic] = useState<SliderImage | null>(null);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [graphicToDelete, setGraphicToDelete] = useState<SliderImage | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [fileUploading, setFileUploading] = useState(false);
 
   const PageRoutes = [
@@ -74,20 +61,6 @@ function Graphics() {
 
   // Single homeCarousel constant
   const carouselName = 'homeCarousel';
-
-  // Combined screen options
-  const screenOptions: ScreenOptions = {
-    HomeScreenNavigator: 'Home Screen Navigator',
-    makeupSuggestor: 'Makeup Suggestor',
-    myBooking: 'My Booking',
-    Account: 'Account',
-    helpDeskScreen: 'Help Desk Screen',
-    edit: 'Edit',
-    savedLocation: 'Saved Location',
-    payment: 'Payment',
-    notification: 'Notification',
-    homeTab: 'Home Tab',
-  };
 
   useEffect(() => {
     if (firebaseInitialized) {
@@ -160,27 +133,29 @@ function Graphics() {
       throw error;
     }
   };
-// Also update the handleUploadSuccess function to provide better feedback
-const handleUploadSuccess = async (downloadUrl: string, fileType: string) => {
-  try {
-    setUploadedImageUrl(downloadUrl);
-    setFileUploading(false);
-    
-    // Also add to archive for future use
-    await addImageUrlToArchive(downloadUrl);
-    
-    message.success('Image uploaded successfully! You can now add it to the carousel.');
-  } catch (error) {
-    console.error('Error adding to archive:', error);
-    setUploadedImageUrl(downloadUrl); // Still set the URL even if archive fails
-    setFileUploading(false);
-    message.warning('Image uploaded but failed to add to archive. You can still proceed.');
-  }
-};
+
+  // Handle upload success
+  const handleUploadSuccess = async (downloadUrl: string, fileType: string) => {
+    try {
+      setUploadedImageUrl(downloadUrl);
+      setFileUploading(false);
+
+      // Also add to archive for future use
+      await addImageUrlToArchive(downloadUrl);
+
+      message.success('Image uploaded successfully! You can now add it to the carousel.');
+    } catch (error) {
+      console.error('Error adding to archive:', error);
+      setUploadedImageUrl(downloadUrl); // Still set the URL even if archive fails
+      setFileUploading(false);
+      message.warning('Image uploaded but failed to add to archive. You can still proceed.');
+    }
+  };
 
   // Handle upload start
   const handleUploadStart = () => {
     setFileUploading(true);
+    setUploadedImageUrl(''); // Clear previous upload
   };
 
   // Handle upload error
@@ -189,74 +164,81 @@ const handleUploadSuccess = async (downloadUrl: string, fileType: string) => {
     message.error(`Upload failed: ${error.message}`);
   };
 
-  
-const handleAddImage = async () => {
-  if (!firebaseInitialized) {
-    message.error('Firebase is not initialized yet');
-    return;
-  }
-
-  if (!selectedDestination) {
-    message.error('Please select a destination');
-    return;
-  }
-
-  if (!uploadedImageUrl) {
-    message.error('Please upload an image first');
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    // Dynamic import of Firestore functions
-    const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-
-    const newImageData = {
-      imageUrl: uploadedImageUrl,
-      screenName: selectedDestination,
-    };
-
-    // Store data in the main Firebase database for homeCarousel
-    const docRef = doc(db, 'sliderImages', carouselName);
-    const docSnapshot = await getDoc(docRef);
-
-    if (docSnapshot.exists()) {
-      const currentData = docSnapshot.data();
-      const updatedArray = [...(currentData.images || []), newImageData];
-
-      await updateDoc(docRef, {
-        images: updatedArray,
-      });
-    } else {
-      await setDoc(docRef, {
-        images: [newImageData],
-      });
+  const handleAddImage = async () => {
+    if (!firebaseInitialized) {
+      message.error('Firebase is not initialized yet');
+      return;
     }
-
-    // Success: Close modal and show notification
-    message.success('Image added successfully to carousel');
-    
-    // Close the modal
-    setAddImageModalOpen(false);
-    
-    // Reset form state
-    setSelectedDestination('');
-    setUploadedImageUrl('');
-    setFileUploading(false);
-    
-    // Refresh the data
-    await fetchSliderImages();
-    
-  } catch (error) {
-    console.error('Error adding image:', error);
-    message.error('Failed to add image. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-
+  
+    if (!uploadedImageUrl) {
+      message.error('Please upload an image first');
+      return;
+    }
+  
+    if (!redirectionUrl.trim()) {
+      message.error('Please enter a redirection URL');
+      return;
+    }
+  
+    // Basic URL validation
+    try {
+      new URL(redirectionUrl);
+    } catch (error) {
+      message.error('Please enter a valid URL (e.g., https://example.com)');
+      return;
+    }
+  
+    try {
+      setLoading(true);
+  
+      // Dynamic import of Firestore functions
+      const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+  
+      const newImageData = {
+        imageUrl: uploadedImageUrl,
+        redirectionURL: redirectionUrl,
+        // createdAt: serverTimestamp(), // Uncomment if you want to track creation time
+      };
+  
+      // Store data in the main Firebase database for homeCarousel
+      const docRef = doc(db, 'sliderImages', carouselName);
+      const docSnapshot = await getDoc(docRef);
+  
+      if (docSnapshot.exists()) {
+        const currentData = docSnapshot.data();
+        
+        // Check if currentData.images exists, if not initialize as empty array
+        const currentImages = currentData.images || [];
+        
+        // Create the updated array with the new image
+        const updatedArray = [...currentImages, newImageData];
+  
+        await updateDoc(docRef, {
+          images: updatedArray,
+        });
+      } else {
+        // If document doesn't exist, create it with the new image as the first element in the array
+        await setDoc(docRef, {
+          images: [newImageData],
+        });
+      }
+  
+      // Success: Close modal and show notification
+      message.success('Image added successfully to carousel');
+  
+      // Close the modal and reset form
+      handleModalClose();
+  
+      // Refresh the data
+      await fetchSliderImages();
+  
+    } catch (error) {
+      console.error('Error adding image:', error);
+      message.error('Failed to add image. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteImage = async (index: number) => {
     if (!firebaseInitialized) {
@@ -297,10 +279,12 @@ const handleAddImage = async () => {
     }
   };
 
-  const camelCaseToTitleCase = (camelCase: string): string => {
-    if (!camelCase) return '';
-    const result = camelCase.replace(/([A-Z])/g, ' $1');
-    return result.charAt(0).toUpperCase() + result.slice(1);
+  // Function to handle modal close and reset all states
+  const handleModalClose = () => {
+    setAddImageModalOpen(false);
+    setUploadedImageUrl('');
+    setRedirectionUrl('');
+    setFileUploading(false);
   };
 
   // Display loading state if Firebase is not yet initialized
@@ -347,7 +331,9 @@ const handleAddImage = async () => {
               <thead>
                 <tr className="bg-gray-50 dark:bg-white/10">
                   <th className="px-4 py-5 font-medium text-start text-light dark:text-white/60">Image</th>
-                  <th className="px-4 py-5 font-medium text-start text-light dark:text-white/60">Screen</th>
+                  <th className="px-4 py-5 font-medium text-start text-light dark:text-white/60">
+                    Redirection URL
+                  </th>
                   <th className="px-4 py-5 font-medium text-start text-light dark:text-white/60">Actions</th>
                 </tr>
               </thead>
@@ -382,7 +368,14 @@ const handleAddImage = async () => {
                           </div>
                         </td>
                         <td className="px-4 py-5 text-center text-dark dark:text-white/[.87]">
-                          {camelCaseToTitleCase(item.screenName)}
+                          <a
+                            href={item.redirectionURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline break-all"
+                          >
+                            {item.redirectionURL}
+                          </a>
                         </td>
                         <td className="px-4 py-5">
                           <div className="flex justify-center">
@@ -390,7 +383,7 @@ const handleAddImage = async () => {
                               type="text"
                               icon={<DeleteOutlined />}
                               className="text-red-600 hover:text-red-800"
-                              onClick={() => handleDeleteImage(index)}
+                              onClick={() => handleDeleteImage(page * rowsPerPage + index)}
                             >
                             </Button>
                           </div>
@@ -447,58 +440,43 @@ const handleAddImage = async () => {
           </div>
         }
         open={addImageModalOpen}
-        onCancel={() => {
-          setAddImageModalOpen(false);
-          setSelectedDestination('');
-          setUploadedImageUrl('');
-          setFileUploading(false);
-        }}
+        onCancel={handleModalClose}
         width={650}
         bodyStyle={{ padding: '24px 28px' }}
         footer={[
-              <Button
-                key="back"
+          <Button
+            key="back"
             size="large"
-                onClick={() => {
-                  setAddImageModalOpen(false);
-                  setSelectedDestination('');
-                  setUploadedImageUrl('');
-                  setFileUploading(false);
-                }}
-                className="min-w-[100px] font-medium mb-4 "
-              >
-                Cancel
-              </Button>,
-              <Button
-                key="submit"
-                type="primary"
-                loading={loading}
-                className="min-w-[160px] font-medium mb-4 mr-4"
-                onClick={handleAddImage}
-                disabled={!selectedDestination || !uploadedImageUrl || fileUploading}
-              >
-                Add to Carousel
-              </Button>
+            onClick={handleModalClose}
+            className="min-w-[100px] font-medium mb-4"
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={loading}
+            className="min-w-[160px] font-medium mb-4 mr-4"
+            onClick={handleAddImage}
+            disabled={!uploadedImageUrl || !redirectionUrl.trim() || fileUploading}
+          >
+            Add to Carousel
+          </Button>
         ]}
       >
         <div className="mt-4 px-2">
           <div className="mb-8">
-            <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Select Destination Screen *</label>
-            <Select
-              placeholder="Select screen where image will be displayed"
-              onChange={(value) => setSelectedDestination(value)}
-              value={selectedDestination}
-              className="w-full"
+            <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Redirection URL *</label>
+            <Input
+              placeholder="Enter the URL to redirect when image is clicked (e.g., https://example.com)"
+              value={redirectionUrl}
+              onChange={(e) => setRedirectionUrl(e.target.value)}
               size="large"
-              showSearch
-              optionFilterProp="children"
-            >
-              {Object.keys(screenOptions).map((key) => (
-                <Option key={key} value={key}>
-                  {screenOptions[key]}
-                </Option>
-              ))}
-            </Select>
+              className="w-full"
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              Make sure to include http:// or https:// in the URL
+            </div>
           </div>
 
           <div className="mb-3">
@@ -516,6 +494,22 @@ const handleAddImage = async () => {
               onUploadError={handleUploadError}
               disabled={fileUploading}
             />
+            {uploadedImageUrl && (
+              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-700 dark:text-green-300 font-medium">Image uploaded successfully!</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={uploadedImageUrl} 
+                    alt="Uploaded preview" 
+                    className="w-16 h-16 object-cover rounded border border-green-200"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">Ready to add to carousel</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Modal>
