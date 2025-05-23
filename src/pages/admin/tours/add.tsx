@@ -353,7 +353,7 @@ function AddTour() {
             const tourData = {
                 title: values.title,
                 slug: values.slug,
-                description: editorContent.replace(/<\/?[^>]+(>|$)/g, ""), // Strip HTML
+                description: values.summary,
                 categoryDetails: {
                     categoryID: values.categoryID || "",
                     name: values.categoryName || "",
