@@ -111,11 +111,23 @@ function Blogs() {
     if (typeof window === "undefined") return;
 
     Modal.confirm({
-      title: 'Are you sure you want to delete this blog?',
-      content: 'This action cannot be undone',
+      icon: null, // Removes default icon
+      title: (
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+            Confirm Delete
+          </span>
+        </div>
+      ),
+      content: (
+        <p className="p-3">
+          Are you sure you want to delete this blog? This action cannot be undone.
+        </p>
+      ),
       okText: 'Yes, delete it',
       okType: 'danger',
       cancelText: 'Cancel',
+      className: 'custom-confirm-modal', // use this to target modal styles
       onOk: async () => {
         try {
           await deleteDoc(doc(db, "blogs", id));
@@ -127,6 +139,7 @@ function Blogs() {
         }
       }
     });
+
   };
 
   const handleEdit = (blog: Blog) => {
@@ -187,9 +200,8 @@ function Blogs() {
       dataIndex: 'isFeatured',
       key: 'isFeatured',
       render: (isFeatured: boolean) => (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${
-          isFeatured ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-        }`}>
+        <span className={`px-2 py-1 rounded text-xs font-medium ${isFeatured ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+          }`}>
           {isFeatured ? 'Yes' : 'No'}
         </span>
       ),
@@ -312,7 +324,7 @@ function Blogs() {
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
-                <Text strong className="text-base mt-10 ml-2">Blog Details</Text>
+              <Text strong className="text-base mt-10 ml-2">Blog Details</Text>
             </span>
           </div>
         }

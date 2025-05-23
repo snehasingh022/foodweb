@@ -348,28 +348,28 @@ function Categories() {
             label="Category Name"
             rules={[{ required: true, message: 'Please enter category name' }]}
           >
-            <Input 
-              placeholder="Enter category name" 
+            <Input
+              placeholder="Enter category name"
               onChange={handleNameChange}
             />
           </Form.Item>
-          
+
           <Form.Item
             name="slug"
             label="Slug"
             rules={[
               { required: true, message: 'Please enter slug' },
-              { 
-                pattern: /^[a-z0-9-]+$/, 
-                message: 'Slug can only contain lowercase letters, numbers, and hyphens' 
+              {
+                pattern: /^[a-z0-9-]+$/,
+                message: 'Slug can only contain lowercase letters, numbers, and hyphens'
               }
             ]}
           >
-            <Input 
+            <Input
               placeholder="Enter slug "
             />
           </Form.Item>
-          
+
           <Form.Item
             name="description"
             label="Description"
@@ -377,7 +377,7 @@ function Categories() {
           >
             <Input.TextArea rows={4} placeholder="Enter description" />
           </Form.Item>
-          
+
           <Form.Item className="mb-0 flex justify-end mt-4">
             <Space>
               <Button onClick={handleModalCancel}>
@@ -397,18 +397,29 @@ function Categories() {
 
       {/* Delete Confirmation Modal */}
       <Modal
-        title="Delete Category"
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              Confirm Delete
+            </span>
+          </div>
+        }
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         onOk={handleDeleteCategory}
         okText="Delete"
-        okButtonProps={{ danger: true, loading: submitLoading }}
+        okButtonProps={{ danger: true, className: "mr-4 mb-4" }} // margin to OK button
+        cancelButtonProps={{ className: "mb-4" }} // margin to Cancel button
       >
-        <p>Are you sure you want to delete this category?</p>
-        <p className="text-red-500 mt-2">This action cannot be undone.</p>
+        <p className="p-3">
+          Are you sure you want to delete this tag? This action cannot be undone.
+        </p>
+        <p className="text-red-500 mt-2 p-3">This action cannot be undone.</p>
+
       </Modal>
     </>
   );
 }
+<p className="text-red-500 mt-2">This action cannot be undone.</p>
 
 export default Protected(Categories, ["admin"]);

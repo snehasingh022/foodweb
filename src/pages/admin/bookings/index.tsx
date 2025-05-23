@@ -524,28 +524,31 @@ function Bookings() {
       {/* Delete Confirmation Modal */}
       <Modal
         title={
-          <div className="flex items-center gap-2 text-danger">
-            <DeleteOutlined />
-            <span>Confirm Delete</span>
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              Confirm Delete
+            </span>
           </div>
         }
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         footer={[
           <Button
-            key="back"
+            key="cancel"
             onClick={() => setDeleteModalVisible(false)}
             size={isMobile ? 'middle' : 'large'}
+            className="mb-4"
           >
             Cancel
           </Button>,
           <Button
-            key="submit"
+            key="delete"
             type="primary"
             danger
             loading={submitLoading}
             onClick={confirmDelete}
             size={isMobile ? 'middle' : 'large'}
+            className="mr-4 mb-4"
           >
             Delete
           </Button>,
@@ -555,12 +558,11 @@ function Bookings() {
         className="responsive-modal"
         centered
       >
-        <Divider className="my-2" />
-        <div className="p-4 bg-danger-transparent rounded-lg mb-4">
-          <p className="mb-2 font-medium">Are you sure you want to delete the booking <strong>{bookingToDelete?.bookingId}</strong>?</p>
-          <p className="text-danger">This action cannot be undone.</p>
-        </div>
+        <p className="p-3">
+          Are you sure you want to delete the booking <strong>{bookingToDelete?.bookingId}</strong>? This action cannot be undone.
+        </p>
       </Modal>
+
 
       {/* User Details Modal */}
       <Modal

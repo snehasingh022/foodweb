@@ -240,11 +240,23 @@ function Tours() {
     if (typeof window === "undefined") return;
 
     Modal.confirm({
-      title: 'Are you sure you want to delete this tour?',
-      content: 'This action cannot be undone',
+      icon: null, // Removes default icon
+      title: (
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+            Confirm Delete
+          </span>
+        </div>
+      ),
+      content: (
+        <p className="p-3">
+          Are you sure you want to delete this tour? This action cannot be undone.
+        </p>
+      ),
       okText: 'Yes, delete it',
       okType: 'danger',
       cancelText: 'Cancel',
+      className: 'custom-confirm-modal', // Use this class for styling buttons
       onOk: async () => {
         try {
           await deleteDoc(doc(db, "tours", id));
@@ -256,6 +268,7 @@ function Tours() {
         }
       }
     });
+
   };
 
   // Handle edit button click

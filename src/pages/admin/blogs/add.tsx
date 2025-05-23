@@ -30,13 +30,9 @@ import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
 import Protected from '../../../components/Protected/Protected';
 import { useRouter } from 'next/router';
+import { storage } from '@/lib/firebase-secondary';
 
-// Initialize Firebase Storage
-let storage: any = null;
-// Storage should only be initialized on the client side
-if (typeof window !== "undefined") {
-  storage = getStorage(app);
-}
+
 
 const { Option } = Select;
 
@@ -153,7 +149,7 @@ function AddBlog() {
         throw new Error("Firebase Storage is not available");
       }
       const slug = form.getFieldValue('slug') || `blog-${Date.now()}`;
-      const storageRef = ref(storage, `blogs/${slug}/images/${file.name}`);
+      const storageRef = ref(storage, `blogs/images/${slug}/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       setImageUrl(downloadURL);
@@ -173,7 +169,7 @@ function AddBlog() {
         throw new Error("Firebase Storage is not available");
       }
       const slug = form.getFieldValue('slug') || `blog-${Date.now()}`;
-      const storageRef = ref(storage, `blogs/${slug}/seo/${file.name}`);
+      const storageRef = ref(storage, `blogs/seoImages/${slug}/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       setSeoImageUrl(downloadURL);
@@ -191,7 +187,7 @@ function AddBlog() {
       if (!storage) {
         throw new Error("Firebase Storage is not available");
       }
-      const storageRef = ref(storage, `/archive/images/${file.name}`);
+      const storageRef = ref(storage, `/blogs/images/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
 
@@ -351,6 +347,18 @@ function AddBlog() {
     setSelectedTags(tagsMap);
   };
 
+  // Custom handler for featured image upload success
+  const handleFeaturedImageUploadSuccess = (url: string) => {
+    setImageUrl(url);
+    message.success("Featured image uploaded successfully!");
+  };
+
+  // Custom handler for SEO image upload success
+  const handleSeoImageUploadSuccess = (url: string) => {
+    setSeoImageUrl(url);
+    message.success("SEO image uploaded successfully!");
+  };
+
   const handleSubmit = async (values: any) => {
     const selectedCategoryName = form.getFieldValue('category');
     const category = categories.find(cat => cat.name === selectedCategoryName);
@@ -382,8 +390,8 @@ function AddBlog() {
           description: seoDescription,
           keywords: seoKeywords.length > 0 ? seoKeywords : [""],
           imageURL: seoImageUrl
-        },        
-        tags: selectedCategory.tags || {},
+        },
+        tags: selectedTags,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -482,6 +490,7 @@ function AddBlog() {
                               placeholder="Select category"
                               className="w-full"
                               dropdownStyle={{ borderRadius: '6px' }}
+                              onChange={handleCategoryChange}
                             >
                               {categories.map((cat) => (
                                 <Select.Option key={cat.id} value={cat.name}>
@@ -500,6 +509,7 @@ function AddBlog() {
                             <Select
                               className="w-full"
                               dropdownStyle={{ borderRadius: '6px' }}
+                              onChange={(value) => setIsFeatured(value === "Yes")}
                             >
                               <Select.Option value="Yes">Yes</Select.Option>
                               <Select.Option value="No">No</Select.Option>
@@ -550,10 +560,10 @@ function AddBlog() {
                         <Col span={12}>
                           <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
                             <FirebaseFileUploader
-                              storagePath="tours/images" // Customize storage path
+                              storagePath="blogs/images" // Updated storage path
                               accept="image/*" // Only accept images
                               maxSizeMB={10} // Adjust max file size
-                              onUploadSuccess={(url) => setImageUrl(url)} // Capture the download URL
+                              onUploadSuccess={handleFeaturedImageUploadSuccess} // Use custom handler
                               onUploadError={(error) => message.error("Image upload failed!")}
                               disabled={false}
                             />
@@ -568,7 +578,6 @@ function AddBlog() {
                               </div>
                             )}
                           </Form.Item>
-
                         </Col>
                       </Row>
                     </div>
@@ -617,7 +626,11 @@ function AddBlog() {
                             label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Title</span>}
                             name="seoTitle"
                           >
-                            <Input placeholder="SEO title (leave empty to use main title)" className="py-2" />
+                            <Input
+                              placeholder="SEO title (leave empty to use main title)"
+                              className="py-2"
+                              onChange={(e) => setSeoTitle(e.target.value)}
+                            />
                           </Form.Item>
                         </Col>
                         <Col span={12}>
@@ -625,7 +638,11 @@ function AddBlog() {
                             label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Description</span>}
                             name="seoDescription"
                           >
-                            <Input.TextArea rows={2} placeholder="SEO description" />
+                            <Input.TextArea
+                              rows={2}
+                              placeholder="SEO description"
+                              onChange={(e) => setSeoDescription(e.target.value)}
+                            />
                           </Form.Item>
                         </Col>
                       </Row>
@@ -654,19 +671,19 @@ function AddBlog() {
 
                       <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Image</span>}>
                         <FirebaseFileUploader
-                          storagePath="blogs(seo)/images" // Customize storage path
+                          storagePath="blogs/seoImages" // Updated storage path for SEO images
                           accept="image/*" // Only accept images
                           maxSizeMB={10} // Adjust max file size
-                          onUploadSuccess={(url) => setSeoImageUrl(url)} // Capture the download URL
-                          onUploadError={(error) => message.error("Image upload failed!")}
+                          onUploadSuccess={handleSeoImageUploadSuccess} // Use custom handler
+                          onUploadError={(error) => message.error("SEO image upload failed!")}
                           disabled={false}
                         />
 
-                        {imageUrl && (
+                        {seoImageUrl && (
                           <div className="mt-2">
                             <img
                               src={seoImageUrl}
-                              alt="seo"
+                              alt="SEO Preview"
                               className="max-h-32 rounded-md border"
                             />
                           </div>
@@ -698,6 +715,7 @@ function AddBlog() {
           </Col>
         </Row>
       </main>
+
 
       {/* Category Dialog */}
       <Modal

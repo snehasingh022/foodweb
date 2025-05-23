@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase-secondary'; 
+import { storage } from '@/lib/firebase-secondary'; // Adjust the import based on your Firebase setup
 import Image from 'next/image';
 
 interface FirebaseFileUploaderProps {

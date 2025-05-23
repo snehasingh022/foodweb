@@ -765,70 +765,81 @@ function Helpdesk() {
 
       {/* View Ticket Modal - Simplified to only show details */}
       <Modal
-        title={
-          <div className="px-2 py-1">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Ticket Details</h3>
-          </div>
-        }
-        open={viewModalVisible}
-        onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            Close
-          </Button>
-        ]}
-        width={700}
-        className="helpdesk-view-modal"
-      >
-        {currentTicket && (
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Ticket ID</p>
-                <p className="text-base font-semibold">{currentTicket.helpDeskID || currentTicket.id}</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                <Tag color={getStatusColor(currentTicket.status)} className="px-3 py-1 text-sm">
-                  {currentTicket.status.toUpperCase()}
-                </Tag>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Created At</p>
-                <p className="text-base">{formatDate(currentTicket.createdAt)}</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Customer Name</p>
-                <p className="text-base font-semibold">{currentTicket.customerName}</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Email</p>
-                <p className="text-base">{currentTicket.email}</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Category</p>
-                <p className="text-base">{formatCategory(currentTicket.category)}</p>
-              </div>
-            </div>
-
-            <div className="mb-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Message</p>
-              <div className="bg-white dark:bg-gray-700 p-3 rounded-md text-gray-800 dark:text-gray-200 whitespace-pre-wrap border border-gray-200 dark:border-gray-600">
-                {currentTicket.openMessage}
-              </div>
-            </div>
-
-            {/* Ticket History Timeline */}
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-              <p className="text-base font-medium mb-4">Ticket History</p>
-              <TicketHistoryTimeline
-                currentTicket={currentTicket}
-                formatDate={formatDate}
-              />
+  title={
+    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 className="text-xl font-semibold text-dark dark:text-white/[.87]">
+      {currentTicket?.helpDeskID || currentTicket?.id }
+      </h3>
+    </div>
+  }
+  open={viewModalVisible}
+  onCancel={() => setViewModalVisible(false)}
+  footer={[
+    <Button
+      key="close"
+      size="large"
+      onClick={() => setViewModalVisible(false)}
+      className="min-w-[100px] font-medium mb-4"
+    >
+      Close
+    </Button>
+  ]}
+  width={700}
+  className="ticket-detail-modal"
+  bodyStyle={{ padding: "20px 24px" }}
+  maskClosable={false}
+>
+  {currentTicket ? (
+    <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Created At:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">{formatDate(currentTicket.createdAt)}</Text>
             </div>
           </div>
-        )}
-      </Modal>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Customer Name:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">{currentTicket.customerName}</Text>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Email:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">{currentTicket.email}</Text>
+            </div>
+          </div>
+          <div className="border-b pb-2">
+            <Text type="secondary" className="text-sm">Category:</Text>
+            <div className="mt-1">
+              <Text strong className="text-base">{formatCategory(currentTicket.category)}</Text>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-6 border-b pb-2">
+          <Text type="secondary" className="text-sm">Message:</Text>
+          <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
+            <Text className="text-base whitespace-pre-line">{currentTicket.openMessage}</Text>
+          </div>
+        </div>
+
+        <div className="bg-regularBG dark:bg-[#323440] p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+          <Text strong className="text-base block mb-4">Ticket History</Text>
+          <TicketHistoryTimeline
+            currentTicket={currentTicket}
+            formatDate={formatDate}
+          />
+        </div>
+    </div>
+  ) : (
+    <div className="flex justify-center items-center p-10">
+      <Spin size="large" />
+    </div>
+  )}
+</Modal>
+
 
       {/* Response Modal (Replaces Resolve and Close dialogs) */}
       <Modal

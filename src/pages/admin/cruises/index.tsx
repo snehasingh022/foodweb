@@ -168,22 +168,34 @@ function Cruises() {
     if (typeof window === "undefined") return;
 
     Modal.confirm({
-      title: 'Are you sure you want to delete this cruise?',
-      content: 'This action cannot be undone',
-      okText: 'Yes, delete it',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        try {
-          await deleteDoc(doc(db, "cruises", id));
-          message.success("Cruise deleted successfully");
-          fetchCruises();
-        } catch (error) {
-          console.error("Error deleting cruise:", error);
-          message.error("Failed to delete cruise");
-        }
-      }
-    });
+          icon: null, // Removes default icon
+          title: (
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+                Confirm Delete
+              </span>
+            </div>
+          ),
+          content: (
+            <p className="p-3">
+              Are you sure you want to delete this cruise? This action cannot be undone.
+            </p>
+          ),
+          okText: 'Yes, delete it',
+          okType: 'danger',
+          cancelText: 'Cancel',
+          className: 'custom-confirm-modal', // Use this class for styling buttons
+          onOk: async () => {
+            try {
+              await deleteDoc(doc(db, "cruises", id));
+              message.success("cruise deleted successfully");
+              fetchCruises();
+            } catch (error) {
+              console.error("Error deleting cruise:", error);
+              message.error("Failed to delete cruise");
+            }
+          }
+        });
   };
 
   const handleEdit = (record: Cruise) => {

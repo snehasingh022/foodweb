@@ -412,15 +412,25 @@ function Tags() {
 
       {/* Delete Confirmation Modal */}
       <Modal
-        title="Confirm Delete"
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              Confirm Delete
+            </span>
+          </div>
+        }
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         onOk={handleDeleteTag}
         okText="Delete"
-        okButtonProps={{ danger: true }}
+        okButtonProps={{ danger: true, className: "mr-4 mb-4" }} // margin to OK button
+        cancelButtonProps={{ className: "mb-4" }} // margin to Cancel button
       >
-        <p>Are you sure you want to delete this tag? This action cannot be undone.</p>
+        <p className="p-3">
+          Are you sure you want to delete this tag? This action cannot be undone.
+        </p>
       </Modal>
+
     </>
   );
 }
