@@ -2,7 +2,7 @@
 
 import type React from "react"
 import FirebaseFileUploader from '@/components/FirebaseFileUploader';
-
+import { listAll, ref as storageRef } from "firebase/storage"
 import { useState, useEffect } from "react"
 import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload, message, Space, Modal, DatePicker } from "antd"
 import { UploadOutlined, PlusOutlined, ArrowLeftOutlined, PictureOutlined } from "@ant-design/icons"
@@ -10,16 +10,9 @@ import { PageHeaders } from "../../../components/page-headers/index"
 import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, setDoc, doc } from "firebase/firestore"
 import { db, app } from "../../../authentication/firebase"
 import { getDownloadURL, ref, uploadBytes, getStorage } from "firebase/storage"
-import { Editor } from "@tinymce/tinymce-react"
 import Protected from "../../../components/Protected/Protected"
 import { useRouter } from "next/router"
-
-// Initialize Firebase Storage
-let storage: any = null
-// Storage should only be initialized on the client side
-if (typeof window !== "undefined") {
-    storage = getStorage(app)
-}
+import { storage } from "@/lib/firebase-secondary";
 
 const { Option } = Select
 
@@ -33,9 +26,7 @@ function AddCruise() {
     const [videoFileName, setVideoFileName] = useState<string>("");
     const [selectedTags, setSelectedTags] = useState<string[]>([])
     const [imageLoading, setImageLoading] = useState(false)
-    const [imageUrl, setImageUrl] = useState("")
-    const [editorContent, setEditorContent] = useState("")
-    const [keywordInput, setKeywordInput] = useState("")
+    const [imageUrl, setImageUrl] = useState<string>('')
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
     const [newCategory, setNewCategory] = useState("")
     const [categorySlug, setCategorySlug] = useState("")
@@ -46,7 +37,11 @@ function AddCruise() {
     const [tagDescription, setTagDescription] = useState("")
     const [imageDialogOpen, setImageDialogOpen] = useState(false)
     const [imageType, setImageType] = useState("") // 'main' or 'seo'
-    const [archive, setArchive] = useState<any[]>([])
+    const [archiveImages, setArchiveImages] = useState<any[]>([])
+    const [showArchive, setShowArchive] = useState(false)
+    const [selectedArchiveImage, setSelectedArchiveImage] = useState("")
+    const [videoLoading, setVideoLoading] = useState(false)
+    const [videoUrl, setVideoUrl] = useState("")
 
     const PageRoutes = [
         {
@@ -68,7 +63,7 @@ function AddCruise() {
         if (typeof window !== "undefined") {
             fetchCategories()
             fetchTags()
-            fetchArchive()
+            fetchArchiveImages()
         }
     }, [])
 
@@ -110,61 +105,76 @@ function AddCruise() {
         }
     }
 
-    const fetchArchive = async () => {
+    const fetchArchiveImages = async () => {
         try {
-            const archiveRef = collection(db, "archive")
-            const querySnapshot = await getDocs(archiveRef)
-            const archiveData = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-            setArchive(archiveData)
+            if (!storage) return;
+            const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
+            const result = await listAll(archiveRef);
+
+            const imagePromises = result.items.map(async (imageRef) => {
+                const url = await getDownloadURL(imageRef);
+                return {
+                    name: imageRef.name,
+                    url: url,
+                    fullPath: imageRef.fullPath
+                };
+            });
+
+            const images = await Promise.all(imagePromises);
+            setArchiveImages(images);
         } catch (error) {
-            console.error("Error fetching archive:", error)
+            console.error("Error fetching archive images:", error);
+            message.error("Failed to fetch archive images");
         }
     }
 
     const handleImageUpload = async (file: File) => {
-        setImageLoading(true)
         try {
             if (!storage) {
-                throw new Error("Firebase Storage is not available")
+                throw new Error("Firebase Storage is not available");
             }
-            const slug = form.getFieldValue("slug") || `cruise-${Date.now()}`
-            const storageRef = ref(storage, `cruise/${slug}/images/${file.name}`)
-            await uploadBytes(storageRef, file)
-            const downloadURL = await getDownloadURL(storageRef)
-            setImageUrl(downloadURL) // We'll keep using imageUrl as the state variable name
-            return downloadURL
+            setImageLoading(true);
+            const storageReference = storageRef(storage, `prathaviTravelsMedia/${file.name}`);
+            await uploadBytes(storageReference, file);
+            const downloadURL = await getDownloadURL(storageReference);
+            setImageUrl(downloadURL);
+            message.success("Image uploaded successfully!");
         } catch (error) {
-            console.error("Error uploading image:", error)
-            message.error("Failed to upload image")
+            console.error("Error uploading image:", error);
+            message.error("Failed to upload image. Please try again.");
         } finally {
-            setImageLoading(false)
+            setImageLoading(false);
         }
-    }
+    };
 
-    const handleArchiveImageUpload = async (file: File) => {
+    // Replace the existing handleVideoUpload function
+    const handleVideoUpload = async (file: File) => {
         try {
             if (!storage) {
-                throw new Error("Firebase Storage is not available")
+                throw new Error("Firebase Storage is not available");
             }
-            const storageRef = ref(storage, `/archive/images/${file.name}`)
-            await uploadBytes(storageRef, file)
-            const downloadURL = await getDownloadURL(storageRef)
-
-            const archiveRef = collection(db, "archive")
-            await addDoc(archiveRef, {
-                ImageUrl: downloadURL,
-            })
-
-            setArchive([...archive, { ImageUrl: downloadURL }])
-            message.success("Image saved to archive successfully!")
-            return downloadURL
+            setVideoLoading(true);
+            const storageReference = storageRef(storage, `prathaviTravelsMedia/${file.name}`);
+            await uploadBytes(storageReference, file);
+            const downloadURL = await getDownloadURL(storageReference);
+            form.setFieldsValue({ videoURL: downloadURL });
+            setVideoFileName(file.name);
+            setVideoUrl(downloadURL);
+            message.success("Video uploaded successfully!");
         } catch (error) {
-            console.error("Error saving image to archive:", error)
-            message.error("Error saving image to archive. Please try again.")
+            console.error("Error uploading video:", error);
+            message.error("Failed to upload video. Please try again.");
+        } finally {
+            setVideoLoading(false);
         }
+    };
+
+    // Add this function for handling archive image selection
+    const handleArchiveImageSelect = (imageUrl: string) => {
+        setImageUrl(imageUrl);
+        setSelectedArchiveImage(imageUrl);
+        setShowArchive(false);
+        message.success("Archive image selected!");
     }
 
     const handleAddCategory = async () => {
@@ -229,13 +239,6 @@ function AddCruise() {
         }
     }
 
-    const handleSetArchiveImage = (url: string) => {
-        if (imageType === "main") {
-            setImageUrl(url)
-        }
-        setImageDialogOpen(false)
-    }
-
     const handleOpenImageDialog = (type: string) => {
         setImageType(type)
         setImageDialogOpen(true)
@@ -287,24 +290,6 @@ function AddCruise() {
         } catch (error) {
             console.error("Error saving cruise:", error);
             message.error("Failed to save cruise");
-        }
-    };
-
-    const handleVideoUpload = async (file: File) => {
-        try {
-            if (!storage) {
-                throw new Error("Firebase Storage is not available");
-            }
-            const slug = form.getFieldValue("slug") || `cruise-${Date.now()}`;
-            const storageRef = ref(storage, `cruise/${slug}/videos/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-            form.setFieldsValue({ videoURL: downloadURL });
-            setVideoFileName(file.name); // Update the file name state
-            message.success("Video uploaded successfully!");
-        } catch (error) {
-            console.error("Error uploading video:", error);
-            message.error("Failed to upload video. Please try again.");
         }
     };
 
@@ -489,7 +474,7 @@ function AddCruise() {
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
-                                                <div className="flex justify-between items-center mb-1">
+                                                    <div className="flex justify-between items-center mb-1">
                                                         <label className="text-dark dark:text-white/[.87] font-medium">
                                                             Category
                                                         </label>
@@ -570,25 +555,69 @@ function AddCruise() {
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Image URL</span>}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Image</span>}
                                                     >
-                                                        <FirebaseFileUploader
-                                                            storagePath="cruise/images" // Customize storage path
-                                                            accept="image/*" // Only accept images
-                                                            maxSizeMB={10} // Adjust max file size
-                                                            onUploadSuccess={(url) => setImageUrl(url)} // Capture the download URL
-                                                            onUploadError={(error) => message.error("Image upload failed!")}
-                                                            disabled={false}
-                                                        />
-                                                        {imageUrl && (
-                                                            <div className="mt-2">
-                                                                <img
-                                                                    src={imageUrl}
-                                                                    alt="Preview"
-                                                                    className="max-h-32 rounded-md border"
-                                                                />
+                                                        <div className="space-y-3">
+                                                            <div className="flex gap-4 mb-4">
+                                                                <Button
+                                                                    onClick={() => setShowArchive(!showArchive)}
+                                                                    icon={<PictureOutlined />}
+                                                                    className="border-primary text-primary hover:bg-primary hover:text-white"
+                                                                >
+                                                                    {showArchive ? 'Hide Archive' : 'Show Archive'}
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => {
+                                                                        const input = document.createElement('input');
+                                                                        input.type = 'file';
+                                                                        input.accept = 'image/*';
+                                                                        input.onchange = (e) => {
+                                                                            const file = (e.target as HTMLInputElement).files?.[0];
+                                                                            if (file) handleImageUpload(file);
+                                                                        };
+                                                                        input.click();
+                                                                    }}
+                                                                    icon={<UploadOutlined />}
+                                                                    loading={imageLoading}
+                                                                    className="bg-primary text-white hover:bg-primary-hb"
+                                                                >
+                                                                    {imageLoading ? 'Uploading...' : 'Upload Image'}
+                                                                </Button>
                                                             </div>
-                                                        )}
+
+                                                            {showArchive && (
+                                                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                                                                    <div className="grid grid-cols-3 gap-2">
+                                                                        {archiveImages.map((image, index) => (
+                                                                            <div
+                                                                                key={index}
+                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                                                                onClick={() => handleArchiveImageSelect(image.url)}
+                                                                            >
+                                                                                <img
+                                                                                    src={image.url}
+                                                                                    alt={image.name}
+                                                                                    className="w-full h-20 object-cover"
+                                                                                />
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    {archiveImages.length === 0 && (
+                                                                        <p className="text-center text-gray-500 py-4">No archive images found</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {imageUrl && (
+                                                                <div className="mt-2">
+                                                                    <img
+                                                                        src={imageUrl}
+                                                                        alt="Preview"
+                                                                        className="max-h-32 rounded-md border"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -604,16 +633,26 @@ function AddCruise() {
                                                             showUploadList={false}
                                                             beforeUpload={(file) => {
                                                                 handleVideoUpload(file);
-                                                                return false; // Prevent default upload behavior
+                                                                return false;
                                                             }}
                                                         >
-                                                            <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
-                                                                Upload Video
+                                                            <Button
+                                                                icon={<UploadOutlined />}
+                                                                type="primary"
+                                                                className="bg-primary hover:bg-primary-hbr"
+                                                                loading={videoLoading}
+                                                            >
+                                                                {videoLoading ? 'Uploading...' : 'Upload Video'}
                                                             </Button>
                                                         </Upload>
                                                         {videoFileName && (
                                                             <div className="mt-2 text-gray-600 dark:text-gray-300">
                                                                 Selected Video: <span className="font-medium">{videoFileName}</span>
+                                                            </div>
+                                                        )}
+                                                        {videoUrl && (
+                                                            <div className="mt-2 text-gray-600 dark:text-gray-300">
+                                                                Video URL: <span className="font-medium text-xs break-all">{videoUrl}</span>
                                                             </div>
                                                         )}
                                                     </Form.Item>
@@ -747,50 +786,6 @@ function AddCruise() {
                         />
                     </Form.Item>
                 </Form>
-            </Modal>
-
-            {/* Image Dialog */}
-            <Modal
-                title="Select from Archive"
-                open={imageDialogOpen}
-                onCancel={() => setImageDialogOpen(false)}
-                footer={null}
-                width="95%"
-                style={{ maxWidth: "1000px" }}
-                className="responsive-modal"
-            >
-                <div className="flex justify-center gap-4 mb-4">
-                    <Upload
-                        name="image"
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                            if (imageType === "main") {
-                                handleImageUpload(file)
-                            }
-                            handleArchiveImageUpload(file)
-                            setImageDialogOpen(false)
-                            return false
-                        }}
-                    >
-                        <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
-                            Upload New Image
-                        </Button>
-                    </Upload>
-                </div>
-
-                <Divider>Or Select from Archive</Divider>
-
-                <div className="grid grid-cols-4 gap-4 mt-4 max-h-[400px] overflow-y-auto">
-                    {archive.map((item, index) => (
-                        <div
-                            key={index}
-                            className="cursor-pointer border p-2 rounded hover:border-primary"
-                            onClick={() => handleSetArchiveImage(item.ImageUrl)}
-                        >
-                            <img src={item.ImageUrl || "/placeholder.svg"} alt="Archive item" className="w-full h-24 object-cover" />
-                        </div>
-                    ))}
-                </div>
             </Modal>
         </>
     )

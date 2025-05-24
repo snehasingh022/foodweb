@@ -42,13 +42,7 @@ import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
 import Protected from '../../../components/Protected/Protected';
 import { useRouter } from 'next/router';
-
-// Initialize Firebase Storage
-let storage: any = null;
-// Storage should only be initialized on the client side
-if (typeof window !== "undefined") {
-    storage = getStorage(app);
-}
+import { storage } from '@/lib/firebase-secondary';
 
 const { Option } = Select;
 
@@ -162,11 +156,7 @@ function AddTour() {
                 setImageLoading(false);
                 return;
             }
-            if (!storage) {
-                throw new Error("Firebase Storage is not available");
-            }
-            const slug = form.getFieldValue('slug') || `tour-${Date.now()}`;
-            const storageRef = ref(storage, `tour/${slug}/images/${file.name}`);
+            const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
             setImageUrl(downloadURL);
@@ -181,10 +171,7 @@ function AddTour() {
 
     const handleArchiveImageUpload = async (file: File) => {
         try {
-            if (!storage) {
-                throw new Error("Firebase Storage is not available");
-            }
-            const storageRef = ref(storage, `/archive/images/${file.name}`);
+            const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
@@ -201,6 +188,7 @@ function AddTour() {
             message.error("Error saving image to archive. Please try again.");
         }
     };
+
 
     const handleAddCategory = async () => {
         if (typeof window === "undefined" || newCategory.trim() === "") return;
@@ -292,19 +280,23 @@ function AddTour() {
         setImageDialogOpen(true);
     };
 
-    const handleItineraryImageUpload = async (day: string, imageUrl: string) => {
+    const handleItineraryImageUpload = async (day: string, file: File) => {
         try {
             setImageLoading(true);
+            const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
             setItineraryImages(prev => {
                 const dayImages = prev[day] || [];
                 return {
                     ...prev,
-                    [day]: [...dayImages, imageUrl]
+                    [day]: [...dayImages, downloadURL]
                 };
             });
 
             message.success("Itinerary image uploaded successfully");
-            return imageUrl;
+            return downloadURL;
         } catch (error) {
             console.error("Error saving itinerary image:", error);
             message.error("Failed to save itinerary image");
@@ -749,14 +741,29 @@ function AddTour() {
                                                 <Col span={12}>
                                                     <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
                                                         <Form.Item label="">
-                                                            <FirebaseFileUploader
-                                                                storagePath="tours/images" // Customize storage path
-                                                                accept="image/*" // Only accept images
-                                                                maxSizeMB={10} // Adjust max file size
-                                                                onUploadSuccess={(url) => setImageUrl(url)} // Capture the download URL
-                                                                onUploadError={(error) => message.error("Image upload failed!")}
-                                                                disabled={false}
-                                                            />
+                                                            <Upload
+                                                                name="image"
+                                                                showUploadList={false}
+                                                                beforeUpload={(file) => {
+                                                                    if (imageType === 'main') {
+                                                                        handleImageUpload(file);
+                                                                    }
+                                                                    handleArchiveImageUpload(file);
+                                                                    setImageDialogOpen(false);
+                                                                    return false;
+                                                                }}
+                                                            >
+                                                                <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
+                                                                    Upload New Image
+                                                                </Button>
+                                                                <Button
+                                                                    icon={<PictureOutlined />}
+                                                                    onClick={() => handleOpenImageDialog('main')}
+                                                                    className="ml-2"
+                                                                >
+                                                                    Select from Archive
+                                                                </Button>
+                                                            </Upload>
                                                             {imageUrl && (
                                                                 <div className="mt-2">
                                                                     <img
@@ -843,23 +850,20 @@ function AddTour() {
                                                                     <label className="block text-dark dark:text-white/[.87] font-medium mb-2">
                                                                         Images
                                                                     </label>
-                                                                    <div className="flex flex-wrap gap-2 mb-2">
-                                                                        {(itineraryImages[`${index + 1}`] || []).map((imgUrl, imgIndex) => (
-                                                                            <div key={imgIndex} className="relative">
-                                                                                <img
-                                                                                    src={imgUrl}
-                                                                                    alt={`Day ${index + 1} image ${imgIndex + 1}`}
-                                                                                    className="w-24 h-24 object-cover rounded-md"
-                                                                                />
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
                                                                     <FirebaseFileUploader
-                                                                        storagePath={`tours/itinerary/day${index + 1}`}
+                                                                        storagePath="prathaviTravelsMedia"
                                                                         accept="image/*"
                                                                         maxSizeMB={5}
                                                                         onUploadSuccess={(url) => handleItineraryImageUpload(`${index + 1}`, url)}
                                                                     />
+                                                                    <Button
+                                                                        icon={<PictureOutlined />}
+                                                                        onClick={() => handleOpenImageDialog('itinerary')}
+                                                                        size="small"
+                                                                        className="mt-2"
+                                                                    >
+                                                                        Select from Archive
+                                                                    </Button>
                                                                 </div>
                                                             </div>
                                                         ))}
