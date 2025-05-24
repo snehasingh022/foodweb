@@ -87,12 +87,12 @@ function EditCustomTour() {
         try {
             setLoading(true);
             const tourDoc = await getDoc(doc(db, "customComponents", id));
-            
+
             if (tourDoc.exists()) {
                 const data = tourDoc.data() as TourData;
                 setTourData(data);
                 setImageUrls(data.images || []);
-                
+
                 // Set form values
                 form.setFieldsValue({
                     title: data.title,
@@ -229,8 +229,8 @@ function EditCustomTour() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <Spin 
-                    indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} 
+                <Spin
+                    indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />}
                     tip="Loading tour data..."
                     size="large"
                 />
@@ -260,7 +260,7 @@ function EditCustomTour() {
                                         >
                                             Back to Custom Tours
                                         </Button>
-                                        
+
                                         {tourData && (
                                             <div className="text-sm text-gray-500">
                                                 Tour ID: <span className="font-mono font-medium">{tourData.componentID}</span>
@@ -383,41 +383,52 @@ function EditCustomTour() {
                                                 </Button>
                                             </div>
 
-                                            <div className="max-w-[720px] mx-auto mt-4">
-                                            {/* Image Preview Grid */}
-                                            {imageUrls.length > 0 && (
-                                                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-1 mt-4">
-                                                    {imageUrls.map((url, index) => (
-                                                        <div key={index} className="flex items-center">
-                                                            {/* Image container with minimal spacing */}
-                                                            <div className="rounded-lg overflow-hidden border-2 border-gray-200 hover:border-primary transition-colors max-w-[350px]">
-                                                                <Image
-                                                                    src={url}
-                                                                    alt={`Tour image ${index + 1}`}
-                                                                    className="w-auto h-auto max-h-[320px] object-contain"
-                                                                    preview={true}
-                                                                />
-                                                            </div>
+                                            <div className="mx-auto mt-4 pl-4"> {/* Added left padding */}
+                                                {imageUrls.length > 0 && (
+                                                    <div className="flex flex-wrap" style={{ gap: '16px 8px' }}> {/* Controlled horizontal/vertical gaps */}
+                                                        {imageUrls.map((url, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="flex items-center"
+                                                                style={{
+                                                                    width: 'calc((100% - 32px) / 3)', // Exactly 3 items per row accounting for gaps
+                                                                    marginRight: '4px', // Right margin between items
+                                                                    marginBottom: '16px' // Bottom margin between rows
+                                                                }}
+                                                            >
+                                                                {/* Image container with natural width */}
+                                                                <div className="rounded-lg overflow-hidden border-2 border-gray-200 hover:border-primary transition-colors">
+                                                                    <Image
+                                                                        src={url}
+                                                                        alt={`Tour image ${index + 1}`}
+                                                                        className="max-h-[200px] w-auto" // Natural width with constrained height
+                                                                        preview={true}
+                                                                        style={{ display: 'block' }} // Ensures proper image sizing
+                                                                    />
+                                                                </div>
 
-                                                            {/* Delete Button + Index */}
-                                                            <div className="flex flex-col items-center justify-between h-full ml-1">
-                                                                <Button
-                                                                    type="primary"
-                                                                    danger
-                                                                    size="small"
-                                                                    icon={<DeleteOutlined />}
-                                                                    onClick={() => handleRemoveImage(index)}
-                                                                />
-                                                                <div className="bg-black bg-opacity-50 text-white px-2 py-0.5 rounded text-xs mt-1">
-                                                                    {index + 1}
+                                                                {/* Delete Button + Index - now positioned absolutely */}
+                                                                <div className="relative ml-1">
+                                                                    <Button
+                                                                        type="primary"
+                                                                        danger
+                                                                        size="small"
+                                                                        icon={<DeleteOutlined />}
+                                                                        onClick={() => handleRemoveImage(index)}
+                                                                        style={{ position: 'absolute', top: '4px', left: '4px' }}
+                                                                    />
+                                                                    <div
+                                                                        className="bg-black bg-opacity-50 text-white px-2 py-0.5 rounded text-xs"
+                                                                        style={{ position: 'absolute', bottom: '4px', left: '4px' }}
+                                                                    >
+                                                                        {index + 1}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-
                                             {imageUrls.length === 0 && (
                                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                                                     <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -474,35 +485,60 @@ function EditCustomTour() {
                 style={{ maxWidth: '1200px' }}
                 className="responsive-modal"
             >
-                <div className="max-w-[720px] mx-auto mt-4">
+                <div className="max-h-[70vh] overflow-y-auto pl-4">
                     {archiveImages.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
-                            {archiveImages.map((image, index) => (
-                                <div
-                                    key={index}
-                                    className="relative group cursor-pointer inline-flex"
-                                    onClick={() => handleAddFromArchive(image.url)}
-                                >
-                                    <div className="rounded-lg overflow-hidden border-2 border-gray-200 hover:border-primary transition-colors max-w-[350px]">
-                                        <Image
-                                            src={image.url}
-                                            alt={image.name}
-                                            className="w-auto h-auto max-h-[320px] object-contain"
-                                            preview={false}
-                                        />
-                                    </div>
-                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
-                                        <PlusOutlined className="text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                    {imageUrls.includes(image.url) && (
-                                        <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
-                                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                                                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
-                                            </svg>
+                        <div className="flex flex-wrap gap-x-6 gap-y-4">
+                            {archiveImages.map((image, index) => {
+                                const isSelected = imageUrls.includes(image.url);
+                                return (
+                                    <div
+                                        key={index}
+                                        className="relative group cursor-pointer"
+                                        style={{
+                                            marginRight: '16px',
+                                            marginBottom: '16px'
+                                        }}
+                                        onClick={() => {
+                                            if (isSelected) {
+                                                // Remove if already selected
+                                                handleRemoveImage(imageUrls.indexOf(image.url));
+                                            } else {
+                                                // Add if not selected
+                                                handleAddFromArchive(image.url);
+                                            }
+                                        }}
+                                    >
+                                        <div className={`rounded-lg overflow-hidden border-2 transition-colors ${isSelected ? 'border-primary' : 'border-gray-200 hover:border-primary'
+                                            }`}>
+                                            <Image
+                                                src={image.url}
+                                                alt={image.name}
+                                                className="max-h-[200px] w-auto"
+                                                preview={false}
+                                                style={{ display: 'block' }}
+                                            />
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+
+                                        {/* Selection indicator (always visible if selected) */}
+                                        {isSelected && (
+                                            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
+                                                <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
+                                                </svg>
+                                            </div>
+                                        )}
+
+                                        {/* Click-to-toggle hint (only shown on hover for unselected items) */}
+                                        {!isSelected && (
+                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                                <div className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    Click to select
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-center py-8">
