@@ -3,15 +3,16 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Secondary Firebase Config
+// Updated Firebase Config
 const firebaseConfig = {
-  apiKey: "AIzaSyDsLezwK8WE2rVAY_fxUBfyEt5rpSH0ZE0",
-  authDomain: "foodweb-world.firebaseapp.com",
-  projectId: "foodweb-world",
-  storageBucket: "foodweb-world.firebasestorage.app",
-  messagingSenderId: "766590226062",
-  appId: "1:766590226062:web:acd3a01063bccd15cb03df",
-  measurementId: "G-HF25RR23JN"
+  apiKey: "AIzaSyBFUlYyJuvFMQSdywxPeMIfe8NUo6zf7A4",
+  authDomain: "goyal-stores-chain.firebaseapp.com",
+  databaseURL: "https://goyal-stores-chain-default-rtdb.firebaseio.com",
+  projectId: "goyal-stores-chain",
+  storageBucket: "goyal-stores-chain.firebasestorage.app",
+  messagingSenderId: "348888889312",
+  appId: "1:348888889312:web:d2f46fa51c8759d9979d85",
+  measurementId: "G-M3L31S02QW"
 };
 
 // Initialize Firebase
