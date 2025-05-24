@@ -4,16 +4,13 @@ import { PageHeaders } from '../../../components/page-headers/index';
 import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import Protected from '../../../components/Protected/Protected';
-import FirebaseFileUploader from '../../../components/FirebaseFileUploader'; // Adjust path as needed\
 
-// Import the graphics-specific Firebase configuration
-import { graphicsDb, graphicsStorage, graphicsAnalytics } from '../../../authentication/firebase-graphics';
 // Import the main Firebase database
 import { db } from '../../../authentication/firebase';
-// Import the secondary Firebase storage
+// Import the secondary Firebase storage (your updated one)
 import { storage as secondaryStorage } from '../../../lib/firebase-secondary';
+import { convertImageToWebP } from '../../../components/imageConverter';
 
-// Import types for TypeScript but not the actual implementation
 import type {
   DocumentData,
   DocumentReference,
@@ -47,6 +44,7 @@ function Graphics() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [firebaseInitialized, setFirebaseInitialized] = useState(true);
   const [fileUploading, setFileUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const PageRoutes = [
     {
@@ -134,34 +132,72 @@ function Graphics() {
     }
   };
 
-  // Handle upload success
-  const handleUploadSuccess = async (downloadUrl: string, fileType: string) => {
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        message.error('Please select an image file');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        message.error('File size must be less than 5MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      setUploadedImageUrl(''); // Clear previous upload
+    }
+  };
+
+  // Handle image upload with WebP conversion
+  const handleImageUpload = async () => {
+    if (!selectedFile) {
+      message.error('Please select an image first');
+      return;
+    }
+
+    setFileUploading(true);
+
     try {
+      // Convert image to WebP
+      message.info('Converting image to WebP format...');
+      const webpFile = await convertImageToWebP(selectedFile);
+
+      // Dynamic import of Firebase storage functions
+      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+
+      // Create a unique filename
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${webpFile.name}`;
+
+      // Create storage reference in prathaviTravelsMedia folder
+      const storageRef = ref(secondaryStorage, `prathaviTravelsMedia/${fileName}`);
+
+      message.info('Uploading image...');
+
+      // Upload the WebP file
+      const uploadResult = await uploadBytes(storageRef, webpFile);
+
+      // Get the download URL
+      const downloadUrl = await getDownloadURL(uploadResult.ref);
+
       setUploadedImageUrl(downloadUrl);
       setFileUploading(false);
 
       // Also add to archive for future use
       await addImageUrlToArchive(downloadUrl);
 
-      message.success('Image uploaded successfully! You can now add it to the carousel.');
+      message.success('Image uploaded successfully as WebP format!');
     } catch (error) {
-      console.error('Error adding to archive:', error);
-      setUploadedImageUrl(downloadUrl); // Still set the URL even if archive fails
+      console.error('Error uploading image:', error);
       setFileUploading(false);
-      message.warning('Image uploaded but failed to add to archive. You can still proceed.');
+      const err = error as Error;
+      message.error(`Upload failed: ${err.message}`);
     }
-  };
-
-  // Handle upload start
-  const handleUploadStart = () => {
-    setFileUploading(true);
-    setUploadedImageUrl(''); // Clear previous upload
-  };
-
-  // Handle upload error
-  const handleUploadError = (error: Error) => {
-    setFileUploading(false);
-    message.error(`Upload failed: ${error.message}`);
   };
 
   const handleAddImage = async () => {
@@ -169,17 +205,17 @@ function Graphics() {
       message.error('Firebase is not initialized yet');
       return;
     }
-  
+
     if (!uploadedImageUrl) {
       message.error('Please upload an image first');
       return;
     }
-  
+
     if (!redirectionUrl.trim()) {
       message.error('Please enter a redirection URL');
       return;
     }
-  
+
     // Basic URL validation
     try {
       new URL(redirectionUrl);
@@ -187,32 +223,32 @@ function Graphics() {
       message.error('Please enter a valid URL (e.g., https://example.com)');
       return;
     }
-  
+
     try {
       setLoading(true);
-  
+
       // Dynamic import of Firestore functions
       const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-  
+
       const newImageData = {
         imageUrl: uploadedImageUrl,
         redirectionURL: redirectionUrl,
         // createdAt: serverTimestamp(), // Uncomment if you want to track creation time
       };
-  
+
       // Store data in the main Firebase database for homeCarousel
       const docRef = doc(db, 'sliderImages', carouselName);
       const docSnapshot = await getDoc(docRef);
-  
+
       if (docSnapshot.exists()) {
         const currentData = docSnapshot.data();
-        
+
         // Check if currentData.images exists, if not initialize as empty array
         const currentImages = currentData.images || [];
-        
+
         // Create the updated array with the new image
         const updatedArray = [...currentImages, newImageData];
-  
+
         await updateDoc(docRef, {
           images: updatedArray,
         });
@@ -222,16 +258,16 @@ function Graphics() {
           images: [newImageData],
         });
       }
-  
+
       // Success: Close modal and show notification
       message.success('Image added successfully to carousel');
-  
+
       // Close the modal and reset form
       handleModalClose();
-  
+
       // Refresh the data
       await fetchSliderImages();
-  
+
     } catch (error) {
       console.error('Error adding image:', error);
       message.error('Failed to add image. Please try again.');
@@ -285,6 +321,7 @@ function Graphics() {
     setUploadedImageUrl('');
     setRedirectionUrl('');
     setFileUploading(false);
+    setSelectedFile(null);
   };
 
   // Display loading state if Firebase is not yet initialized
@@ -481,29 +518,60 @@ function Graphics() {
 
           <div className="mb-3">
             <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Upload Image *</label>
+            <div className="text-xs text-gray-500 mb-2">
+              Images will be automatically converted to WebP format for better performance
+            </div>
           </div>
 
-          {/* File Uploader Component */}
+          {/* Custom File Upload Section */}
           <div className="mb-6">
-            <FirebaseFileUploader
-              storagePath="graphics/images"
-              accept="image/*"
-              maxSizeMB={5}
-              onUploadSuccess={handleUploadSuccess}
-              onUploadStart={handleUploadStart}
-              onUploadError={handleUploadError}
-              disabled={fileUploading}
-            />
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="file-upload"
+                disabled={fileUploading}
+              />
+              <label
+                htmlFor="file-upload"
+                className={`cursor-pointer ${fileUploading ? 'cursor-not-allowed opacity-50' : ''}`}
+              >
+                <CloudUploadOutlined className="text-4xl text-gray-400 mb-2" />
+                <div className="text-dark dark:text-white/[.87] mb-1">
+                  {selectedFile ? selectedFile.name : 'Click to select an image'}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Supports: JPG, PNG, GIF, WEBP (Max: 5MB)
+                </div>
+              </label>
+            </div>
+
+            {selectedFile && !uploadedImageUrl && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  type="primary"
+                  loading={fileUploading}
+                  onClick={handleImageUpload}
+                  icon={<CloudUploadOutlined />}
+                  disabled={fileUploading}
+                >
+                  {fileUploading ? 'Converting & Uploading...' : 'Upload Image'}
+                </Button>
+              </div>
+            )}
+
             {uploadedImageUrl && (
               <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-700 dark:text-green-300 font-medium">Image uploaded successfully!</span>
+                  <span className="text-green-700 dark:text-green-300 font-medium">Image uploaded successfully as WebP!</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img 
-                    src={uploadedImageUrl} 
-                    alt="Uploaded preview" 
+                  <img
+                    src={uploadedImageUrl}
+                    alt="Uploaded preview"
                     className="w-16 h-16 object-cover rounded border border-green-200"
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-300">Ready to add to carousel</span>
