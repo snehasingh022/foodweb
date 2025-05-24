@@ -385,27 +385,6 @@ function Helpdesk() {
     }
   };
 
-  const onCancelView = () => {
-    setVisibleView(false);
-    setCurrentTicket(null);
-  };
-
-  const showModal = () => {
-    setVisible(true);
-  };
-
-  const onCancel = () => {
-    setVisible(false);
-  };
-
-  const handleStatusSearch = (value: string) => {
-    setStatusFilter(value);
-  };
-
-  const handleSubjectSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchText(e.target.value);
-  };
-
   // Filter data based on search text
   const filteredData = tickets.filter(item =>
     (item.customerName?.toLowerCase().includes(searchText.toLowerCase()) || false) ||
@@ -542,55 +521,7 @@ function Helpdesk() {
     },
   ];
 
-  const handleSubmit = async (values: any) => {
-    // This function is intentionally left empty after removing ticket creation
-    message.info("Ticket creation has been disabled");
-  };
-
-  const updateTicket = async (id: string, values: any) => {
-    try {
-      await updateDoc(doc(db, 'helpdesk', id), values);
-      message.success("Ticket updated successfully");
-    } catch (error) {
-      console.error("Error updating ticket:", error);
-      message.error("Failed to update ticket");
-    }
-  };
-
-  const handleAddNote = async (values: any) => {
-    setNoteSubmitLoading(true);
-    try {
-      const ticketRef = doc(db, 'helpdesk', currentTicket!.id);
-
-      // Create the appropriate response object based on status
-      const responseType = values.status.toLowerCase().replace('-', '');
-      const responseData = {
-        [responseType]: {
-          createdAt: serverTimestamp(),
-          response: values.message
-        }
-      };
-
-      await updateDoc(ticketRef, {
-        status: values.status,
-        responses: {
-          ...(currentTicket!.responses || {}),
-          ...responseData
-        },
-        updatedAt: serverTimestamp()
-      });
-
-      message.success("Response added successfully");
-      setViewModalVisible(false);
-      setNoteSubmitLoading(false);
-      fetchTicketDetails(currentTicket!.id);
-    } catch (error) {
-      console.error("Error adding response:", error);
-      message.error("Failed to add response");
-    } finally {
-      setNoteSubmitLoading(false);
-    }
-  };
+  
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'N/A';
@@ -601,24 +532,7 @@ function Helpdesk() {
       : 'N/A';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'opened': return 'green';
-      case 're-opened': return 'yellow';
-      case 'resolved': return 'blue';
-      case 'closed': return 'red';
-      default: return 'default';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-      case 'high': return 'red';
-      case 'medium': return 'orange';
-      case 'low': return 'green';
-      default: return 'default';
-    }
-  };
+  
 
   // Send email notification
   const sendEmailNotification = async (email: string, subject: string, message: string) => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import FirebaseFileUploader from '@/components/FirebaseFileUploader';
+import { listAll, ref as storageRef } from "firebase/storage"
 import {
     Row,
     Col,
@@ -72,6 +73,9 @@ function AddTour() {
     const [archive, setArchive] = useState<any[]>([]);
     const [itineraryImages, setItineraryImages] = useState<{ [key: string]: string[] }>({});
     const [tagForm] = Form.useForm();
+    const [archiveImages, setArchiveImages] = useState<any[]>([])
+    const [showArchive, setShowArchive] = useState(false)
+    const [selectedArchiveImage, setSelectedArchiveImage] = useState("")
 
     const PageRoutes = [
         {
@@ -93,7 +97,7 @@ function AddTour() {
         if (typeof window !== "undefined") {
             fetchCategories();
             fetchTags();
-            fetchArchive();
+            fetchArchiveImages();
         }
     }, []);
 
@@ -135,35 +139,50 @@ function AddTour() {
         }
     };
 
-    const fetchArchive = async () => {
+    const fetchArchiveImages = async () => {
         try {
-            const archiveRef = collection(db, "archive");
-            const querySnapshot = await getDocs(archiveRef);
-            const archiveData = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setArchive(archiveData);
+            if (!storage) return;
+            const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
+            const result = await listAll(archiveRef);
+
+            const imagePromises = result.items
+                .filter((item) => {
+                    // ✅ Filter for common image extensions
+                    const isImage = /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(item.name);
+                    return isImage;
+                })
+                .map(async (imageRef) => {
+                    const url = await getDownloadURL(imageRef);
+                    return {
+                        name: imageRef.name,
+                        url,
+                        fullPath: imageRef.fullPath,
+                    };
+                });
+
+            const images = await Promise.all(imagePromises);
+            setArchiveImages(images);
         } catch (error) {
-            console.error("Error fetching archive:", error);
+            console.error("Error fetching archive images:", error);
+            message.error("Failed to fetch archive images");
         }
     };
 
+
     const handleImageUpload = async (file: File) => {
-        setImageLoading(true);
         try {
-            if (!file) {
-                setImageLoading(false);
-                return;
+            if (!storage) {
+                throw new Error("Firebase Storage is not available");
             }
-            const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
+            setImageLoading(true);
+            const storageReference = storageRef(storage, `prathaviTravelsMedia/${file.name}`);
+            await uploadBytes(storageReference, file);
+            const downloadURL = await getDownloadURL(storageReference);
             setImageUrl(downloadURL);
-            return downloadURL;
+            message.success("Image uploaded successfully!");
         } catch (error) {
             console.error("Error uploading image:", error);
-            message.error("Failed to upload image");
+            message.error("Failed to upload image. Please try again.");
         } finally {
             setImageLoading(false);
         }
@@ -268,17 +287,14 @@ function AddTour() {
         }
     };
 
-    const handleSetArchiveImage = (url: string) => {
-        if (imageType === 'main') {
-            setImageUrl(url);
-        }
-        setImageDialogOpen(false);
-    };
+    const handleArchiveImageSelect = (imageUrl: string) => {
+        setImageUrl(imageUrl);
+        setSelectedArchiveImage(imageUrl);
+        setShowArchive(false);
+        message.success("Archive image selected!");
+    }
 
-    const handleOpenImageDialog = (type: string) => {
-        setImageType(type);
-        setImageDialogOpen(true);
-    };
+
 
     const handleItineraryImageUpload = async (day: string, file: File) => {
         try {
@@ -739,31 +755,60 @@ function AddTour() {
 
                                             <Row gutter={24}>
                                                 <Col span={12}>
-                                                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
-                                                        <Form.Item label="">
-                                                            <Upload
-                                                                name="image"
-                                                                showUploadList={false}
-                                                                beforeUpload={(file) => {
-                                                                    if (imageType === 'main') {
-                                                                        handleImageUpload(file);
-                                                                    }
-                                                                    handleArchiveImageUpload(file);
-                                                                    setImageDialogOpen(false);
-                                                                    return false;
-                                                                }}
-                                                            >
-                                                                <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
-                                                                    Upload New Image
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Image</span>}
+                                                    >
+                                                        <div className="space-y-3">
+                                                            <div className="flex gap-4 mb-4">
+                                                                <Button
+                                                                    onClick={() => setShowArchive(!showArchive)}
+                                                                    icon={<PictureOutlined />}
+                                                                    className="border-primary text-primary hover:bg-primary hover:text-white"
+                                                                >
+                                                                    {showArchive ? 'Hide Archive' : 'Show Archive'}
                                                                 </Button>
                                                                 <Button
-                                                                    icon={<PictureOutlined />}
-                                                                    onClick={() => handleOpenImageDialog('main')}
-                                                                    className="ml-2"
+                                                                    onClick={() => {
+                                                                        const input = document.createElement('input');
+                                                                        input.type = 'file';
+                                                                        input.accept = 'image/*';
+                                                                        input.onchange = (e) => {
+                                                                            const file = (e.target as HTMLInputElement).files?.[0];
+                                                                            if (file) handleImageUpload(file);
+                                                                        };
+                                                                        input.click();
+                                                                    }}
+                                                                    icon={<UploadOutlined />}
+                                                                    loading={imageLoading}
+                                                                    className="bg-primary text-white hover:bg-primary-hb"
                                                                 >
-                                                                    Select from Archive
+                                                                    {imageLoading ? 'Uploading...' : 'Upload Image'}
                                                                 </Button>
-                                                            </Upload>
+                                                            </div>
+
+                                                            {showArchive && (
+                                                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                                                                    <div className="grid grid-cols-3 gap-2">
+                                                                        {archiveImages.map((image, index) => (
+                                                                            <div
+                                                                                key={index}
+                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                                                                onClick={() => handleArchiveImageSelect(image.url)}
+                                                                            >
+                                                                                <img
+                                                                                    src={image.url}
+                                                                                    alt={image.name}
+                                                                                    className="w-full h-20 object-cover"
+                                                                                />
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    {archiveImages.length === 0 && (
+                                                                        <p className="text-center text-gray-500 py-4">No archive images found</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
                                                             {imageUrl && (
                                                                 <div className="mt-2">
                                                                     <img
@@ -773,7 +818,7 @@ function AddTour() {
                                                                     />
                                                                 </div>
                                                             )}
-                                                        </Form.Item>
+                                                        </div>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -850,20 +895,67 @@ function AddTour() {
                                                                     <label className="block text-dark dark:text-white/[.87] font-medium mb-2">
                                                                         Images
                                                                     </label>
-                                                                    <FirebaseFileUploader
-                                                                        storagePath="prathaviTravelsMedia"
-                                                                        accept="image/*"
-                                                                        maxSizeMB={5}
-                                                                        onUploadSuccess={(url) => handleItineraryImageUpload(`${index + 1}`, url)}
-                                                                    />
-                                                                    <Button
-                                                                        icon={<PictureOutlined />}
-                                                                        onClick={() => handleOpenImageDialog('itinerary')}
-                                                                        size="small"
-                                                                        className="mt-2"
-                                                                    >
-                                                                        Select from Archive
-                                                                    </Button>
+                                                                    <div className="space-y-3">
+                                                                        <div className="flex gap-4 mb-4">
+                                                                            <Button
+                                                                                onClick={() => setShowArchive(!showArchive)}
+                                                                                icon={<PictureOutlined />}
+                                                                                className="border-primary text-primary hover:bg-primary hover:text-white"
+                                                                            >
+                                                                                {showArchive ? 'Hide Archive' : 'Show Archive'}
+                                                                            </Button>
+                                                                            <Button
+                                                                                onClick={() => {
+                                                                                    const input = document.createElement('input');
+                                                                                    input.type = 'file';
+                                                                                    input.accept = 'image/*';
+                                                                                    input.onchange = (e) => {
+                                                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                                                        if (file) handleImageUpload(file);
+                                                                                    };
+                                                                                    input.click();
+                                                                                }}
+                                                                                icon={<UploadOutlined />}
+                                                                                loading={imageLoading}
+                                                                                className="bg-primary text-white hover:bg-primary-hb"
+                                                                            >
+                                                                                {imageLoading ? 'Uploading...' : 'Upload Image'}
+                                                                            </Button>
+                                                                        </div>
+
+                                                                        {showArchive && (
+                                                                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                                                                                <div className="grid grid-cols-3 gap-2">
+                                                                                    {archiveImages.map((image, index) => (
+                                                                                        <div
+                                                                                            key={index}
+                                                                                            className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                                                                            onClick={() => handleArchiveImageSelect(image.url)}
+                                                                                        >
+                                                                                            <img
+                                                                                                src={image.url}
+                                                                                                alt={image.name}
+                                                                                                className="w-full h-20 object-cover"
+                                                                                            />
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                                {archiveImages.length === 0 && (
+                                                                                    <p className="text-center text-gray-500 py-4">No archive images found</p>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {imageUrl && (
+                                                                            <div className="mt-2">
+                                                                                <img
+                                                                                    src={imageUrl}
+                                                                                    alt="Preview"
+                                                                                    className="max-h-32 rounded-md border"
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -1079,54 +1171,6 @@ function AddTour() {
                         />
                     </Form.Item>
                 </Form>
-            </Modal>
-
-            {/* Image Dialog */}
-            <Modal
-                title="Select from Archive"
-                open={imageDialogOpen}
-                onCancel={() => setImageDialogOpen(false)}
-                footer={null}
-                width="95%"
-                style={{ maxWidth: '1000px' }}
-                className="responsive-modal"
-            >
-                <div className="flex justify-center gap-4 mb-4">
-                    <Upload
-                        name="image"
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                            if (imageType === 'main') {
-                                handleImageUpload(file);
-                            }
-                            handleArchiveImageUpload(file);
-                            setImageDialogOpen(false);
-                            return false;
-                        }}
-                    >
-                        <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
-                            Upload New Image
-                        </Button>
-                    </Upload>
-                </div>
-
-                <Divider>Or Select from Archive</Divider>
-
-                <div className="grid grid-cols-4 gap-4 mt-4 max-h-[400px] overflow-y-auto">
-                    {archive.map((item, index) => (
-                        <div
-                            key={index}
-                            className="cursor-pointer border p-2 rounded hover:border-primary"
-                            onClick={() => handleSetArchiveImage(item.ImageUrl)}
-                        >
-                            <img
-                                src={item.ImageUrl || "/placeholder.svg"}
-                                alt="Archive item"
-                                className="w-full h-24 object-cover"
-                            />
-                        </div>
-                    ))}
-                </div>
             </Modal>
         </>
     );

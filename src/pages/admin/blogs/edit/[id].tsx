@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import FirebaseFileUploader from '@/components/FirebaseFileUploader';
+import { listAll, ref as storageRef } from "firebase/storage"
 import {
   Row,
   Col,
@@ -20,6 +21,7 @@ import {
   UploadOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
+  PictureOutlined,
   LoadingOutlined
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../../components/page-headers/index';
@@ -28,14 +30,8 @@ import { db, app } from '../../../../authentication/firebase';
 import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
 import Protected from '../../../../components/Protected/Protected';
-import { useRouter } from 'next/router';
-
-// Initialize Firebase Storage
-let storage: any = null;
-// Storage should only be initialized on the client side
-if (typeof window !== "undefined") {
-  storage = getStorage(app);
-}
+import { useRouter } from 'next/router'
+import { storage } from '@/lib/firebase-secondary';
 
 const { Option } = Select;
 
@@ -71,6 +67,11 @@ function EditBlog() {
   const [imageType, setImageType] = useState(''); // 'main' or 'seo'
   const [archive, setArchive] = useState<any[]>([]);
   const [blogData, setBlogData] = useState<any>(null);
+  const [showArchive, setShowArchive] = useState(false);
+  const [showSeoArchive, setShowSeoArchive] = useState(false);
+  const [selectedArchiveImage, setSelectedArchiveImage] = useState('');
+  const [selectedSeoArchiveImage, setSelectedSeoArchiveImage] = useState('');
+  const [archiveImages, setArchiveImages] = useState<any[]>([]);
 
   const PageRoutes = [
     {
@@ -129,7 +130,7 @@ function EditBlog() {
       fetchBlogData();
       fetchCategories();
       fetchTags();
-      fetchArchive();
+      fetchArchiveImages();
     }
   }, [id]);
 
@@ -159,11 +160,11 @@ function EditBlog() {
       setLoading(true);
       const blogDocRef = doc(db, "blogs", id as string);
       const blogDocSnap = await getDoc(blogDocRef);
-      
+
       if (blogDocSnap.exists()) {
         const data = blogDocSnap.data();
         setBlogData({ id: blogDocSnap.id, ...data });
-        
+
         // Set form values
         form.setFieldsValue({
           title: data.title,
@@ -174,7 +175,7 @@ function EditBlog() {
           seoTitle: data.seoTitle || '',
           seoDescription: data.seoDescription || '',
         });
-        
+
         // Set other state values
         setImageUrl(data.image || '');
         setEditorContent(data.content || '');
@@ -223,19 +224,28 @@ function EditBlog() {
     }
   };
 
-  const fetchArchive = async () => {
+  const fetchArchiveImages = async () => {
     try {
-      const archiveRef = collection(db, "archive");
-      const querySnapshot = await getDocs(archiveRef);
-      const archiveData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setArchive(archiveData);
+        if (!storage) return;
+        const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
+        const result = await listAll(archiveRef);
+
+        const imagePromises = result.items.map(async (imageRef) => {
+            const url = await getDownloadURL(imageRef);
+            return {
+                name: imageRef.name,
+                url: url,
+                fullPath: imageRef.fullPath
+            };
+        });
+
+        const images = await Promise.all(imagePromises);
+        setArchiveImages(images);
     } catch (error) {
-      console.error("Error fetching archive:", error);
+        console.error("Error fetching archive images:", error);
+        message.error("Failed to fetch archive images");
     }
-  };
+}
 
   const handleImageUpload = async (file: File) => {
     setImageLoading(true);
@@ -243,12 +253,16 @@ function EditBlog() {
       if (!storage) {
         throw new Error("Firebase Storage is not available");
       }
-      const slug = form.getFieldValue('slug') || `blog-${Date.now()}`;
-      const storageRef = ref(storage, `blogs/${slug}/images/${file.name}`);
+      const storageRef = ref(storage, `prathviTravelMedia/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
+
       setImageUrl(downloadURL);
       setFormChanged(true);
+
+      // Refresh archive images
+      fetchArchiveImages();
+
       return downloadURL;
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -264,12 +278,16 @@ function EditBlog() {
       if (!storage) {
         throw new Error("Firebase Storage is not available");
       }
-      const slug = form.getFieldValue('slug') || `blog-${Date.now()}`;
-      const storageRef = ref(storage, `blogs/${slug}/seo/${file.name}`);
+      const storageRef = ref(storage, `prathviTravelMedia/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
+
       setSeoImageUrl(downloadURL);
       setFormChanged(true);
+
+      // Refresh archive images
+      fetchArchiveImages();
+
       return downloadURL;
     } catch (error) {
       console.error("Error uploading SEO image:", error);
@@ -279,19 +297,27 @@ function EditBlog() {
     }
   };
 
+  const handleArchiveImageSelect = (imageUrl: string) => {
+    setImageUrl(imageUrl);
+    setSelectedArchiveImage(imageUrl);
+    setFormChanged(true);
+  };
+
+  // Add function to handle archive image selection for SEO image
+  const handleSeoArchiveImageSelect = (imageUrl: string) => {
+    setSeoImageUrl(imageUrl);
+    setSelectedSeoArchiveImage(imageUrl);
+    setFormChanged(true);
+  };
+
   const handleArchiveImageUpload = async (file: File) => {
     try {
       if (!storage) {
         throw new Error("Firebase Storage is not available");
       }
-      const storageRef = ref(storage, `/archive/images/${file.name}`);
+      const storageRef = ref(storage, `/prathaviTravelsMedia/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
-
-      const archiveRef = collection(db, "archive");
-      await addDoc(archiveRef, {
-        ImageUrl: downloadURL,
-      });
 
       setArchive([...archive, { ImageUrl: downloadURL }]);
       message.success("Image saved to archive successfully!");
@@ -593,27 +619,71 @@ function EditBlog() {
 
                       <Row gutter={24}>
                         <Col span={12}>
-                          <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
-                            <FirebaseFileUploader
-                              storagePath="tours/images" // Customize storage path
-                              accept="image/*" // Only accept images
-                              maxSizeMB={10} // Adjust max file size
-                              onUploadSuccess={(url) => setImageUrl(url)} // Capture the download URL
-                              onUploadError={(error) => message.error("Image upload failed!")}
-                              disabled={false}
-                            />
-
-                            {imageUrl && (
-                              <div className="mt-2">
-                                <img
-                                  src={imageUrl}
-                                  alt="Preview"
-                                  className="max-h-32 rounded-md border"
-                                />
+                          <Form.Item
+                            label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}
+                          >
+                            <div className="space-y-3">
+                              <div className="flex gap-4 mb-4">
+                                <Button
+                                  onClick={() => setShowArchive(!showArchive)}
+                                  icon={<PictureOutlined />}
+                                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                                >
+                                  {showArchive ? 'Hide Archive' : 'Show Archive'}
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/*';
+                                    input.onchange = (e) => {
+                                      const file = (e.target as HTMLInputElement).files?.[0];
+                                      if (file) handleImageUpload(file);
+                                    };
+                                    input.click();
+                                  }}
+                                  icon={<UploadOutlined />}
+                                  loading={imageLoading}
+                                  className="bg-primary text-white hover:bg-primary-hb"
+                                >
+                                  {imageLoading ? 'Uploading...' : 'Upload Image'}
+                                </Button>
                               </div>
-                            )}
-                          </Form.Item>
 
+                              {showArchive && (
+                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {archiveImages.map((image, index) => (
+                                      <div
+                                        key={index}
+                                        className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                        onClick={() => handleArchiveImageSelect(image.url)}
+                                      >
+                                        <img
+                                          src={image.url}
+                                          alt={image.name}
+                                          className="w-full h-20 object-cover"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {archiveImages.length === 0 && (
+                                    <p className="text-center text-gray-500 py-4">No archive images found</p>
+                                  )}
+                                </div>
+                              )}
+
+                              {imageUrl && (
+                                <div className="mt-2">
+                                  <img
+                                    src={imageUrl}
+                                    alt="Preview"
+                                    className="max-h-32 rounded-md border"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </Form.Item>
                         </Col>
                       </Row>
                     </div>
@@ -698,24 +768,67 @@ function EditBlog() {
                       </Form.Item>
 
                       <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Image</span>}>
-                        <FirebaseFileUploader
-                          storagePath="blogs(seo)/images" // Customize storage path
-                          accept="image/*" // Only accept images
-                          maxSizeMB={10} // Adjust max file size
-                          onUploadSuccess={(url) => setSeoImageUrl(url)} // Capture the download URL
-                          onUploadError={(error) => message.error("Image upload failed!")}
-                          disabled={false}
-                        />
-
-                        {seoImageUrl && (
-                          <div className="mt-2">
-                            <img
-                              src={seoImageUrl}
-                              alt="seo"
-                              className="max-h-32 rounded-md border"
-                            />
+                        <div className="space-y-3">
+                          <div className="flex gap-4 mb-4">
+                            <Button
+                              onClick={() => setShowSeoArchive(!showSeoArchive)}
+                              icon={<PictureOutlined />}
+                              className="border-primary text-primary hover:bg-primary hover:text-white"
+                            >
+                              {showSeoArchive ? 'Hide Archive' : 'Show Archive'}
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = (e) => {
+                                  const file = (e.target as HTMLInputElement).files?.[0];
+                                  if (file) handleSeoImageUpload(file);
+                                };
+                                input.click();
+                              }}
+                              icon={<UploadOutlined />}
+                              loading={imageLoading}
+                              className="bg-primary text-white hover:bg-primary-hb"
+                            >
+                              {imageLoading ? 'Uploading...' : 'Upload Image'}
+                            </Button>
                           </div>
-                        )}
+
+                          {showSeoArchive && (
+                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                              <div className="grid grid-cols-3 gap-2">
+                                {archiveImages.map((image, index) => (
+                                  <div
+                                    key={index}
+                                    className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedSeoArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                    onClick={() => handleSeoArchiveImageSelect(image.url)}
+                                  >
+                                    <img
+                                      src={image.url}
+                                      alt={image.name}
+                                      className="w-full h-20 object-cover"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              {archiveImages.length === 0 && (
+                                <p className="text-center text-gray-500 py-4">No archive images found</p>
+                              )}
+                            </div>
+                          )}
+
+                          {seoImageUrl && (
+                            <div className="mt-2">
+                              <img
+                                src={seoImageUrl}
+                                alt="SEO Preview"
+                                className="max-h-32 rounded-md border"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </Form.Item>
                     </div>
 
@@ -902,10 +1015,10 @@ function EditBlog() {
           <Button key="cancel" onClick={() => setUnsavedChangesModalVisible(false)}>
             Stay on this page
           </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
-            className="bg-primary hover:bg-primary-hbr" 
+          <Button
+            key="submit"
+            type="primary"
+            className="bg-primary hover:bg-primary-hbr"
             onClick={handleConfirmNavigation}
           >
             Discard changes

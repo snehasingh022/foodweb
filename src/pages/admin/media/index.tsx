@@ -1,19 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Button, Upload, message, Spin, Modal } from 'antd';
-import { UploadOutlined, DeleteOutlined, ExclamationCircleFilled, PlusOutlined } from '@ant-design/icons';
-import { mediaDb, mediaAnalytics, mediaStorage } from '../../../authentication/firebase-media';
-import { db } from '../../../authentication/firebase'; // Import the main db from firebase.tsx
-import { 
-  collection, 
-  query, 
-  getDocs, 
-  orderBy, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
-  serverTimestamp 
-} from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { UploadOutlined, DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+// Import from your secondary Firebase config
+import { storage as secondaryStorage } from '@/lib/firebase-secondary';
+import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
 import { RcFile } from 'antd/es/upload';
 import Protected from '../../../components/Protected/Protected';
 
@@ -22,7 +12,7 @@ interface MediaFile {
   id: string;
   name: string;
   image: string;
-  createdAt: any;
+  fullPath: string; // Store the full storage path
 }
 
 function Media() {
@@ -36,16 +26,28 @@ function Media() {
   const fetchMediaFiles = async () => {
     setLoading(true);
     try {
-      // Query the main Firebase db's media collection instead
-      const mediaRef = query(
-        collection(db, "media"),
-        orderBy("createdAt", "desc")
-      );
-      const querySnapshot = await getDocs(mediaRef);
-      const mediaData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as MediaFile[];
+      // Create a reference to the prathaviTravelsMedia folder
+      const storageRef = ref(secondaryStorage, 'prathaviTravelsMedia');
+      
+      // List all items in the folder
+      const result = await listAll(storageRef);
+      
+      // Get download URLs for all items
+      const mediaPromises = result.items.map(async (itemRef) => {
+        const downloadURL = await getDownloadURL(itemRef);
+        return {
+          id: itemRef.name, // Use the file name as ID
+          name: itemRef.name,
+          image: downloadURL,
+          fullPath: itemRef.fullPath
+        };
+      });
+      
+      const mediaData = await Promise.all(mediaPromises);
+      
+      // Sort by name (since we don't have creation time)
+      mediaData.sort((a, b) => a.name.localeCompare(b.name));
+      
       setMediaFiles(mediaData);
     } catch (error) {
       console.error("Error fetching media:", error);
@@ -63,24 +65,14 @@ function Media() {
     setLoading(true);
     try {
       // Create a unique filename
-      const fileName = `MID${Date.now()}`;
-      const storageRef = ref(mediaStorage, `media/${fileName}`);
+      const fileName = `MID${Date.now()}_${file.name}`;
+      const storageRef = ref(secondaryStorage, `prathaviTravelsMedia/${fileName}`);
       
       // Upload file to Firebase Storage
       await uploadBytes(storageRef, file);
       
-      // Get the download URL
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      // Add document to the main Firestore database's media collection
-      await addDoc(collection(db, "media"), {
-        name: file.name,
-        image: downloadURL,
-        createdAt: serverTimestamp(),
-      });
-      
       message.success("File uploaded successfully");
-      fetchMediaFiles();
+      fetchMediaFiles(); // Refresh the list
     } catch (error) {
       console.error("Error uploading file:", error);
       message.error("Failed to upload file");
@@ -89,7 +81,7 @@ function Media() {
     }
   };
 
-  const showDeleteConfirm = (id: string, imageUrl: string, fileName: string) => {
+  const showDeleteConfirm = (id: string, fullPath: string, fileName: string) => {
     confirm({
       title: 'Are you sure you want to delete this file?',
       icon: <ExclamationCircleFilled style={{ borderColor: '#ff4d4f' }} />,
@@ -98,7 +90,7 @@ function Media() {
       okType: 'danger',
       cancelText: 'No',
       onOk() {
-        handleDelete(id, imageUrl);
+        handleDelete(id, fullPath);
       },
       className: 'delete-confirmation-modal',
       centered: true,
@@ -121,18 +113,11 @@ function Media() {
     });
   };
 
-  const handleDelete = async (id: string, imageUrl: string) => {
+  const handleDelete = async (id: string, fullPath: string) => {
     try {
-      // Delete from the main Firestore
-      await deleteDoc(doc(db, "media", id));
-      
-      // Extract the file path from the URL to delete from Storage
-      const fileRef = ref(mediaStorage, imageUrl);
-      try {
-        await deleteObject(fileRef);
-      } catch (storageError) {
-        console.error("Error deleting file from storage:", storageError);
-      }
+      // Delete from Firebase Storage using the full path
+      const fileRef = ref(secondaryStorage, fullPath);
+      await deleteObject(fileRef);
       
       message.success("File deleted successfully");
       setMediaFiles(mediaFiles.filter(item => item.id !== id));
@@ -169,6 +154,7 @@ function Media() {
             <div className="flex justify-between items-center mb-5 flex-wrap gap-3 p-5">
               <div className="flex-1">
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Media Management</h1>
+                <p className="text-sm text-gray-500 mt-1">Managing images from prathaviTravelsMedia folder</p>
               </div>
               <div className="flex items-center gap-2">
                 <Upload {...uploadProps}>
@@ -224,7 +210,7 @@ function Media() {
                             icon={<DeleteOutlined />} 
                             onClick={(e) => {
                               e.stopPropagation();
-                              showDeleteConfirm(file.id, file.image, file.name);
+                              showDeleteConfirm(file.id, file.fullPath, file.name);
                             }}
                             className="text-white hover:text-red-500 hover:bg-white"
                           />
@@ -241,7 +227,7 @@ function Media() {
                   
                   {!loading && mediaFiles.length === 0 && (
                     <div className="text-center py-10 text-gray-500">
-                      <p>No media files found. Upload some files to get started.</p>
+                      <p>No media files found in prathaviTravelsMedia folder. Upload some files to get started.</p>
                     </div>
                   )}
                 </div>
@@ -266,4 +252,4 @@ function Media() {
   );
 }
 
-export default Protected(Media, ["admin"]); 
+export default Protected(Media, ["admin"]);

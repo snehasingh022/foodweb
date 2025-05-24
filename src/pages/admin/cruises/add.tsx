@@ -239,10 +239,7 @@ function AddCruise() {
         }
     }
 
-    const handleOpenImageDialog = (type: string) => {
-        setImageType(type)
-        setImageDialogOpen(true)
-    }
+    
 
     const handleSlugGeneration = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value

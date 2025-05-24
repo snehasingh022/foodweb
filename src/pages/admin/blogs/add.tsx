@@ -31,6 +31,7 @@ import { Editor } from '@tinymce/tinymce-react';
 import Protected from '../../../components/Protected/Protected';
 import { useRouter } from 'next/router';
 import { storage } from '@/lib/firebase-secondary';
+import { listAll, ref as storageRef } from "firebase/storage"
 
 
 
@@ -66,6 +67,13 @@ function AddBlog() {
   const [archive, setArchive] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
 
+  const [showArchive, setShowArchive] = useState(false);
+  const [showSeoArchive, setShowSeoArchive] = useState(false);
+  const [archiveImages, setArchiveImages] = useState<{ name: string; url: string; fullPath: string }[]>([]);
+
+  const [selectedArchiveImage, setSelectedArchiveImage] = useState('');
+  const [selectedSeoArchiveImage, setSelectedSeoArchiveImage] = useState('');
+
   const PageRoutes = [
     {
       path: '/admin',
@@ -86,7 +94,7 @@ function AddBlog() {
     if (typeof window !== "undefined") {
       fetchCategories();
       fetchTags();
-      fetchArchive();
+      fetchArchiveImages();
     }
   }, []);
 
@@ -128,19 +136,28 @@ function AddBlog() {
     }
   };
 
-  const fetchArchive = async () => {
-    try {
-      const archiveRef = collection(db, "archive");
-      const querySnapshot = await getDocs(archiveRef);
-      const archiveData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setArchive(archiveData);
-    } catch (error) {
-      console.error("Error fetching archive:", error);
-    }
-  };
+  const fetchArchiveImages = async () => {
+          try {
+              if (!storage) return;
+              const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
+              const result = await listAll(archiveRef);
+  
+              const imagePromises = result.items.map(async (imageRef) => {
+                  const url = await getDownloadURL(imageRef);
+                  return {
+                      name: imageRef.name,
+                      url: url,
+                      fullPath: imageRef.fullPath
+                  };
+              });
+  
+              const images = await Promise.all(imagePromises);
+              setArchiveImages(images);
+          } catch (error) {
+              console.error("Error fetching archive images:", error);
+              message.error("Failed to fetch archive images");
+          }
+      }
 
   const handleImageUpload = async (file: File) => {
     setImageLoading(true);
@@ -149,10 +166,12 @@ function AddBlog() {
         throw new Error("Firebase Storage is not available");
       }
       const slug = form.getFieldValue('slug') || `blog-${Date.now()}`;
-      const storageRef = ref(storage, `blogs/images/${slug}/${file.name}`);
+      const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
+
       setImageUrl(downloadURL);
+      fetchArchiveImages(); // Refresh archive images
       return downloadURL;
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -169,10 +188,12 @@ function AddBlog() {
         throw new Error("Firebase Storage is not available");
       }
       const slug = form.getFieldValue('slug') || `blog-${Date.now()}`;
-      const storageRef = ref(storage, `blogs/seoImages/${slug}/${file.name}`);
+      const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
+
       setSeoImageUrl(downloadURL);
+      fetchArchiveImages(); // Refresh archive images
       return downloadURL;
     } catch (error) {
       console.error("Error uploading SEO image:", error);
@@ -180,6 +201,16 @@ function AddBlog() {
     } finally {
       setImageLoading(false);
     }
+  };
+
+  const handleArchiveImageSelect = (url: string) => {
+    setSelectedArchiveImage(url);
+    setImageUrl(url);
+  };
+
+  const handleSeoArchiveImageSelect = (url: string) => {
+    setSelectedSeoArchiveImage(url);
+    setSeoImageUrl(url);
   };
 
   const handleArchiveImageUpload = async (file: File) => {
@@ -559,24 +590,67 @@ function AddBlog() {
                       <Row gutter={24}>
                         <Col span={12}>
                           <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}>
-                            <FirebaseFileUploader
-                              storagePath="blogs/images" // Updated storage path
-                              accept="image/*" // Only accept images
-                              maxSizeMB={10} // Adjust max file size
-                              onUploadSuccess={handleFeaturedImageUploadSuccess} // Use custom handler
-                              onUploadError={(error) => message.error("Image upload failed!")}
-                              disabled={false}
-                            />
-
-                            {imageUrl && (
-                              <div className="mt-2">
-                                <img
-                                  src={imageUrl}
-                                  alt="Preview"
-                                  className="max-h-32 rounded-md border"
-                                />
+                            <div className="space-y-3">
+                              <div className="flex gap-4 mb-4">
+                                <Button
+                                  onClick={() => setShowArchive(!showArchive)}
+                                  icon={<PictureOutlined />}
+                                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                                >
+                                  {showArchive ? 'Hide Archive' : 'Show Archive'}
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/*';
+                                    input.onchange = (e) => {
+                                      const file = (e.target as HTMLInputElement).files?.[0];
+                                      if (file) handleImageUpload(file);
+                                    };
+                                    input.click();
+                                  }}
+                                  icon={<UploadOutlined />}
+                                  loading={imageLoading}
+                                  className="bg-primary text-white hover:bg-primary-hb"
+                                >
+                                  {imageLoading ? 'Uploading...' : 'Upload Image'}
+                                </Button>
                               </div>
-                            )}
+
+                              {showArchive && (
+                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {archiveImages.map((image, index) => (
+                                      <div
+                                        key={index}
+                                        className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                        onClick={() => handleArchiveImageSelect(image.url)}
+                                      >
+                                        <img
+                                          src={image.url}
+                                          alt={image.name}
+                                          className="w-full h-20 object-cover"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {archiveImages.length === 0 && (
+                                    <p className="text-center text-gray-500 py-4">No archive images found</p>
+                                  )}
+                                </div>
+                              )}
+
+                              {imageUrl && (
+                                <div className="mt-2">
+                                  <img
+                                    src={imageUrl}
+                                    alt="Preview"
+                                    className="max-h-32 rounded-md border"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </Form.Item>
                         </Col>
                       </Row>
@@ -670,24 +744,67 @@ function AddBlog() {
                       </Form.Item>
 
                       <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Image</span>}>
-                        <FirebaseFileUploader
-                          storagePath="blogs/seoImages" // Updated storage path for SEO images
-                          accept="image/*" // Only accept images
-                          maxSizeMB={10} // Adjust max file size
-                          onUploadSuccess={handleSeoImageUploadSuccess} // Use custom handler
-                          onUploadError={(error) => message.error("SEO image upload failed!")}
-                          disabled={false}
-                        />
-
-                        {seoImageUrl && (
-                          <div className="mt-2">
-                            <img
-                              src={seoImageUrl}
-                              alt="SEO Preview"
-                              className="max-h-32 rounded-md border"
-                            />
+                        <div className="space-y-3">
+                          <div className="flex gap-4 mb-4">
+                            <Button
+                              onClick={() => setShowSeoArchive(!showSeoArchive)}
+                              icon={<PictureOutlined />}
+                              className="border-primary text-primary hover:bg-primary hover:text-white"
+                            >
+                              {showSeoArchive ? 'Hide Archive' : 'Show Archive'}
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = (e) => {
+                                  const file = (e.target as HTMLInputElement).files?.[0];
+                                  if (file) handleSeoImageUpload(file);
+                                };
+                                input.click();
+                              }}
+                              icon={<UploadOutlined />}
+                              loading={imageLoading}
+                              className="bg-primary text-white hover:bg-primary-hb"
+                            >
+                              {imageLoading ? 'Uploading...' : 'Upload Image'}
+                            </Button>
                           </div>
-                        )}
+
+                          {showSeoArchive && (
+                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                              <div className="grid grid-cols-3 gap-2">
+                                {archiveImages.map((image, index) => (
+                                  <div
+                                    key={index}
+                                    className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedSeoArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                    onClick={() => handleSeoArchiveImageSelect(image.url)}
+                                  >
+                                    <img
+                                      src={image.url}
+                                      alt={image.name}
+                                      className="w-full h-20 object-cover"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              {archiveImages.length === 0 && (
+                                <p className="text-center text-gray-500 py-4">No archive images found</p>
+                              )}
+                            </div>
+                          )}
+
+                          {seoImageUrl && (
+                            <div className="mt-2">
+                              <img
+                                src={seoImageUrl}
+                                alt="SEO Preview"
+                                className="max-h-32 rounded-md border"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </Form.Item>
                     </div>
 
