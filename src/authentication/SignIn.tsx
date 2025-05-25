@@ -4,14 +4,6 @@ import { useRouter } from 'next/router';
 import { Form, Input, Button, Row, Col } from 'antd';
 import { useDispatch } from 'react-redux';
 import { logInAction } from '@/redux/authentication/actionCreator';
-import { ReactSVG } from 'react-svg';
-import {
-  UilFacebook,
-  UilTwitter,
-  UilGithub,
- } from '@iconscout/react-unicons';
-import { CheckBox } from '@/components/checkbox';
-
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useAuth } from './AuthContext'
 
