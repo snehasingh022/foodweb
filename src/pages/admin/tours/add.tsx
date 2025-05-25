@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 import { listAll, ref as storageRef } from "firebase/storage"
+import { convertImageToWebP } from '@/components/imageConverter';
 import {
     Row,
     Col,
@@ -76,6 +77,8 @@ function AddTour() {
     const [archiveImages, setArchiveImages] = useState<any[]>([])
     const [showArchive, setShowArchive] = useState(false)
     const [selectedArchiveImage, setSelectedArchiveImage] = useState("")
+    const [itineraryShowArchive, setItineraryShowArchive] = useState<{ [key: string]: boolean }>({});
+    const [selectedItineraryArchiveImages, setSelectedItineraryArchiveImages] = useState<{ [key: string]: string }>({});
 
     const PageRoutes = [
         {
@@ -175,8 +178,11 @@ function AddTour() {
                 throw new Error("Firebase Storage is not available");
             }
             setImageLoading(true);
-            const storageReference = storageRef(storage, `prathaviTravelsMedia/${file.name}`);
-            await uploadBytes(storageReference, file);
+
+            // Convert to WebP before uploading
+            const webpFile = await convertImageToWebP(file);
+            const storageReference = storageRef(storage, `prathaviTravelsMedia/${webpFile.name}`);
+            await uploadBytes(storageReference, webpFile);
             const downloadURL = await getDownloadURL(storageReference);
             setImageUrl(downloadURL);
             message.success("Image uploaded successfully!");
@@ -185,26 +191,6 @@ function AddTour() {
             message.error("Failed to upload image. Please try again.");
         } finally {
             setImageLoading(false);
-        }
-    };
-
-    const handleArchiveImageUpload = async (file: File) => {
-        try {
-            const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-
-            const archiveRef = collection(db, "archive");
-            await addDoc(archiveRef, {
-                ImageUrl: downloadURL,
-            });
-
-            setArchive([...archive, { ImageUrl: downloadURL }]);
-            message.success("Image saved to archive successfully!");
-            return downloadURL;
-        } catch (error) {
-            console.error("Error saving image to archive:", error);
-            message.error("Error saving image to archive. Please try again.");
         }
     };
 
@@ -239,6 +225,13 @@ function AddTour() {
             message.error("Error adding category. Please try again.");
         }
     };
+
+    const handleArchiveImageSelect = (imageUrl: string) => {
+        setImageUrl(imageUrl);
+        setSelectedArchiveImage(imageUrl);
+        setShowArchive(false);
+        message.success("Archive image selected!");
+    }
 
     const handleAddTag = async (values: any) => {
         if (typeof window === "undefined") return;
@@ -287,27 +280,45 @@ function AddTour() {
         }
     };
 
-    const handleArchiveImageSelect = (imageUrl: string) => {
-        setImageUrl(imageUrl);
-        setSelectedArchiveImage(imageUrl);
-        setShowArchive(false);
+    const handleItineraryArchiveImageSelect = (dayIndex: number, imageUrl: string) => {
+        setItineraryImages(prev => {
+            const dayImages = prev[`${dayIndex + 1}`] || [];
+            return {
+                ...prev,
+                [`${dayIndex + 1}`]: [...dayImages, imageUrl]
+            };
+        });
+
+        setSelectedItineraryArchiveImages(prev => ({
+            ...prev,
+            [`${dayIndex}`]: imageUrl
+        }));
+
+        setItineraryShowArchive(prev => ({
+            ...prev,
+            [`${dayIndex}`]: false
+        }));
+
         message.success("Archive image selected!");
-    }
+    };
 
 
 
-    const handleItineraryImageUpload = async (day: string, file: File) => {
+    const handleItineraryImageUpload = async (dayIndex: number, file: File) => {
         try {
             setImageLoading(true);
-            const storageRef = ref(storage, `prathaviTravelsMedia/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
+
+            // Convert to WebP before uploading
+            const webpFile = await convertImageToWebP(file);
+            const storageReference = storageRef(storage, `prathaviTravelsMedia/${webpFile.name}`);
+            await uploadBytes(storageReference, webpFile);
+            const downloadURL = await getDownloadURL(storageReference);
 
             setItineraryImages(prev => {
-                const dayImages = prev[day] || [];
+                const dayImages = prev[`${dayIndex + 1}`] || [];
                 return {
                     ...prev,
-                    [day]: [...dayImages, downloadURL]
+                    [`${dayIndex + 1}`]: [...dayImages, downloadURL]
                 };
             });
 
@@ -319,6 +330,17 @@ function AddTour() {
         } finally {
             setImageLoading(false);
         }
+    };
+
+    const handleRemoveItineraryImage = (dayIndex: number, imageUrl: string) => {
+        setItineraryImages(prev => {
+            const dayImages = prev[`${dayIndex + 1}`] || [];
+            return {
+                ...prev,
+                [`${dayIndex + 1}`]: dayImages.filter(img => img !== imageUrl)
+            };
+        });
+        message.success("Image removed successfully");
     };
 
 
@@ -898,11 +920,14 @@ function AddTour() {
                                                                     <div className="space-y-3">
                                                                         <div className="flex gap-4 mb-4">
                                                                             <Button
-                                                                                onClick={() => setShowArchive(!showArchive)}
+                                                                                onClick={() => setItineraryShowArchive(prev => ({
+                                                                                    ...prev,
+                                                                                    [`${index}`]: !prev[`${index}`]
+                                                                                }))}
                                                                                 icon={<PictureOutlined />}
                                                                                 className="border-primary text-primary hover:bg-primary hover:text-white"
                                                                             >
-                                                                                {showArchive ? 'Hide Archive' : 'Show Archive'}
+                                                                                {itineraryShowArchive[`${index}`] ? 'Hide Archive' : 'Show Archive'}
                                                                             </Button>
                                                                             <Button
                                                                                 onClick={() => {
@@ -911,7 +936,7 @@ function AddTour() {
                                                                                     input.accept = 'image/*';
                                                                                     input.onchange = (e) => {
                                                                                         const file = (e.target as HTMLInputElement).files?.[0];
-                                                                                        if (file) handleImageUpload(file);
+                                                                                        if (file) handleItineraryImageUpload(index, file);
                                                                                     };
                                                                                     input.click();
                                                                                 }}
@@ -923,14 +948,14 @@ function AddTour() {
                                                                             </Button>
                                                                         </div>
 
-                                                                        {showArchive && (
+                                                                        {itineraryShowArchive[`${index}`] && (
                                                                             <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
                                                                                 <div className="grid grid-cols-3 gap-2">
-                                                                                    {archiveImages.map((image, index) => (
+                                                                                    {archiveImages.map((image, imgIndex) => (
                                                                                         <div
-                                                                                            key={index}
-                                                                                            className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
-                                                                                            onClick={() => handleArchiveImageSelect(image.url)}
+                                                                                            key={imgIndex}
+                                                                                            className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedItineraryArchiveImages[`${index}`] === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                                                                            onClick={() => handleItineraryArchiveImageSelect(index, image.url)}
                                                                                         >
                                                                                             <img
                                                                                                 src={image.url}
@@ -946,13 +971,27 @@ function AddTour() {
                                                                             </div>
                                                                         )}
 
-                                                                        {imageUrl && (
+                                                                        {itineraryImages[`${index + 1}`] && itineraryImages[`${index + 1}`].length > 0 && (
                                                                             <div className="mt-2">
-                                                                                <img
-                                                                                    src={imageUrl}
-                                                                                    alt="Preview"
-                                                                                    className="max-h-32 rounded-md border"
-                                                                                />
+                                                                                <div className="flex flex-wrap gap-2">
+                                                                                    {itineraryImages[`${index + 1}`].map((imageUrl, imgIndex) => (
+                                                                                        <div key={imgIndex} className="relative">
+                                                                                            <img
+                                                                                                src={imageUrl}
+                                                                                                alt={`Day ${index + 1} Image ${imgIndex + 1}`}
+                                                                                                className="max-h-32 rounded-md border"
+                                                                                            />
+                                                                                            <Button
+                                                                                                type="text"
+                                                                                                size="small"
+                                                                                                danger
+                                                                                                icon={<MinusCircleOutlined />}
+                                                                                                className="absolute top-1 right-1 bg-white rounded-full shadow-md"
+                                                                                                onClick={() => handleRemoveItineraryImage(index, imageUrl)}
+                                                                                            />
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
                                                                             </div>
                                                                         )}
                                                                     </div>
