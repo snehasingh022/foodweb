@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, Input, Button, Table, Modal, message, Space, Tooltip, Divider, Typography, Spin, Tabs, Descriptions, Tag } from 'antd';
 import type { InputRef } from 'antd';
@@ -514,12 +515,47 @@ function Bookings() {
                       rowKey="id"
                     />
                   </div>
+=======
+import React from 'react';
+import { Row, Col, Card } from 'antd';
+import { PageHeaders } from '../../../components/page-headers/index';
+import Protected from '../../../components/Protected/Protected';
+
+function Bookings() {
+  const PageRoutes = [
+    {
+      path: '/admin',
+      breadcrumbName: 'Dashboard',
+    },
+    {
+      path: '',
+      breadcrumbName: 'Bookings',
+    },
+  ];
+
+  return (
+    <>
+      <PageHeaders
+        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
+        title="Bookings"
+        routes={PageRoutes}
+      />
+      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
+        <Row gutter={25}>
+          <Col sm={24} xs={24}>
+            <Card className="h-full">
+              <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
+                <div className="p-[25px]">
+                  <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold mb-4">Bookings Management</h2>
+                  <p>Bookings listing and management will be implemented here.</p>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 </div>
               </div>
             </Card>
           </Col>
         </Row>
       </main>
+<<<<<<< HEAD
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -816,8 +852,14 @@ function Bookings() {
           </div>
         )}
       </Modal>
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     </>
   );
 }
 
+<<<<<<< HEAD
 export default Protected(Bookings, ["admin"]);
+=======
+export default Protected(Bookings, ["admin"]); 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12

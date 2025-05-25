@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+<<<<<<< HEAD
 import { Form, Input, Button, Row, Col, message } from 'antd';
 import { 
   getAuth, 
@@ -96,6 +97,18 @@ function ForgotPassword() {
     } finally {
       setLoading(false);
     }
+=======
+import { Form, Input, Button, Row, Col } from 'antd';
+
+function ForgotPassword() {
+  const router = useRouter();
+  const [state, setState] = useState({
+    values: null,
+  });
+  const handleSubmit = (values:any) => {
+    router.push('/admin')
+    setState({ ...state, values });
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   };
 
   return (
@@ -108,11 +121,16 @@ function ForgotPassword() {
             </div>
             <div className="px-10 pt-8 pb-6">
               <p className="mb-4 dark:text-white/60">
+<<<<<<< HEAD
                 Enter the email address you used when you joined and we'll send you instructions to reset your password.
+=======
+                Enter the email address you used when you joined and we’ll send you instructions to reset your password.
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </p>
               <Form.Item
                 label="Email Address"
                 name="email"
+<<<<<<< HEAD
                 rules={[
                   { required: true, message: 'Please input your email!' },
                   { type: 'email', message: 'Please enter a valid email address!' }
@@ -122,6 +140,11 @@ function ForgotPassword() {
                   placeholder="name@example.com" 
                   disabled={loading}
                 />
+=======
+                rules={[{ required: true, message: 'Please input your email!', type: 'email' }]}
+              >
+                <Input placeholder="name@example.com" />
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </Form.Item>
               <Form.Item>
                 <Button
@@ -129,16 +152,25 @@ function ForgotPassword() {
                   htmlType="submit"
                   type="primary"
                   size="large"
+<<<<<<< HEAD
                   loading={loading}
                 >
                   {loading ? 'Sending...' : 'Send Reset Instructions'}
+=======
+                >
+                  Send Reset Instructions
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 </Button>
               </Form.Item>
             </div>
             <div className="p-6 text-center bg-section dark:bg-white/10 rounded-b-md">
               <p className="mb-0 text-sm font-medium text-body dark:text-white/60">
                 Return to
+<<<<<<< HEAD
                 <Link href="/admin/login" className="ltr:ml-1.5 rtl:mr-1.5 text-info hover:text-primary">
+=======
+                <Link href="/" className="ltr:ml-1.5 rtl:mr-1.5 text-info hover:text-primary">
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   Sign In
                 </Link>
               </p>
@@ -150,4 +182,8 @@ function ForgotPassword() {
   );
 }
 
+<<<<<<< HEAD
 export default ForgotPassword;
+=======
+export default ForgotPassword;
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12

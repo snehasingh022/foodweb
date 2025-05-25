@@ -3,7 +3,11 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 
+<<<<<<< HEAD
 import backgroundImage from '../../public/img/logo.webp';
+=======
+import backgroundImage from '../../public/img/admin-bg-light.png';
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
 
@@ -33,10 +37,18 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
       style={{
         backgroundImage: `url(${backgroundImage.src})`,
       }}
+<<<<<<< HEAD
       className="bg-top bg-no-repeat mt-24"
     >
       <div className="py-[120px] 2xl:py-[80px] px-[15px]">
         <div className="flex justify-center">
+=======
+      className="bg-top bg-no-repeat"
+    >
+      <div className="py-[120px] 2xl:py-[80px] px-[15px]">
+        <div className="flex justify-center">
+          <Image className="dark:hidden" src='/img/logo_dark.svg' alt="Logo Dark" width="140" height="32" />
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
           <Image className="hidden dark:block" src='/img/logo_white.svg' alt="Logo" width="140" height="32" />
         </div>
           {children}

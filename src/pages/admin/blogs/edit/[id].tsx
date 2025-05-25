@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 import { listAll, ref as storageRef } from "firebase/storage"
 import {
@@ -34,10 +35,18 @@ import { useRouter } from 'next/router'
 import { storage } from '@/lib/firebase-secondary';
 
 const { Option } = Select;
+=======
+import { useRouter } from 'next/router';
+import Protected from '../../../../components/Protected/Protected';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../../authentication/firebase';
+import { Spin, message } from 'antd';
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
 function EditBlog() {
   const router = useRouter();
   const { id } = router.query;
+<<<<<<< HEAD
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [formChanged, setFormChanged] = useState(false);
@@ -182,18 +191,45 @@ function EditBlog() {
         setSelectedTags(data.tags || []);
         setSeoKeywords(data.seoKeywords || []);
         setSeoImageUrl(data.seoImage || '');
+=======
+  const [loading, setLoading] = useState(true);
+  const [blog, setBlog] = useState<any>(null);
+
+  useEffect(() => {
+    if (id && typeof id === 'string') {
+      fetchBlog(id);
+    }
+  }, [id]);
+
+  const fetchBlog = async (blogId: string) => {
+    try {
+      setLoading(true);
+      const blogDoc = await getDoc(doc(db, "blogs", blogId));
+      
+      if (blogDoc.exists()) {
+        setBlog({
+          id: blogDoc.id,
+          ...blogDoc.data()
+        });
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       } else {
         message.error("Blog not found");
         router.push('/admin/blogs');
       }
     } catch (error) {
+<<<<<<< HEAD
       console.error("Error fetching blog data:", error);
       message.error("Failed to fetch blog data");
+=======
+      console.error("Error fetching blog:", error);
+      message.error("Failed to fetch blog");
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     } finally {
       setLoading(false);
     }
   };
 
+<<<<<<< HEAD
   const fetchCategories = async () => {
     try {
       const q = query(collection(db, "categories"), orderBy("createdAt", "desc"));
@@ -1032,3 +1068,27 @@ function EditBlog() {
 }
 
 export default Protected(EditBlog, ["admin"]);
+=======
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!blog) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h1>Edit Blog: {blog.title}</h1>
+      <p>This page will be implemented to edit blog ID: {id}</p>
+      <button onClick={() => router.push('/admin/blogs')}>Back to Blogs</button>
+    </div>
+  );
+}
+
+export default Protected(EditBlog, ["admin"]); 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12

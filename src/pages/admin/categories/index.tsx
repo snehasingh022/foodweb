@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { Row, Col, Card, Input, Table, Button, Modal, Form, Spin, message, Space, Tooltip } from 'antd';
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { db } from '../../../authentication/firebase';
 import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+=======
+import { Row, Col, Card, Input, Table, Button, Modal, Form, Spin, message, Space } from 'antd';
+import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { db } from '../../../authentication/firebase';
+import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 import Protected from '../../../components/Protected/Protected';
 
 interface CategoryType {
@@ -16,7 +23,10 @@ interface CategoryType {
 
 interface CategoryFormValues {
   name: string;
+<<<<<<< HEAD
   slug: string;
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   description: string;
 }
 
@@ -25,8 +35,15 @@ function Categories() {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>('');
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+<<<<<<< HEAD
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
   const [form] = Form.useForm();
+=======
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
@@ -54,6 +71,7 @@ function Categories() {
     fetchCategories();
   }, []);
 
+<<<<<<< HEAD
   // Generate slug from name
   const generateSlug = (name: string) => {
     return name
@@ -71,14 +89,23 @@ function Categories() {
     form.setFieldsValue({ slug });
   };
 
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   // Handle add category
   const handleAddCategory = async (values: CategoryFormValues) => {
     try {
       setSubmitLoading(true);
+<<<<<<< HEAD
       const categoryId = `CID${Date.now().toString().slice(-6)}`;
       await setDoc(doc(db, 'categories', categoryId), {
         name: values.name,
         slug: values.slug,
+=======
+      const slug = values.name.toLowerCase().replace(/ /g, '-');
+      await addDoc(collection(db, 'categories'), {
+        name: values.name,
+        slug: slug,
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         description: values.description,
         createdAt: serverTimestamp(),
       });
@@ -89,7 +116,10 @@ function Categories() {
     } catch (error) {
       console.error('Error adding category:', error);
       message.error('Failed to add category');
+<<<<<<< HEAD
     } finally {
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       setSubmitLoading(false);
     }
   };
@@ -99,23 +129,39 @@ function Categories() {
     if (!selectedCategory) return;
     try {
       setSubmitLoading(true);
+<<<<<<< HEAD
       const categoryRef = doc(db, 'categories', selectedCategory.id);
       await updateDoc(categoryRef, {
         name: values.name,
         slug: values.slug,
+=======
+      const slug = values.name.toLowerCase().replace(/ /g, '-');
+      const categoryRef = doc(db, 'categories', selectedCategory.id);
+      await updateDoc(categoryRef, {
+        name: values.name,
+        slug: slug,
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         description: values.description,
         updatedAt: serverTimestamp(),
       });
       message.success('Category updated successfully');
+<<<<<<< HEAD
       form.resetFields();
       setModalVisible(false);
       setEditMode(false);
       setSelectedCategory(null);
+=======
+      editForm.resetFields();
+      setEditModalVisible(false);
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       fetchCategories();
     } catch (error) {
       console.error('Error updating category:', error);
       message.error('Failed to update category');
+<<<<<<< HEAD
     } finally {
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       setSubmitLoading(false);
     }
   };
@@ -128,18 +174,25 @@ function Categories() {
       await deleteDoc(doc(db, 'categories', selectedCategory.id));
       message.success('Category deleted successfully');
       setDeleteModalVisible(false);
+<<<<<<< HEAD
       setSelectedCategory(null);
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       fetchCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
       message.error('Failed to delete category');
+<<<<<<< HEAD
     } finally {
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       setSubmitLoading(false);
     }
   };
 
   // Filter categories based on search text
   const filteredCategories = categories.filter((category) =>
+<<<<<<< HEAD
     category.name.toLowerCase().includes(searchText.toLowerCase()) ||
     category.slug.toLowerCase().includes(searchText.toLowerCase())
   );
@@ -178,6 +231,11 @@ function Categories() {
     setModalVisible(true);
   };
 
+=======
+    category.name.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   // Table columns
   const columns = [
     {
@@ -201,7 +259,10 @@ function Categories() {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
+<<<<<<< HEAD
       render: (description: string) => truncateDescription(description),
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     },
     {
       title: 'Created At',
@@ -216,6 +277,7 @@ function Categories() {
       key: 'actions',
       render: (_: any, record: CategoryType) => (
         <div className="flex gap-2">
+<<<<<<< HEAD
           <Tooltip title="Edit">
             <Button
               type="text"
@@ -235,6 +297,36 @@ function Categories() {
               className="text-red-600 hover:text-red-800"
             />
           </Tooltip>
+=======
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            size="small"
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => {
+              setSelectedCategory(record);
+              editForm.setFieldsValue({
+                name: record.name,
+                description: record.description,
+              });
+              setEditMode(true);
+              setModalVisible(true);
+            }}
+          >
+            
+          </Button>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            size="small"
+            onClick={() => {
+              setSelectedCategory(record);
+              setDeleteModalVisible(true);
+            }}
+          >
+            
+          </Button>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         </div>
       ),
     },
@@ -243,8 +335,11 @@ function Categories() {
   const handleModalCancel = () => {
     setModalVisible(false);
     setEditMode(false);
+<<<<<<< HEAD
     setSelectedCategory(null);
     form.resetFields();
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   };
 
   const handleSubmit = editMode ? handleUpdateCategory : handleAddCategory;
@@ -259,6 +354,7 @@ function Categories() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Category Management</h1>
               </div>
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <Button
                   type="primary"
                   onClick={handleAddClick}
@@ -267,6 +363,8 @@ function Categories() {
                 >
                   Add Category
                 </Button>
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 <Input
                   placeholder="Search categories..."
                   prefix={<SearchOutlined />}
@@ -274,6 +372,7 @@ function Categories() {
                   style={{ width: 250 }}
                   className="py-2 text-base font"
                 />
+<<<<<<< HEAD
                 {loading ? (
                   <div className="h-10 flex items-center justify-center">
                     <Spin size="small" />
@@ -287,11 +386,26 @@ function Categories() {
                     Refresh
                   </Button>
                 )}
+=======
+                <Button 
+                  type="primary" 
+                  onClick={() => setModalVisible(true)}
+                  icon={<PlusOutlined />}
+                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                >
+                  Add Category
+                </Button>
+                {loading && <Spin />}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </div>
             </div>
           </Col>
         </Row>
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
@@ -302,12 +416,20 @@ function Categories() {
                       dataSource={filteredCategories}
                       columns={columns.map(col => ({
                         ...col,
+<<<<<<< HEAD
                         responsive: col.dataIndex === 'name' || col.key === 'action'
+=======
+                        responsive: col.dataIndex === 'name' || col.key === 'action' 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                           ? ['xs', 'sm', 'md', 'lg', 'xl'] as any
                           : ['sm', 'md', 'lg', 'xl'] as any,
                       }))}
                       loading={loading}
+<<<<<<< HEAD
                       pagination={{
+=======
+                      pagination={{ 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                         pageSize: 10,
                         showSizeChanger: false,
                         responsive: true,
@@ -325,11 +447,15 @@ function Categories() {
 
       {/* Add/Edit Category Modal */}
       <Modal
+<<<<<<< HEAD
         title={<div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
             {editMode ? "Edit Category" : "Add New Category"}
           </span>
         </div>}
+=======
+        title={editMode ? "Edit Category" : "Add New Category"}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         open={modalVisible}
         onCancel={handleModalCancel}
         footer={null}
@@ -341,13 +467,18 @@ function Categories() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+<<<<<<< HEAD
           className="p-6"
+=======
+          className="p-2"
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         >
           <Form.Item
             name="name"
             label="Category Name"
             rules={[{ required: true, message: 'Please enter category name' }]}
           >
+<<<<<<< HEAD
             <Input
               placeholder="Enter category name"
               onChange={handleNameChange}
@@ -370,6 +501,10 @@ function Categories() {
             />
           </Form.Item>
 
+=======
+            <Input placeholder="Enter category name" />
+          </Form.Item>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
           <Form.Item
             name="description"
             label="Description"
@@ -377,15 +512,24 @@ function Categories() {
           >
             <Input.TextArea rows={4} placeholder="Enter description" />
           </Form.Item>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
           <Form.Item className="mb-0 flex justify-end mt-4">
             <Space>
               <Button onClick={handleModalCancel}>
                 Cancel
               </Button>
+<<<<<<< HEAD
               <Button
                 type="primary"
                 htmlType="submit"
+=======
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 loading={submitLoading}
               >
                 {editMode ? "Update" : "Add"}
@@ -397,6 +541,7 @@ function Categories() {
 
       {/* Delete Confirmation Modal */}
       <Modal
+<<<<<<< HEAD
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
@@ -404,10 +549,14 @@ function Categories() {
             </span>
           </div>
         }
+=======
+        title="Delete Category"
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         onOk={handleDeleteCategory}
         okText="Delete"
+<<<<<<< HEAD
         okButtonProps={{ danger: true, className: "mr-4 mb-4" }} // margin to OK button
         cancelButtonProps={{ className: "mb-4" }} // margin to Cancel button
       >
@@ -416,10 +565,21 @@ function Categories() {
         </p>
         <p className="text-red-500 mt-2 p-3">This action cannot be undone.</p>
 
+=======
+        okButtonProps={{ danger: true, loading: submitLoading }}
+      >
+        <p>Are you sure you want to delete this category?</p>
+        <p className="text-red-500 mt-2">This action cannot be undone.</p>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       </Modal>
     </>
   );
 }
+<<<<<<< HEAD
 <p className="text-red-500 mt-2">This action cannot be undone.</p>
 
 export default Protected(Categories, ["admin"]);
+=======
+
+export default Protected(Categories, ["admin"]); 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12

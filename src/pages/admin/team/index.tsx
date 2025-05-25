@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   Row,
   Col,
@@ -10,18 +11,37 @@ import {
   Input,
   Select,
   Space,
+=======
+import { 
+  Row, 
+  Col, 
+  Card, 
+  Table, 
+  Button, 
+  Modal, 
+  Form, 
+  Input, 
+  Select, 
+  Space, 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   Spin,
   Typography,
   Tag
 } from 'antd';
+<<<<<<< HEAD
 import {
   EditOutlined,
+=======
+import { 
+  EditOutlined, 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   DeleteOutlined,
   SearchOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import { db, auth } from '../../../authentication/firebase';
 import { useAuth } from '../../../authentication/AuthContext';
+<<<<<<< HEAD
 import {
   collection,
   query,
@@ -33,14 +53,34 @@ import {
   setDoc,
   serverTimestamp,
   where,
+=======
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  deleteDoc, 
+  setDoc, 
+  serverTimestamp, 
+  where, 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   addDoc,
   DocumentData
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+<<<<<<< HEAD
 import {
   UilPlus,
   UilEdit,
   UilTrash,
+=======
+import { 
+  UilPlus, 
+  UilEdit, 
+  UilTrash, 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   UilEye
 } from '@iconscout/react-unicons';
 import type { Breakpoint } from 'antd/es/_util/responsiveObserver';
@@ -109,9 +149,15 @@ function Team() {
       // Use only the admins collection 
       const adminsCollection = collection(db, "admins");
       const usersQuery = query(adminsCollection, orderBy("createdAt", "desc"));
+<<<<<<< HEAD
 
       const querySnapshot = await getDocs(usersQuery);
 
+=======
+      
+      const querySnapshot = await getDocs(usersQuery);
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       if (!querySnapshot.empty) {
         const adminsList = querySnapshot.docs.map(doc => {
           const data = doc.data() as DocumentData;
@@ -166,11 +212,19 @@ function Team() {
 
   const confirmDelete = async () => {
     if (!selectedUser) return;
+<<<<<<< HEAD
 
     setLoading(true);
     try {
       await deleteDoc(doc(db, "admins", selectedUser.id));
 
+=======
+    
+    setLoading(true);
+    try {
+      await deleteDoc(doc(db, "admins", selectedUser.id));
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       // If the user is an author, delete from authors collection
       if (selectedUser.roles.includes('author')) {
         const authorQuery = query(
@@ -182,7 +236,11 @@ function Team() {
           await deleteDoc(authorSnapshot.docs[0].ref);
         }
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       fetchUsers();
       setDeleteModalVisible(false);
     } catch (error) {
@@ -194,7 +252,11 @@ function Team() {
 
   const handleUpdateUser = async (values: EditUserFormValues) => {
     if (!selectedUser) return;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     setLoading(true);
     try {
       const userRef = doc(db, "admins", selectedUser.id);
@@ -211,7 +273,11 @@ function Team() {
           where("name", "==", selectedUser.name)
         );
         const authorSnapshot = await getDocs(authorQuery);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         if (authorSnapshot.empty) {
           // Create new author record
           await addDoc(collection(db, "authors"), {
@@ -287,7 +353,11 @@ function Team() {
       fetchUsers();
       setAddModalVisible(false);
       addForm.resetFields();
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     } catch (error: any) {
       console.error("Error adding user:", error);
       if (error.code === "auth/email-already-in-use") {
@@ -306,7 +376,11 @@ function Team() {
     setSearchText(value);
   };
 
+<<<<<<< HEAD
   const filteredUsers = users.filter(user =>
+=======
+  const filteredUsers = users.filter(user => 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     user.name?.toLowerCase().includes(searchText.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchText.toLowerCase()) ||
     (user.uid ? user.uid.toLowerCase().includes(searchText.toLowerCase()) : false) ||
@@ -340,12 +414,21 @@ function Team() {
       render: (roles: string[]) => (
         <Space size={[0, 8]} wrap>
           {roles?.map(role => (
+<<<<<<< HEAD
             <Tag
               key={role}
               color={
                 role === 'admin' ? 'blue' :
                   role === 'helpdesk' ? 'orange' :
                     role === 'author' ? 'purple' : 'default'
+=======
+            <Tag 
+              key={role} 
+              color={
+                role === 'admin' ? 'blue' : 
+                role === 'helpdesk' ? 'orange' : 
+                role === 'author' ? 'purple' : 'default'
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               }
             >
               {role.toUpperCase()}
@@ -376,12 +459,22 @@ function Team() {
             size="small" 
             onClick={() => handleEditUser(record)}
           /> */}
+<<<<<<< HEAD
           <Button
             type="text"
             icon={<EditOutlined />}
             className="text-green-600 hover:text-green-800"
             onClick={() => handleEditUser(record)}
           />
+=======
+          <Button 
+                type="primary" 
+                size="small" 
+                icon={<EditOutlined />}
+                onClick={() => handleEditUser(record)}
+                className="bg-primary hover:bg-primary-hbr"
+              />
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
           {/* <Button 
             type="primary" 
             danger
@@ -389,12 +482,22 @@ function Team() {
             size="small"
             onClick={() => handleDeleteUser(record)}
           /> */}
+<<<<<<< HEAD
           <Button
             type="text"
             icon={<DeleteOutlined />}
             className="text-red-600 hover:text-red-800"
             onClick={() => handleDeleteUser(record)}
           />
+=======
+          <Button 
+                type="primary" 
+                danger
+                size="small" 
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteUser(record)}
+              />
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         </Space>
       ),
     },
@@ -410,14 +513,27 @@ function Team() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Team Management</h1>
               </div>
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <Button
                   type="primary"
+=======
+                <Input 
+                  placeholder="Search team members..." 
+                  prefix={<SearchOutlined />}
+                  onChange={e => handleSearch(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-"
+                />
+                <Button 
+                  type="primary" 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   onClick={() => setAddModalVisible(true)}
                   icon={<UilPlus />}
                   className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
                 >
                   Add User
                 </Button>
+<<<<<<< HEAD
                 <Input
                   placeholder="Search team members..."
                   prefix={<SearchOutlined />}
@@ -438,11 +554,18 @@ function Team() {
                     Refresh
                   </Button>
                 )}
+=======
+                {loading && <Spin />}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </div>
             </div>
           </Col>
         </Row>
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
@@ -513,7 +636,11 @@ function Team() {
             noStyle
             shouldUpdate={(prevValues, currentValues) => prevValues.roles !== currentValues.roles}
           >
+<<<<<<< HEAD
             {({ getFieldValue }) =>
+=======
+            {({ getFieldValue }) => 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               getFieldValue('roles')?.includes('author') ? (
                 <>
                   <Form.Item
@@ -522,7 +649,11 @@ function Team() {
                   >
                     <Input placeholder="Enter slug" />
                   </Form.Item>
+<<<<<<< HEAD
 
+=======
+                  
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   <Form.Item
                     name="authorDescription"
                     label="Author Description"
@@ -620,7 +751,11 @@ function Team() {
             noStyle
             shouldUpdate={(prevValues, currentValues) => prevValues.roles !== currentValues.roles}
           >
+<<<<<<< HEAD
             {({ getFieldValue }) =>
+=======
+            {({ getFieldValue }) => 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               getFieldValue('roles')?.includes('author') ? (
                 <>
                   <Form.Item
@@ -629,7 +764,11 @@ function Team() {
                   >
                     <Input placeholder="Enter slug" />
                   </Form.Item>
+<<<<<<< HEAD
 
+=======
+                  
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   <Form.Item
                     name="authorDescription"
                     label="Author Description"
@@ -726,6 +865,10 @@ function TeamPage() {
 
   // Only render Team component if user has admin access
   return isAdmin ? <Team /> : null;
+<<<<<<< HEAD
 }
+=======
+} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
 export default Protected(TeamPage, ["admin"]);

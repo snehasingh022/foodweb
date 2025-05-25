@@ -19,6 +19,10 @@
       "@/*": ["./src/*"]
     }
   },
+<<<<<<< HEAD
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "custom.d.ts", "src/layout/Style.tsx", "src/pages/admin/cruises/edit"],
+=======
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "custom.d.ts", "src/layout/Style.tsx"],
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   "exclude": ["node_modules"]
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   Row,
   Col,
@@ -24,6 +25,32 @@ import {
   doc,
   deleteDoc,
   query,
+=======
+import { 
+  Row, 
+  Col, 
+  Card, 
+  Table, 
+  Input, 
+  Button, 
+  Space, 
+  Modal, 
+  message,
+  Spin 
+} from 'antd';
+import { 
+  SearchOutlined, 
+  EditOutlined, 
+  DeleteOutlined,
+  EyeOutlined
+} from '@ant-design/icons';
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  deleteDoc, 
+  query, 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   orderBy,
   where
 } from 'firebase/firestore';
@@ -58,7 +85,11 @@ function Users() {
     try {
       const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       const usersData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         key: doc.id,
@@ -70,7 +101,11 @@ function Users() {
         createdAt: doc.data().createdAt,
         updatedAt: doc.data().updatedAt,
       }));
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       setUsers(usersData);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -87,7 +122,11 @@ function Users() {
   // Delete user
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     try {
       await deleteDoc(doc(db, "users", selectedUser.id));
       message.success("User deleted successfully");
@@ -100,7 +139,11 @@ function Users() {
   };
 
   // Filter users based on search text
+<<<<<<< HEAD
   const filteredUsers = users.filter(user =>
+=======
+  const filteredUsers = users.filter(user => 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     user.name.toLowerCase().includes(searchText.toLowerCase()) ||
     user.email.toLowerCase().includes(searchText.toLowerCase()) ||
     user.phone.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -137,6 +180,7 @@ function Users() {
       render: (createdAt: any) => {
         if (!createdAt) return 'N/A';
         // Check if createdAt is a Firebase timestamp or a regular JS Date
+<<<<<<< HEAD
         return createdAt.toDate ? new Date(createdAt.toDate()).toLocaleString() :
           (createdAt.seconds ? new Date(createdAt.seconds * 1000).toLocaleString() :
             new Date(createdAt).toLocaleString());
@@ -149,6 +193,20 @@ function Users() {
         const bTime = b.createdAt.toDate ? b.createdAt.toDate().getTime() :
           (b.createdAt.seconds ? b.createdAt.seconds * 1000 :
             new Date(b.createdAt).getTime());
+=======
+        return createdAt.toDate ? new Date(createdAt.toDate()).toLocaleString() : 
+               (createdAt.seconds ? new Date(createdAt.seconds * 1000).toLocaleString() : 
+               new Date(createdAt).toLocaleString());
+      },
+      sorter: (a: User, b: User) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        const aTime = a.createdAt.toDate ? a.createdAt.toDate().getTime() : 
+                    (a.createdAt.seconds ? a.createdAt.seconds * 1000 : 
+                    new Date(a.createdAt).getTime());
+        const bTime = b.createdAt.toDate ? b.createdAt.toDate().getTime() : 
+                    (b.createdAt.seconds ? b.createdAt.seconds * 1000 : 
+                    new Date(b.createdAt).getTime());
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         return aTime - bTime;
       },
     },
@@ -157,6 +215,7 @@ function Users() {
       key: 'actions',
       render: (_: any, record: User) => (
         <Space size="middle">
+<<<<<<< HEAD
           <Tooltip title="View">
             <Button
               type="text"
@@ -179,6 +238,30 @@ function Users() {
               className="text-red-600 hover:text-red-800"
             />
           </Tooltip>
+=======
+          <Button 
+            type="primary" 
+            icon={<EyeOutlined />} 
+            onClick={() => {
+              setSelectedUser(record);
+              setViewModalVisible(true);
+            }}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            View
+          </Button>
+          <Button 
+            type="primary" 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={() => {
+              setSelectedUser(record);
+              setDeleteModalVisible(true);
+            }}
+          >
+            Delete
+          </Button>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         </Space>
       ),
     },
@@ -206,16 +289,26 @@ function Users() {
             </div>
           </Col>
         </Row>
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
+<<<<<<< HEAD
                     <Table
                       dataSource={filteredUsers}
                       columns={columns}
+=======
+                    <Table 
+                      dataSource={filteredUsers} 
+                      columns={columns} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                       pagination={{ pageSize: 10 }}
                       loading={loading}
                     />
@@ -251,6 +344,7 @@ function Users() {
             <p className="mb-3"><strong>User ID:</strong> {selectedUser.userID}</p>
             <p className="mb-3"><strong>UID:</strong> {selectedUser.uid}</p>
             <p className="mb-3"><strong>Created At:</strong> {
+<<<<<<< HEAD
               selectedUser.createdAt
                 ? (selectedUser.createdAt.toDate
                   ? new Date(selectedUser.createdAt.toDate()).toLocaleString()
@@ -266,6 +360,23 @@ function Users() {
                   : (selectedUser.updatedAt.seconds
                     ? new Date(selectedUser.updatedAt.seconds * 1000).toLocaleString()
                     : new Date(selectedUser.updatedAt).toLocaleString()))
+=======
+              selectedUser.createdAt 
+                ? (selectedUser.createdAt.toDate 
+                    ? new Date(selectedUser.createdAt.toDate()).toLocaleString() 
+                    : (selectedUser.createdAt.seconds 
+                        ? new Date(selectedUser.createdAt.seconds * 1000).toLocaleString() 
+                        : new Date(selectedUser.createdAt).toLocaleString()))
+                : 'N/A'
+            }</p>
+            <p className="mb-1"><strong>Updated At:</strong> {
+              selectedUser.updatedAt 
+                ? (selectedUser.updatedAt.toDate 
+                    ? new Date(selectedUser.updatedAt.toDate()).toLocaleString() 
+                    : (selectedUser.updatedAt.seconds 
+                        ? new Date(selectedUser.updatedAt.seconds * 1000).toLocaleString() 
+                        : new Date(selectedUser.updatedAt).toLocaleString()))
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 : 'N/A'
             }</p>
           </div>
@@ -274,11 +385,15 @@ function Users() {
 
       {/* Delete User Confirmation Modal */}
       <Modal
+<<<<<<< HEAD
         title={<div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
             Delete User
           </span>
         </div>}
+=======
+        title={<div className="px-4 py-2">Delete User</div>}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         open={deleteModalVisible}
         footer={null}
         onCancel={() => setDeleteModalVisible(false)}

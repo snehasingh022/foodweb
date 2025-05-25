@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   Row,
   Col,
@@ -30,6 +31,37 @@ import {
   query,
   orderBy,
   setDoc,
+=======
+import { 
+  Row, 
+  Col, 
+  Card, 
+  Table, 
+  Input, 
+  Button, 
+  Space, 
+  Modal, 
+  Form, 
+  message,
+  Spin
+} from 'antd';
+import { 
+  SearchOutlined, 
+  PlusOutlined, 
+  EditOutlined, 
+  DeleteOutlined 
+} from '@ant-design/icons';
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  deleteDoc, 
+  addDoc, 
+  updateDoc, 
+  serverTimestamp, 
+  query, 
+  orderBy 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import Protected from '../../../components/Protected/Protected';
@@ -50,10 +82,20 @@ function Tags() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>('');
+<<<<<<< HEAD
   const [editMode, setEditMode] = useState<boolean>(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [form] = Form.useForm();
+=======
+  const [addModalVisible, setAddModalVisible] = useState<boolean>(false);
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
+  const [editMode, setEditMode] = useState<boolean>(false);
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   // Fetch tags from Firestore
@@ -62,7 +104,11 @@ function Tags() {
     try {
       const q = query(collection(db, "tags"), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       const tagsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         key: doc.id,
@@ -72,7 +118,11 @@ function Tags() {
         createdAt: doc.data().createdAt,
         updatedAt: doc.data().updatedAt,
       }));
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       setTags(tagsData);
     } catch (error) {
       console.error("Error fetching tags:", error);
@@ -93,20 +143,39 @@ function Tags() {
     form.setFieldsValue({ slug });
   };
 
+<<<<<<< HEAD
   // Add new tag
   const handleAddTag = async (values: any) => {
     try {
       const tagId = `TID${Date.now().toString().slice(-6)}`;
       await setDoc(doc(db, "tags", tagId), {
+=======
+  const handleEditNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+    editForm.setFieldsValue({ slug });
+  };
+
+  // Add new tag
+  const handleAddTag = async (values: any) => {
+    try {
+      await addDoc(collection(db, "tags"), {
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         name: values.name,
         slug: values.slug,
         description: values.description,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+<<<<<<< HEAD
 
       message.success("Tag added successfully");
       setModalVisible(false);
+=======
+      
+      message.success("Tag added successfully");
+      setAddModalVisible(false);
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       form.resetFields();
       fetchTags();
     } catch (error) {
@@ -118,7 +187,11 @@ function Tags() {
   // Edit tag
   const handleEditTag = async (values: any) => {
     if (!selectedTag) return;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     try {
       const tagRef = doc(db, "tags", selectedTag.id);
       await updateDoc(tagRef, {
@@ -127,10 +200,17 @@ function Tags() {
         description: values.description,
         updatedAt: serverTimestamp(),
       });
+<<<<<<< HEAD
 
       message.success("Tag updated successfully");
       setModalVisible(false);
       form.resetFields();
+=======
+      
+      message.success("Tag updated successfully");
+      setEditModalVisible(false);
+      editForm.resetFields();
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       fetchTags();
     } catch (error) {
       console.error("Error updating tag:", error);
@@ -141,7 +221,11 @@ function Tags() {
   // Delete tag
   const handleDeleteTag = async () => {
     if (!selectedTag) return;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     try {
       await deleteDoc(doc(db, "tags", selectedTag.id));
       message.success("Tag deleted successfully");
@@ -154,16 +238,24 @@ function Tags() {
   };
 
   // Filter tags based on search text
+<<<<<<< HEAD
   const filteredTags = tags.filter(tag =>
     tag.name.toLowerCase().includes(searchText.toLowerCase()) ||
     tag.slug.toLowerCase().includes(searchText.toLowerCase()) ||
     tag.description.toLowerCase().includes(searchText.toLowerCase()) ||
     tag.id.toLowerCase().includes(searchText.toLowerCase())
+=======
+  const filteredTags = tags.filter(tag => 
+    tag.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    tag.slug.toLowerCase().includes(searchText.toLowerCase()) ||
+    tag.description.toLowerCase().includes(searchText.toLowerCase())
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   );
 
   // Table columns
   const columns = [
     {
+<<<<<<< HEAD
       title: 'Tag ID',
       dataIndex: 'id',
       key: 'id',
@@ -171,6 +263,8 @@ function Tags() {
       ellipsis: true,
     },
     {
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       title: 'Tag Name',
       dataIndex: 'name',
       key: 'name',
@@ -202,6 +296,7 @@ function Tags() {
       key: 'actions',
       render: (text: string, record: Tag) => (
         <Space size="middle">
+<<<<<<< HEAD
           <Tooltip title="Edit">
             <Button
               type="text"
@@ -231,6 +326,36 @@ function Tags() {
               className="text-red-600 hover:text-red-800"
             />
           </Tooltip>
+=======
+          <Button 
+            type="primary" 
+            icon={<EditOutlined />} 
+            onClick={() => {
+              setSelectedTag(record);
+              editForm.setFieldsValue({
+                name: record.name,
+                slug: record.slug,
+                description: record.description,
+              });
+              setEditMode(true);
+              setModalVisible(true);
+            }}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            Edit
+          </Button>
+          <Button 
+            type="primary" 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={() => {
+              setSelectedTag(record);
+              setDeleteModalVisible(true);
+            }}
+          >
+            Delete
+          </Button>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         </Space>
       ),
     },
@@ -248,6 +373,7 @@ function Tags() {
     } else {
       await handleAddTag(values);
     }
+<<<<<<< HEAD
     setEditMode(false);
   };
 
@@ -255,6 +381,9 @@ function Tags() {
     setEditMode(false);
     form.resetFields();
     setModalVisible(true);
+=======
+    setModalVisible(false);
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   };
 
   return (
@@ -267,6 +396,7 @@ function Tags() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Tag Management</h1>
               </div>
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <Button
                   type="primary"
                   onClick={openAddModal}
@@ -275,6 +405,8 @@ function Tags() {
                 >
                   Add Tag
                 </Button>
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 <Input
                   placeholder="Search tags..."
                   prefix={<SearchOutlined />}
@@ -282,6 +414,7 @@ function Tags() {
                   style={{ width: 250 }}
                   className="py-2 text-base font-medium"
                 />
+<<<<<<< HEAD
                 {loading ? (
                   <div className="h-10 flex items-center justify-center">
                     <Spin size="small" />
@@ -295,20 +428,41 @@ function Tags() {
                     Refresh
                   </Button>
                 )}
+=======
+                <Button 
+                  type="primary" 
+                  onClick={() => setModalVisible(true)}
+                  icon={<PlusOutlined />}
+                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                >
+                  Add Tag
+                </Button>
+                {loading && <Spin />}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </div>
             </div>
           </Col>
         </Row>
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
+<<<<<<< HEAD
                     <Table
                       dataSource={filteredTags}
                       columns={columns}
+=======
+                    <Table 
+                      dataSource={filteredTags} 
+                      columns={columns} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                       pagination={{ pageSize: 10 }}
                       loading={loading}
                       className="[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-regularBG dark:[&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:bg-[#323440] [&>div>div>div>div>div>.ant-table-content>table>thead>tr>th]:font-medium"
@@ -322,6 +476,10 @@ function Tags() {
         </Row>
       </main>
 
+<<<<<<< HEAD
+=======
+      {/* Add/Edit Tag Modal */}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       <Modal
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -342,14 +500,23 @@ function Tags() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+<<<<<<< HEAD
           className="px-2 pt-1"
         >
           <div className="mb-6">
+=======
+          className="px-6 pt-4"
+        >
+          <div className="mb-6">
+            <h3 className="text-base text-gray-500 dark:text-gray-400 mb-4">Tag Information</h3>
+            
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
             <Form.Item
               label={<span className="text-dark dark:text-white/[.87] font-medium">Tag Name</span>}
               name="name"
               rules={[{ required: true, message: 'Please enter tag name!' }]}
             >
+<<<<<<< HEAD
               <Input
                 prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
                   <path d="M3.5 2a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-5a.5.5 0 0 0-.5-.5h-5zm1 .5H8v4H4.5v-4zM11 1a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h10zm-1 2H2v9h8v-9z" />
@@ -360,12 +527,25 @@ function Tags() {
               />
             </Form.Item>
 
+=======
+              <Input 
+                prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
+                  <path d="M3.5 2a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-5a.5.5 0 0 0-.5-.5h-5zm1 .5H8v4H4.5v-4zM11 1a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h10zm-1 2H2v9h8v-9z"/>
+                </svg>}
+                placeholder="Enter tag name" 
+                onChange={handleNameChange}
+                className="py-2" 
+              />
+            </Form.Item>
+            
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
             <Form.Item
               label={<span className="text-dark dark:text-white/[.87] font-medium">Slug</span>}
               name="slug"
               rules={[{ required: true, message: 'Please enter tag slug!' }]}
               tooltip="The slug is used in the URL. It must be unique and contain only lowercase letters, numbers, and hyphens."
             >
+<<<<<<< HEAD
               <Input
                 prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
                   <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
@@ -376,18 +556,37 @@ function Tags() {
               />
             </Form.Item>
 
+=======
+              <Input 
+                prefix={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-400" viewBox="0 0 16 16">
+                  <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/>
+                  <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z"/>
+                </svg>}
+                placeholder="tag-slug" 
+                className="py-2"
+              />
+            </Form.Item>
+            
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
             <Form.Item
               label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
               name="description"
               rules={[{ required: true, message: 'Please enter tag description!' }]}
             >
+<<<<<<< HEAD
               <Input.TextArea
                 placeholder="Enter a description for this tag"
                 rows={4}
+=======
+              <Input.TextArea 
+                placeholder="Enter a description for this tag" 
+                rows={4} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 className="text-base"
               />
             </Form.Item>
           </div>
+<<<<<<< HEAD
 
           <div className="flex justify-end mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <Space size="middle">
@@ -402,6 +601,22 @@ function Tags() {
                 htmlType="submit"
                 loading={loading}
                 className="px-5 h-10 shadow-none mb-6 mr-6"
+=======
+          
+          <div className="flex justify-end mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <Space size="middle">
+              <Button 
+                onClick={handleModalCancel}
+                className="px-5 h-10 shadow-none hover:bg-gray-50 dark:hover:bg-white/10"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={loading}
+                className="px-5 h-10 shadow-none"
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               >
                 {editMode ? "Update Tag" : "Add Tag"}
               </Button>
@@ -412,6 +627,7 @@ function Tags() {
 
       {/* Delete Confirmation Modal */}
       <Modal
+<<<<<<< HEAD
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
@@ -419,10 +635,14 @@ function Tags() {
             </span>
           </div>
         }
+=======
+        title="Confirm Delete"
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         onOk={handleDeleteTag}
         okText="Delete"
+<<<<<<< HEAD
         okButtonProps={{ danger: true, className: "mr-4 mb-4" }} // margin to OK button
         cancelButtonProps={{ className: "mb-4" }} // margin to Cancel button
       >
@@ -431,8 +651,18 @@ function Tags() {
         </p>
       </Modal>
 
+=======
+        okButtonProps={{ danger: true }}
+      >
+        <p>Are you sure you want to delete this tag? This action cannot be undone.</p>
+      </Modal>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     </>
   );
 }
 
+<<<<<<< HEAD
 export default Protected(Tags, ["admin"]);
+=======
+export default Protected(Tags, ["admin"]); 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   Row,
   Col,
@@ -21,15 +22,42 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   PaperClipOutlined
+=======
+import { 
+  Row, 
+  Col, 
+  Card, 
+  Table, 
+  Space, 
+  Button, 
+  Tag, 
+  Modal, 
+  Typography, 
+  Input,
+  message,
+  Spin
+} from 'antd';
+import { 
+  SearchOutlined, 
+  EyeOutlined, 
+  CheckCircleOutlined, 
+  CloseCircleOutlined 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 } from '@ant-design/icons';
 import { collection, getDocs, doc, updateDoc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import Protected from '../../../components/Protected/Protected';
+<<<<<<< HEAD
 import { useMediaQuery } from 'react-responsive';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
+=======
+
+const { Text, Title } = Typography;
+const { TextArea } = Input;
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
 // Query interface
 interface CustomerQuery {
@@ -41,7 +69,10 @@ interface CustomerQuery {
   message: string;
   subject: string;
   status: string;
+<<<<<<< HEAD
   attachmentURL?: string;
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   createdAt: any;
   updatedAt: any;
   key: string;
@@ -54,9 +85,12 @@ function Queries() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<CustomerQuery | null>(null);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
+<<<<<<< HEAD
   const [activeTab, setActiveTab] = useState('all');
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
   useEffect(() => {
     fetchQueries();
@@ -85,6 +119,7 @@ function Queries() {
     setSearchText(value);
   };
 
+<<<<<<< HEAD
   const handleTabChange = (key: string) => {
     setActiveTab(key);
   };
@@ -108,12 +143,21 @@ function Queries() {
 
     return matchesSearch;
   });
+=======
+  const filteredQueries = queries.filter(query => 
+    query.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+    query.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+    query.queryID?.toLowerCase().includes(searchText.toLowerCase()) ||
+    query.subject?.toLowerCase().includes(searchText.toLowerCase())
+  );
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
   const showQueryDetails = (query: CustomerQuery) => {
     setCurrentQuery(query);
     setDetailModalVisible(true);
   };
 
+<<<<<<< HEAD
   const handleOpenAttachment = (url: string | undefined) => {
     if (url) {
       window.open(url, '_blank');
@@ -146,6 +190,26 @@ function Queries() {
         (activeTab === 'resolved' && status === 'pending')) {
         setDetailModalVisible(false);
       }
+=======
+  const handleStatusChange = async (status: string) => {
+    if (!currentQuery) return;
+    
+    setStatusUpdateLoading(true);
+    try {
+      const queryRef = doc(db, "queries", currentQuery.id);
+      await updateDoc(queryRef, { 
+        status: status,
+        updatedAt: new Date()
+      });
+      
+      // Update local state
+      setQueries(prev => prev.map(q => 
+        q.id === currentQuery.id ? { ...q, status } : q
+      ));
+      
+      setCurrentQuery(prev => prev ? { ...prev, status } : null);
+      message.success(`Query status updated to ${status}`);
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     } catch (error) {
       console.error("Error updating query status:", error);
       message.error("Failed to update query status");
@@ -154,6 +218,7 @@ function Queries() {
     }
   };
 
+<<<<<<< HEAD
   const getColumns = () => {
     const baseColumns = [
       {
@@ -190,10 +255,48 @@ function Queries() {
           const date = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
           return date instanceof Date && !isNaN(date.getTime())
             ? date.toLocaleDateString('en-US', {
+=======
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'queryID',
+      key: 'queryID',
+      width: 120,
+      render: (text: string) => <Text copyable>{text}</Text>,
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string) => <span className="font-medium">{text}</span>,
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Subject',
+      dataIndex: 'subject',
+      key: 'subject',
+      render: (text: string) => (
+        <span className="truncate block max-w-[250px]">{text}</span>
+      ),
+    },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (createdAt: any) => {
+        const date = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
+        return date instanceof Date && !isNaN(date.getTime())
+          ? date.toLocaleDateString('en-US', {
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               year: 'numeric',
               month: 'short',
               day: 'numeric',
             })
+<<<<<<< HEAD
             : 'N/A';
         },
       },
@@ -242,6 +345,45 @@ function Queries() {
 
     return baseColumns;
   };
+=======
+          : 'N/A';
+      },
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = 'blue';
+        if (status === 'resolved') {
+          color = 'green';
+        } else if (status === 'pending') {
+          color = 'orange';
+        } else if (status === 'rejected') {
+          color = 'red';
+        }
+        return <Tag color={color}>{status?.toUpperCase() || 'ACTIVE'}</Tag>;
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 100,
+      render: (_: any, record: CustomerQuery) => (
+        <Space size="small">
+          <Button 
+            type="primary" 
+            icon={<EyeOutlined />} 
+            size="small" 
+            onClick={() => showQueryDetails(record)}
+          >
+           
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
   return (
     <>
@@ -253,13 +395,20 @@ function Queries() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Customer Queries</h1>
               </div>
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <Input
                   placeholder="Search queries..."
                   prefix={<SearchOutlined />}
+=======
+                <Input 
+                  placeholder="Search queries..." 
+                  prefix={<SearchOutlined />} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   onChange={e => handleSearch(e.target.value)}
                   style={{ width: 250 }}
                   className="py-2 text-base font-medium"
                 />
+<<<<<<< HEAD
                 {loading ? (
                   <div className="h-10 flex items-center justify-center">
                     <Spin size="small" />
@@ -275,16 +424,31 @@ function Queries() {
                 )}
 
 
+=======
+                <Button 
+                  type="primary" 
+                  onClick={fetchQueries}
+                  className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+                >
+                  Refresh
+                </Button>
+                {loading && <Spin />}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </div>
             </div>
           </Col>
         </Row>
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
+<<<<<<< HEAD
                   <Tabs
                     defaultActiveKey="all"
                     onChange={handleTabChange}
@@ -299,6 +463,11 @@ function Queries() {
                   <div className="table-responsive">
                     <Table
                       columns={getColumns()}
+=======
+                  <div className="table-responsive">
+                    <Table
+                      columns={columns}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                       dataSource={filteredQueries}
                       pagination={{ pageSize: 10 }}
                       loading={loading}
@@ -315,6 +484,7 @@ function Queries() {
 
       {/* Query Details Modal */}
       <Modal
+<<<<<<< HEAD
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
@@ -330,18 +500,39 @@ function Queries() {
             size="large"
             onClick={() => setDetailModalVisible(false)}
             className="min-w-[100px] font-medium mb-4 "
+=======
+        title={<Title level={4} className="text-lg font-semibold p-4">Query Details</Title>}
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={[
+          <Button 
+            key="back" 
+            size="large"
+            onClick={() => setDetailModalVisible(false)}
+            className="min-w-[100px] font-medium"
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
           >
             Close
           </Button>,
           currentQuery?.status !== 'resolved' && (
+<<<<<<< HEAD
             <Button
               key="resolve"
               type="primary"
+=======
+            <Button 
+              key="resolve" 
+              type="primary" 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               size="large"
               icon={<CheckCircleOutlined />}
               onClick={() => handleStatusChange('resolved')}
               loading={statusUpdateLoading && currentQuery?.status !== 'resolved'}
+<<<<<<< HEAD
               className="min-w-[160px] font-medium mb-4 mr-4"
+=======
+              className="min-w-[160px] font-medium"
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
             >
               Mark as Resolved
             </Button>
@@ -368,6 +559,27 @@ function Queries() {
             <Spin spinning={statusUpdateLoading}>
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div className="border-b pb-2">
+<<<<<<< HEAD
+=======
+                  <Text type="secondary" className="text-sm">Query ID:</Text>
+                  <div className="mt-1">
+                    <Text copyable strong className="text-base">{currentQuery.queryID}</Text>
+                  </div>
+                </div>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Status:</Text>
+                  <div className="mt-1">
+                    <Tag color={
+                      currentQuery.status === 'resolved' ? 'green' : 
+                      currentQuery.status === 'rejected' ? 'red' : 
+                      currentQuery.status === 'pending' ? 'orange' : 'blue'
+                    } className="text-sm px-3 py-1">
+                      {currentQuery.status?.toUpperCase() || 'ACTIVE'}
+                    </Tag>
+                  </div>
+                </div>
+                <div className="border-b pb-2">
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   <Text type="secondary" className="text-sm">Name:</Text>
                   <div className="mt-1">
                     <Text strong className="text-base">{currentQuery.name}</Text>
@@ -385,6 +597,7 @@ function Queries() {
                     <Text strong className="text-base">{currentQuery.phone || 'N/A'}</Text>
                   </div>
                 </div>
+<<<<<<< HEAD
                 <div className="border-b pb-2 flex justify-between items-end">
                   <div>
                     <Text type="secondary" className="text-sm">Date:</Text>
@@ -420,6 +633,27 @@ function Queries() {
                 )}
               </div>
 
+=======
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Date:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">
+                      {currentQuery.createdAt?.toDate ? 
+                        currentQuery.createdAt.toDate().toLocaleString() : 
+                        new Date(currentQuery.createdAt).toLocaleString()}
+                    </Text>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-6 border-b pb-2">
+                <Text type="secondary" className="text-sm">Subject:</Text>
+                <div className="mt-1">
+                  <Text strong className="text-base">{currentQuery.subject}</Text>
+                </div>
+              </div>
+              
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               <div>
                 <Text type="secondary" className="text-sm">Message:</Text>
                 <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
@@ -433,9 +667,17 @@ function Queries() {
             <Spin size="large" />
           </div>
         )}
+<<<<<<< HEAD
       </Modal >
+=======
+      </Modal>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     </>
   );
 }
 
+<<<<<<< HEAD
 export default Protected(Queries, ["admin", "helpdesk"]);
+=======
+export default Protected(Queries, ["admin", "helpdesk"]); 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12

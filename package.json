@@ -20,7 +20,10 @@
     "@ant-design/pro-table": "^3.11.1",
     "@auth0/auth0-react": "^2.2.1",
     "@auth0/nextjs-auth0": "^3.1.0",
+<<<<<<< HEAD
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     "@iconscout/react-unicons": "^2.0.2",
     "@react-google-maps/api": "^2.19.2",
     "@redux-devtools/extension": "^3.2.5",
@@ -39,12 +42,20 @@
     "emoji-picker-react": "^4.4.11",
     "eslint": "^8.48.0",
     "eslint-config-next": "13.4.19",
+<<<<<<< HEAD
     "firebase": "^10.14.1",
+=======
+    "firebase": "^10.3.0",
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     "i18next": "^23.4.6",
     "js-cookie": "^3.0.5",
     "leaflet": "^1.9.4",
     "moment": "^2.29.4",
+<<<<<<< HEAD
     "next": "^13.5.11",
+=======
+    "next": "^13.4.19",
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     "next-redux-wrapper": "^8.1.0",
     "peity-react": "^0.0.7",
     "postcss": "8.4.28",

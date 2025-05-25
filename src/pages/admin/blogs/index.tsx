@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   Row,
   Col,
@@ -9,6 +10,18 @@ import {
   Space,
   Modal,
   message,
+=======
+import { 
+  Row, 
+  Col, 
+  Card, 
+  Input, 
+  Button, 
+  Table, 
+  Space, 
+  Modal, 
+  message, 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   Tooltip,
   Typography,
   Form,
@@ -19,17 +32,29 @@ import {
   Spin,
   Checkbox
 } from 'antd';
+<<<<<<< HEAD
 import {
   SearchOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+=======
+import { 
+  SearchOutlined, 
+  PlusOutlined, 
+  EditOutlined, 
+  DeleteOutlined, 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   EyeOutlined,
   UploadOutlined,
   LoadingOutlined,
   CloudUploadOutlined,
+<<<<<<< HEAD
   PictureOutlined,
   PaperClipOutlined
+=======
+  PictureOutlined
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
 import { collection, getDocs, doc, deleteDoc, query, orderBy, addDoc, updateDoc, serverTimestamp, FieldValue, where } from 'firebase/firestore';
@@ -48,7 +73,11 @@ if (typeof window !== "undefined") {
 }
 
 const { TextArea } = Input;
+<<<<<<< HEAD
 const { Title, Text } = Typography;
+=======
+const { Title } = Typography;
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 const { Option } = Select;
 
 // Blog interface
@@ -76,8 +105,11 @@ function Blogs() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+<<<<<<< HEAD
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [currentBlog, setCurrentBlog] = useState<Blog | null>(null);
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
 
   useEffect(() => {
     // Only fetch data on the client side
@@ -88,7 +120,11 @@ function Blogs() {
 
   const fetchBlogs = async () => {
     if (typeof window === "undefined") return;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     setLoading(true);
     try {
       const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
@@ -111,6 +147,7 @@ function Blogs() {
     if (typeof window === "undefined") return;
 
     Modal.confirm({
+<<<<<<< HEAD
       icon: null, // Removes default icon
       title: (
         <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -128,6 +165,13 @@ function Blogs() {
       okType: 'danger',
       cancelText: 'Cancel',
       className: 'custom-confirm-modal', // use this to target modal styles
+=======
+      title: 'Are you sure you want to delete this blog?',
+      content: 'This action cannot be undone',
+      okText: 'Yes, delete it',
+      okType: 'danger',
+      cancelText: 'Cancel',
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       onOk: async () => {
         try {
           await deleteDoc(doc(db, "blogs", id));
@@ -139,13 +183,17 @@ function Blogs() {
         }
       }
     });
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   };
 
   const handleEdit = (blog: Blog) => {
     router.push(`/admin/blogs/edit/${blog.id}`);
   };
 
+<<<<<<< HEAD
   const handleView = (blog: Blog) => {
     setCurrentBlog(blog);
     setDetailModalVisible(true);
@@ -153,16 +201,23 @@ function Blogs() {
 
   const handleOpenImage = (imageUrl: string) => {
     window.open(imageUrl, '_blank');
+=======
+  const handleAdd = () => {
+    router.push('/admin/blogs/add');
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   };
 
   const columns = [
     {
+<<<<<<< HEAD
       title: 'Blog ID',
       dataIndex: 'id',
       key: 'id',
       render: (text: string) => <span className="text-sm text-gray-600">{text}</span>,
     },
     {
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
@@ -174,6 +229,7 @@ function Blogs() {
           (record.category?.toLowerCase() || '').includes(String(value).toLowerCase())
         );
       },
+<<<<<<< HEAD
       render: (text: string, record: any) => (
         <div className="flex items-center">
           {record.imageURL && (
@@ -186,25 +242,46 @@ function Blogs() {
           <div>
             <span className="font-medium">{text}</span>
           </div>
+=======
+      render: (text: string, record: Blog) => (
+        <div className="flex items-center">
+          {record.image && (
+            <img 
+              src={record.image} 
+              alt={text} 
+              className="w-10 h-10 object-cover rounded mr-3"
+            />
+          )}
+          <span className="font-medium">{text}</span>
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         </div>
       ),
     },
     {
       title: 'Category',
+<<<<<<< HEAD
       dataIndex: 'categoryDetails',
       key: 'category',
       render: (categoryDetails: any) => categoryDetails?.name || 'No Category',
+=======
+      dataIndex: 'category',
+      key: 'category',
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     },
     {
       title: 'Featured',
       dataIndex: 'isFeatured',
       key: 'isFeatured',
+<<<<<<< HEAD
       render: (isFeatured: boolean) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${isFeatured ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
           }`}>
           {isFeatured ? 'Yes' : 'No'}
         </span>
       ),
+=======
+      render: (text: string) => text || 'No'
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     },
     {
       title: 'Created',
@@ -218,25 +295,43 @@ function Blogs() {
       render: (_: any, record: Blog) => (
         <Space size="middle">
           <Tooltip title="View">
+<<<<<<< HEAD
             <Button
               type="text"
               icon={<EyeOutlined />}
               onClick={() => handleView(record)}
+=======
+            <Button 
+              type="text" 
+              icon={<EyeOutlined />} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               className="text-blue-600 hover:text-blue-800"
             />
           </Tooltip>
           <Tooltip title="Edit">
+<<<<<<< HEAD
             <Button
               type="text"
               icon={<EditOutlined />}
+=======
+            <Button 
+              type="text" 
+              icon={<EditOutlined />} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               onClick={() => handleEdit(record)}
               className="text-green-600 hover:text-green-800"
             />
           </Tooltip>
           <Tooltip title="Delete">
+<<<<<<< HEAD
             <Button
               type="text"
               icon={<DeleteOutlined />}
+=======
+            <Button 
+              type="text" 
+              icon={<DeleteOutlined />} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               onClick={() => handleDelete(record.id)}
               className="text-red-600 hover:text-red-800"
             />
@@ -246,7 +341,11 @@ function Blogs() {
     },
   ];
 
+<<<<<<< HEAD
   const filteredBlogs = blogs.filter(blog =>
+=======
+  const filteredBlogs = blogs.filter(blog => 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     blog.title.toLowerCase().includes(searchText.toLowerCase()) ||
     blog.slug.toLowerCase().includes(searchText.toLowerCase()) ||
     blog.summary?.toLowerCase().includes(searchText.toLowerCase())
@@ -262,15 +361,29 @@ function Blogs() {
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Blog Management</h1>
               </div>
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <Link href="/admin/blogs/add">
                   <Button
                     type="primary"
+=======
+                <Input 
+                  placeholder="Search blogs..." 
+                  prefix={<SearchOutlined />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 250 }}
+                  className="py-2 text-base font-medium"
+                />
+                <Link href="/admin/blogs/add">
+                  <Button 
+                    type="primary" 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                     icon={<PlusOutlined />}
                     className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
                   >
                     Add Blog
                   </Button>
                 </Link>
+<<<<<<< HEAD
                 <Input
                   placeholder="Search blogs..."
                   prefix={<SearchOutlined />}
@@ -292,20 +405,33 @@ function Blogs() {
                     Refresh
                   </Button>
                 )}
+=======
+                {loading && <Spin />}
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </div>
             </div>
           </Col>
         </Row>
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
                   <div className="overflow-x-auto">
+<<<<<<< HEAD
                     <Table
                       dataSource={filteredBlogs}
                       columns={columns}
+=======
+                    <Table 
+                      dataSource={filteredBlogs} 
+                      columns={columns} 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                       pagination={{ pageSize: 10 }}
                       loading={loading}
                       rowKey="id"
@@ -318,6 +444,7 @@ function Blogs() {
           </Col>
         </Row>
       </main>
+<<<<<<< HEAD
 
       {/* Blog Detail Modal */}
       <Modal
@@ -497,8 +624,14 @@ function Blogs() {
           </div>
         )}
       </Modal>
+=======
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     </>
   );
 }
 
+<<<<<<< HEAD
 export default Protected(Blogs, ["admin"]);
+=======
+export default Protected(Blogs, ["admin"]); 
+>>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
