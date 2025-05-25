@@ -290,7 +290,14 @@ function Tours() {
         title: 'Title',
         dataIndex: 'title',
         key: 'title',
-        render: (text: string, record: Tour) => <span className="font-medium">{text || record.name || 'N/A'}</span>,
+        render: (text: string, record: Tour) => {
+          const titleText = text || record.name || 'N/A';
+          const words = titleText.split(' ');
+          const truncatedTitle = words.length > 4 
+            ? words.slice(0, 4).join(' ') + '...' 
+            : titleText;
+          return <span className="font-medium">{truncatedTitle}</span>;
+        },
       },
       {
         title: 'Location',
