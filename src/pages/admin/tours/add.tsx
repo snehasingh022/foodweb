@@ -814,13 +814,13 @@ function AddTour() {
                                                                         {archiveImages.map((image, index) => (
                                                                             <div
                                                                                 key={index}
-                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden h-28 ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
                                                                                 onClick={() => handleArchiveImageSelect(image.url)}
                                                                             >
                                                                                 <img
                                                                                     src={image.url}
                                                                                     alt={image.name}
-                                                                                    className="w-full h-20 object-cover"
+                                                                                    className="w-full h-full object-cover"
                                                                                 />
                                                                             </div>
                                                                         ))}
@@ -830,6 +830,7 @@ function AddTour() {
                                                                     )}
                                                                 </div>
                                                             )}
+
 
                                                             {imageUrl && (
                                                                 <div className="mt-2">
@@ -949,18 +950,18 @@ function AddTour() {
                                                                         </div>
 
                                                                         {itineraryShowArchive[`${index}`] && (
-                                                                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
-                                                                                <div className="grid grid-cols-3 gap-2">
+                                                                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto w-[45rem]"> {/* 👈 increased width from w-72 to w-96 */}
+                                                                                <div className="grid grid-cols-3 gap-3"> {/* 👈 slightly more spacing between images */}
                                                                                     {archiveImages.map((image, imgIndex) => (
                                                                                         <div
                                                                                             key={imgIndex}
-                                                                                            className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedItineraryArchiveImages[`${index}`] === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                                                                            className={`cursor-pointer border-2 rounded-md overflow-hidden h-28 ${selectedItineraryArchiveImages === image.url ? 'border-primary' : 'border-gray-200'}`} // 👈 increased image height a bit
                                                                                             onClick={() => handleItineraryArchiveImageSelect(index, image.url)}
                                                                                         >
                                                                                             <img
                                                                                                 src={image.url}
                                                                                                 alt={image.name}
-                                                                                                className="w-full h-20 object-cover"
+                                                                                                className="w-full h-full object-cover object-center"
                                                                                             />
                                                                                         </div>
                                                                                     ))}
@@ -970,6 +971,8 @@ function AddTour() {
                                                                                 )}
                                                                             </div>
                                                                         )}
+
+
 
                                                                         {itineraryImages[`${index + 1}`] && itineraryImages[`${index + 1}`].length > 0 && (
                                                                             <div className="mt-2">

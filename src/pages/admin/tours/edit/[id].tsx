@@ -63,7 +63,6 @@ function EditTour() {
     const [imageLoading, setImageLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState('');
     const [editorContent, setEditorContent] = useState('');
-    const [keywordInput, setKeywordInput] = useState('');
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [newCategory, setNewCategory] = useState('');
     const [categorySlug, setCategorySlug] = useState('');
@@ -230,23 +229,30 @@ function EditTour() {
 
     const fetchArchive = async () => {
         try {
-            const storage = getStorage();
-            const archiveRef = ref(storage, 'prathaviTravelsMedia');
+            if (!storage) return;
+            const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
             const result = await listAll(archiveRef);
 
-            const archiveData = await Promise.all(
-                result.items.map(async (imageRef) => {
+            const imagePromises = result.items
+                .filter((item) => {
+                    // ✅ Filter for common image extensions
+                    const isImage = /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(item.name);
+                    return isImage;
+                })
+                .map(async (imageRef) => {
                     const url = await getDownloadURL(imageRef);
                     return {
                         name: imageRef.name,
-                        url: url
+                        url,
+                        fullPath: imageRef.fullPath,
                     };
-                })
-            );
+                });
 
-            setArchiveImages(archiveData);
+            const images = await Promise.all(imagePromises);
+            setArchiveImages(images);
         } catch (error) {
-            console.error("Error fetching archive:", error);
+            console.error("Error fetching archive images:", error);
+            message.error("Failed to fetch archive images");
         }
     };
 
@@ -379,10 +385,7 @@ function EditTour() {
         setImageDialogOpen(false);
     };
 
-    const handleOpenImageDialog = (type: string) => {
-        setImageType(type);
-        setImageDialogOpen(true);
-    };
+
 
     const handleItineraryImageUpload = async (day: string, file: File) => {
         try {
@@ -952,25 +955,26 @@ function EditTour() {
                                                             {showArchive && (
                                                                 <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
                                                                     <div className="grid grid-cols-3 gap-2">
-                                                                        {archiveImages.map((image, index) => (
+                                                                        {archive.map((image, index) => (
                                                                             <div
                                                                                 key={index}
-                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
+                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden h-28 ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
                                                                                 onClick={() => handleArchiveImageSelect(image.url)}
                                                                             >
                                                                                 <img
                                                                                     src={image.url}
                                                                                     alt={image.name}
-                                                                                    className="w-full h-20 object-cover"
+                                                                                    className="w-full h-full object-cover"
                                                                                 />
                                                                             </div>
                                                                         ))}
                                                                     </div>
-                                                                    {archiveImages.length === 0 && (
+                                                                    {archive.length === 0 && (
                                                                         <p className="text-center text-gray-500 py-4">No archive images found</p>
                                                                     )}
                                                                 </div>
                                                             )}
+
 
                                                             {imageUrl && (
                                                                 <div className="mt-2">
@@ -1075,7 +1079,8 @@ function EditTour() {
                                                                                                 <img
                                                                                                     src={image.url}
                                                                                                     alt={image.name}
-                                                                                                    className="w-full h-20 object-cover"
+                                                                                                    className="w-full h-full object-cover"
+                                                                                                    style={{ minHeight: '10rem' }} // Adjust the min-height as per your design
                                                                                                 />
                                                                                             </div>
                                                                                         ))}
@@ -1085,6 +1090,7 @@ function EditTour() {
                                                                                     )}
                                                                                 </div>
                                                                             )}
+
 
                                                                             <div className="flex flex-wrap gap-2 mb-2">
                                                                                 {(itineraryImages[`${name + 1}`] || []).map((url, index) => (
@@ -1291,49 +1297,6 @@ function EditTour() {
                         />
                     </Form.Item>
                 </Form>
-            </Modal>
-
-
-            {/* Select Image from Archive Modal */}
-            <Modal
-                title="Select Image from Archive"
-                open={imageDialogOpen}
-                onCancel={() => setImageDialogOpen(false)}
-                footer={null}
-                width={800}
-            >
-                <div className="my-4">
-                    <Upload
-                        name="archiveImage"
-                        listType="picture-card"
-                        className="avatar-uploader"
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                            handleArchiveImageUpload(file);
-                            return false;
-                        }}
-                    >
-                        <div className="flex flex-col items-center justify-center">
-                            {imageLoading ? <LoadingOutlined /> : <PlusOutlined />}
-                            <div className="mt-2">Upload to Archive</div>
-                        </div>
-                    </Upload>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[400px] overflow-auto">
-                    {archive.map((item, index) => (
-                        <div
-                            key={index}
-                            className="cursor-pointer border border-gray-200 rounded-md overflow-hidden hover:border-blue-500 transition-colors"
-                            onClick={() => handleSetArchiveImage(item.ImageUrl)}
-                        >
-                            <img
-                                src={item.ImageUrl}
-                                alt={`Archive ${index}`}
-                                className="w-full h-32 object-cover"
-                            />
-                        </div>
-                    ))}
-                </div>
             </Modal>
         </>
     );
