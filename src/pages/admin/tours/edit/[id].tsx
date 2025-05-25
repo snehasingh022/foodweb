@@ -955,7 +955,7 @@ function EditTour() {
                                                             {showArchive && (
                                                                 <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
                                                                     <div className="grid grid-cols-3 gap-2">
-                                                                        {archive.map((image, index) => (
+                                                                        {archiveImages.map((image, index) => (
                                                                             <div
                                                                                 key={index}
                                                                                 className={`cursor-pointer border-2 rounded-md overflow-hidden h-28 ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
@@ -969,7 +969,7 @@ function EditTour() {
                                                                             </div>
                                                                         ))}
                                                                     </div>
-                                                                    {archive.length === 0 && (
+                                                                    {archiveImages.length === 0 && (
                                                                         <p className="text-center text-gray-500 py-4">No archive images found</p>
                                                                     )}
                                                                 </div>
@@ -1068,28 +1068,27 @@ function EditTour() {
                                                                             </div>
 
                                                                             {itineraryShowArchive[`${name + 1}`] && (
-                                                                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto mb-4">
-                                                                                    <div className="grid grid-cols-3 gap-2">
-                                                                                        {archiveImages.map((image, index) => (
-                                                                                            <div
-                                                                                                key={index}
-                                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden ${itinerarySelectedArchive[`${name + 1}`] === image.url ? 'border-primary' : 'border-gray-200'}`}
-                                                                                                onClick={() => handleItineraryArchiveSelect(`${name + 1}`, image.url)}
-                                                                                            >
-                                                                                                <img
-                                                                                                    src={image.url}
-                                                                                                    alt={image.name}
-                                                                                                    className="w-full h-full object-cover"
-                                                                                                    style={{ minHeight: '10rem' }} // Adjust the min-height as per your design
-                                                                                                />
-                                                                                            </div>
-                                                                                        ))}
-                                                                                    </div>
-                                                                                    {archiveImages.length === 0 && (
-                                                                                        <p className="text-center text-gray-500 py-4">No archive images found</p>
-                                                                                    )}
+                                                                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto w-[45rem]"> {/* 👈 increased width from w-72 to w-96 */}
+                                                                                <div className="grid grid-cols-3 gap-3"> {/* 👈 slightly more spacing between images */}
+                                                                                    {archiveImages.map((image, imgIndex) => (
+                                                                                        <div
+                                                                                            key={imgIndex}
+                                                                                            className={`cursor-pointer border-2 rounded-md overflow-hidden h-28 ${itinerarySelectedArchive === image.url ? 'border-primary' : 'border-gray-200'}`} // 👈 increased image height a bit
+                                                                                            onClick={() => handleItineraryArchiveSelect(`${name + 1}`, image.url)}
+                                                                                        >
+                                                                                            <img
+                                                                                                src={image.url}
+                                                                                                alt={image.name}
+                                                                                                className="w-full h-full object-cover object-center"
+                                                                                            />
+                                                                                        </div>
+                                                                                    ))}
                                                                                 </div>
-                                                                            )}
+                                                                                {archiveImages.length === 0 && (
+                                                                                    <p className="text-center text-gray-500 py-4">No archive images found</p>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
 
 
                                                                             <div className="flex flex-wrap gap-2 mb-2">
