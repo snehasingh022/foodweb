@@ -44,7 +44,6 @@ function Graphics() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [firebaseInitialized, setFirebaseInitialized] = useState(true);
   const [fileUploading, setFileUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const PageRoutes = [
     {
@@ -132,40 +131,36 @@ function Graphics() {
     }
   };
 
-  // Handle file selection
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection and auto upload
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        message.error('Please select an image file');
-        return;
-      }
+    if (!file) return;
 
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        message.error('File size must be less than 5MB');
-        return;
-      }
-
-      setSelectedFile(file);
-      setUploadedImageUrl(''); // Clear previous upload
-    }
-  };
-
-  // Handle image upload with WebP conversion
-  const handleImageUpload = async () => {
-    if (!selectedFile) {
-      message.error('Please select an image first');
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      message.error('Please select an image file');
       return;
     }
 
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('File size must be less than 5MB');
+      return;
+    }
+
+    // Automatically start upload process
+    await handleImageUpload(file);
+  };
+
+  // Handle image upload with WebP conversion
+  const handleImageUpload = async (file: File) => {
     setFileUploading(true);
+    setUploadedImageUrl(''); // Clear previous upload
 
     try {
       // Convert image to WebP
       message.info('Converting image to WebP format...');
-      const webpFile = await convertImageToWebP(selectedFile);
+      const webpFile = await convertImageToWebP(file);
 
       // Dynamic import of Firebase storage functions
       const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
@@ -321,7 +316,6 @@ function Graphics() {
     setUploadedImageUrl('');
     setRedirectionUrl('');
     setFileUploading(false);
-    setSelectedFile(null);
   };
 
   // Display loading state if Firebase is not yet initialized
@@ -519,7 +513,7 @@ function Graphics() {
           <div className="mb-3">
             <label className="block text-dark dark:text-white/[.87] font-medium mb-3">Upload Image *</label>
             <div className="text-xs text-gray-500 mb-2">
-              Images will be automatically converted to WebP format for better performance
+              Images will be automatically converted to WebP format and uploaded
             </div>
           </div>
 
@@ -538,29 +532,26 @@ function Graphics() {
                 htmlFor="file-upload"
                 className={`cursor-pointer ${fileUploading ? 'cursor-not-allowed opacity-50' : ''}`}
               >
-                <CloudUploadOutlined className="text-4xl text-gray-400 mb-2" />
-                <div className="text-dark dark:text-white/[.87] mb-1">
-                  {selectedFile ? selectedFile.name : 'Click to select an image'}
-                </div>
+                {fileUploading ? (
+                  <div>
+                    <Spin className="text-4xl mb-2" />
+                    <div className="text-dark dark:text-white/[.87] mb-1">
+                      Converting & Uploading...
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <CloudUploadOutlined className="text-4xl text-gray-400 mb-2" />
+                    <div className="text-dark dark:text-white/[.87] mb-1">
+                      Click to select an image
+                    </div>
+                  </div>
+                )}
                 <div className="text-xs text-gray-500">
                   Supports: JPG, PNG, GIF, WEBP (Max: 5MB)
                 </div>
               </label>
             </div>
-
-            {selectedFile && !uploadedImageUrl && (
-              <div className="mt-4 flex justify-center">
-                <Button
-                  type="primary"
-                  loading={fileUploading}
-                  onClick={handleImageUpload}
-                  icon={<CloudUploadOutlined />}
-                  disabled={fileUploading}
-                >
-                  {fileUploading ? 'Converting & Uploading...' : 'Upload Image'}
-                </Button>
-              </div>
-            )}
 
             {uploadedImageUrl && (
               <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
