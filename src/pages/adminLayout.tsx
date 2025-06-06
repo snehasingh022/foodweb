@@ -27,7 +27,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     };
   }
 
-
   const { topMenu, collapsed, isLoggedIn, rtl, mainContent } = useSelector((state:RootState) => {
     return {
       topMenu: state.ChangeLayoutMode.topMenu,
@@ -38,7 +37,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     };
   });
 
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, userRoles } = useAuth();
 
   if(mainContent === 'darkMode') {
     document.body.classList.add('dark');
@@ -51,7 +50,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     if (htmlElement) {
       htmlElement.setAttribute('dir', 'rtl');
     }
-
   }
 
   const router = useRouter();
@@ -60,17 +58,39 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     // If the user is not logged in and trying to access a restricted page, redirect to the login page
     if (!isLoggedIn && !router.pathname.startsWith('/login') && !router.pathname.startsWith('/register') && !router.pathname.startsWith('/forgot-password')) {
       router.push('/');
+      return;
     }
     
-    // If the user is logged in but has no recognized role (neither admin nor helpdesk), redirect to login page
-    if (isLoggedIn && currentUser && !isAdmin && currentUser.role !== 'helpdesk') {
+    // If no current user, exit early
+    if (!currentUser) {
+      return;
+    }
+
+    // Get user roles
+    const userRolesList = currentUser?.roles || userRoles || [];
+    const userPrimaryRole = currentUser?.role || "";
+
+    // Check if user has valid role
+    const hasValidRole = isAdmin || 
+      userRolesList.includes('helpdesk') || 
+      userRolesList.includes('tours') || 
+      userRolesList.includes('tours+media') ||
+      userPrimaryRole === 'helpdesk' ||
+      userPrimaryRole === 'tours' ||
+      userPrimaryRole === 'tours+media';
+
+    // If user has no recognized role, redirect to login
+    if (!hasValidRole) {
       router.push('/');
+      return;
     }
     
-    // If user is helpdesk but trying to access admin-only pages, redirect to helpdesk area
-    if (isLoggedIn && currentUser && currentUser.role === 'helpdesk') {
-      // List of paths that are admin-only (not including /admin/helpdesk, /admin/support, etc.)
-      const adminOnlyPaths = [
+    // Role-based access control
+    if (isLoggedIn && currentUser) {
+      
+      // Define role-specific allowed paths
+      const adminPaths = [
+        '/admin',
         '/admin/users', 
         '/admin/bookings', 
         '/admin/payments', 
@@ -79,23 +99,72 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         '/admin/tours',
         '/admin/cruises',
         '/admin/custom-tours',
+        '/admin/support',
+        '/admin/helpdesk',
+        '/admin/queries',
+        '/admin/homeslider',
         '/admin/blogs',
         '/admin/tags',
         '/admin/categories',
-        '/admin/media',
-        '/admin/graphics'
+        '/admin/media'
       ];
-      
-      // Check if current path starts with any admin-only path
-      const isAdminOnlyPath = adminOnlyPaths.some(path => 
-        router.pathname === path || router.pathname.startsWith(`${path}/`)
-      );
-      
-      if (isAdminOnlyPath) {
-        router.push('/admin/support/tickets');
+
+      const helpdeskPaths = [
+        '/admin',
+        '/admin/support',
+        '/admin/helpdesk',
+        '/admin/queries'
+      ];
+
+      const toursPaths = [
+        '/admin',
+        '/admin/tours',
+        '/admin/cruises',
+        '/admin/custom-tours'
+      ];
+
+      const toursMediaPaths = [
+        '/admin',
+        '/admin/tours',
+        '/admin/cruises',
+        '/admin/custom-tours',
+        '/admin/homeslider',
+        '/admin/blogs',
+        '/admin/tags',
+        '/admin/categories',
+        '/admin/media'
+      ];
+
+      // Check current path access
+      const currentPath = router.pathname;
+      let hasAccess = false;
+      let redirectPath = '/admin';
+
+      if (isAdmin || userRolesList.includes('admin') || userPrimaryRole === 'admin') {
+        hasAccess = true; // Admin has access to everything
+      } else if (userRolesList.includes('helpdesk') || userPrimaryRole === 'helpdesk') {
+        hasAccess = helpdeskPaths.some(path => 
+          currentPath === path || currentPath.startsWith(`${path}/`)
+        );
+        redirectPath = '/admin/support/tickets';
+      } else if (userRolesList.includes('tours+media') || userPrimaryRole === 'tours+media') {
+        hasAccess = toursMediaPaths.some(path => 
+          currentPath === path || currentPath.startsWith(`${path}/`)
+        );
+        redirectPath = '/admin/tours';
+      } else if (userRolesList.includes('tours') || userPrimaryRole === 'tours') {
+        hasAccess = toursPaths.some(path => 
+          currentPath === path || currentPath.startsWith(`${path}/`)
+        );
+        redirectPath = '/admin/tours';
+      }
+
+      // If no access, redirect to appropriate section
+      if (!hasAccess) {
+        router.push(redirectPath);
       }
     }
-  }, [router, isLoggedIn, currentUser, isAdmin]);
+  }, [router, isLoggedIn, currentUser, isAdmin, userRoles]);
   
   return (
     <ThemeProvider theme={theme}>

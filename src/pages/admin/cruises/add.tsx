@@ -1,26 +1,23 @@
 "use client"
-
 import type React from "react"
-import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 import { listAll, ref as storageRef } from "firebase/storage"
 import { useState, useEffect } from "react"
-import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload, message, Space, Modal, DatePicker } from "antd"
-import { UploadOutlined, PlusOutlined, ArrowLeftOutlined, PictureOutlined } from "@ant-design/icons"
+import { Row, Col, Card, Input, Button, Form, Select, Divider, Upload, message, Space, Tabs, Modal, DatePicker, Tag } from "antd"
+import { UploadOutlined, PlusOutlined, ArrowLeftOutlined, PictureOutlined, CloudUploadOutlined, FileImageOutlined } from "@ant-design/icons"
 import { PageHeaders } from "../../../components/page-headers/index"
 import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, setDoc, doc } from "firebase/firestore"
-import { db, app } from "../../../authentication/firebase"
-import { getDownloadURL, ref, uploadBytes, getStorage } from "firebase/storage"
+import { db} from "../../../authentication/firebase"
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage"
 import Protected from "../../../components/Protected/Protected"
 import { useRouter } from "next/router"
 import { storage } from "@/lib/firebase-secondary";
-
-const { Option } = Select
+import { convertImageToWebP } from '../../../components/imageConverter';
+const { RangePicker } = DatePicker;
+import { Dayjs } from "dayjs"
 
 function AddCruise() {
     const router = useRouter()
     const [form] = Form.useForm()
-
-    // State variables
     const [categories, setCategories] = useState<any[]>([])
     const [tags, setTags] = useState<any[]>([])
     const [videoFileName, setVideoFileName] = useState<string>("");
@@ -35,13 +32,17 @@ function AddCruise() {
     const [newTag, setNewTag] = useState("")
     const [tagSlug, setTagSlug] = useState("")
     const [tagDescription, setTagDescription] = useState("")
-    const [imageDialogOpen, setImageDialogOpen] = useState(false)
-    const [imageType, setImageType] = useState("") // 'main' or 'seo'
     const [archiveImages, setArchiveImages] = useState<any[]>([])
-    const [showArchive, setShowArchive] = useState(false)
-    const [selectedArchiveImage, setSelectedArchiveImage] = useState("")
     const [videoLoading, setVideoLoading] = useState(false)
     const [videoUrl, setVideoUrl] = useState("")
+    const [mediaDialogOpen, setMediaDialogOpen] = useState(false)
+    const [archiveMediaImages, setArchiveMediaImages] = useState<any[]>([])
+    const [archiveOrUpload, setArchiveOrUpload] = useState<'upload' | 'archive'>('upload');
+    const [sailingDates, setSailingDates] = useState<Array<[Dayjs, Dayjs]>>([]);
+    const [dateInput, setDateInput] = useState<[Dayjs, Dayjs] | null>(null);
+    const [categoryLoading, setCategoryLoading] = useState(false)
+    const [tagLoading, setTagLoading] = useState(false)
+    const [cruiseLoading, setCruiseLoading] = useState(false)
 
     const PageRoutes = [
         {
@@ -64,6 +65,7 @@ function AddCruise() {
             fetchCategories()
             fetchTags()
             fetchArchiveImages()
+            fetchMediaImages()
         }
     }, [])
 
@@ -105,6 +107,21 @@ function AddCruise() {
         }
     }
 
+    const fetchMediaImages = async () => {
+        try {
+            const q = query(collection(db, "media"), orderBy("createdAt", "desc"))
+            const querySnapshot = await getDocs(q)
+            const mediaData = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+            setArchiveMediaImages(mediaData)
+        } catch (error) {
+            console.error("Error fetching media images:", error)
+            message.error("Failed to fetch media images")
+        }
+    }
+
     const fetchArchiveImages = async () => {
         try {
             if (!storage) return;
@@ -134,9 +151,20 @@ function AddCruise() {
                 throw new Error("Firebase Storage is not available");
             }
             setImageLoading(true);
-            const storageReference = storageRef(storage, `prathaviTravelsMedia/${file.name}`);
-            await uploadBytes(storageReference, file);
-            const downloadURL = await getDownloadURL(storageReference);
+            const webpFile = await convertImageToWebP(file);
+            const storageRef = ref(storage, `prathviTravelsMedia/media/${webpFile.name}`);
+            await uploadBytes(storageRef, webpFile);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // Generate media ID
+            const mediaId = `MID${Date.now()}`;
+
+            // Save to media collection in Firestore
+            await setDoc(doc(db, "media", mediaId), {
+                name: webpFile.name,
+                image: downloadURL,
+                createdAt: serverTimestamp(),
+            });
             setImageUrl(downloadURL);
             message.success("Image uploaded successfully!");
         } catch (error) {
@@ -147,14 +175,19 @@ function AddCruise() {
         }
     };
 
-    // Replace the existing handleVideoUpload function
+    const handleMediaImageSelect = (imageUrl: string) => {
+        setImageUrl(imageUrl);
+        setMediaDialogOpen(false);
+        message.success("Image selected from archive!");
+    }
+
     const handleVideoUpload = async (file: File) => {
         try {
             if (!storage) {
                 throw new Error("Firebase Storage is not available");
             }
             setVideoLoading(true);
-            const storageReference = storageRef(storage, `prathaviTravelsMedia/${file.name}`);
+            const storageReference = storageRef(storage, `prathviTravelsMedia/media/${file.name}`);
             await uploadBytes(storageReference, file);
             const downloadURL = await getDownloadURL(storageReference);
             form.setFieldsValue({ videoURL: downloadURL });
@@ -169,29 +202,36 @@ function AddCruise() {
         }
     };
 
-    // Add this function for handling archive image selection
-    const handleArchiveImageSelect = (imageUrl: string) => {
-        setImageUrl(imageUrl);
-        setSelectedArchiveImage(imageUrl);
-        setShowArchive(false);
-        message.success("Archive image selected!");
-    }
+    const handleAddSailingDate = () => {
+        if (dateInput && dateInput[0] && dateInput[1]) {
+            setSailingDates([...sailingDates, dateInput]);
+            setDateInput(null); // Reset input
+        }
+    };
+
+    const handleDeleteSailingDate = (index: number) => {
+        const updated = sailingDates.filter((_, i) => i !== index);
+        setSailingDates(updated);
+    };
 
     const handleAddCategory = async () => {
         if (typeof window === "undefined" || newCategory.trim() === "") return
 
         try {
-            const categoriesRef = collection(db, "categories")
-            const docRef = await addDoc(categoriesRef, {
+            setCategoryLoading(true)
+            const categoryId = `CID${Date.now().toString().slice(-6)}`;
+            const categoriesRef = doc(db, "categories", categoryId);
+            await setDoc(categoriesRef, {
                 name: newCategory,
                 slug: categorySlug,
                 description: categoryDescription,
                 createdAt: serverTimestamp(),
-            })
+            });
+
             setCategories([
                 ...categories,
                 {
-                    id: docRef.id,
+                    id: categoryId,
                     name: newCategory,
                     slug: categorySlug,
                     description: categoryDescription,
@@ -205,6 +245,8 @@ function AddCruise() {
         } catch (error) {
             console.error("Error adding category:", error)
             message.error("Error adding category. Please try again.")
+        } finally {
+            setCategoryLoading(false)
         }
     }
 
@@ -212,6 +254,7 @@ function AddCruise() {
         if (typeof window === "undefined" || newTag.trim() === "") return
 
         try {
+            setTagLoading(true)
             const tagsRef = collection(db, "tags")
             const docRef = await addDoc(tagsRef, {
                 name: newTag,
@@ -236,10 +279,10 @@ function AddCruise() {
         } catch (error) {
             console.error("Error adding tag:", error)
             message.error("Error adding tag. Please try again.")
+        } finally {
+            setTagLoading(false)
         }
     }
-
-    
 
     const handleSlugGeneration = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value
@@ -254,12 +297,19 @@ function AddCruise() {
         if (typeof window === "undefined") return;
 
         try {
+            setCruiseLoading(true)
             const cruiseId = `CRID${Date.now().toString().slice(-6)}`;
+
+            // Convert sailing dates to proper format - each date range should be an object with start and end dates
+            const formattedSailingDates = sailingDates.map(dateRange => ({
+                startDate: dateRange[0].toDate(), // Convert Dayjs to Date
+                endDate: dateRange[1].toDate()    // Convert Dayjs to Date
+            }));
 
             const cruiseData = {
                 title: values.title,
                 slug: values.slug,
-                description: values.description,
+                description: values.description || "",
                 categoryDetails: {
                     categoryID: values.categoryID || "",
                     name: values.categoryName || "",
@@ -277,6 +327,7 @@ function AddCruise() {
                 startDate: values.startDate ? values.startDate.toDate() : null,
                 status: values.status || "active",
                 videoURL: values.videoURL || "",
+                sailingDates: formattedSailingDates, // Use formatted sailing dates
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -286,7 +337,9 @@ function AddCruise() {
             router.push("/admin/cruises");
         } catch (error) {
             console.error("Error saving cruise:", error);
-            message.error("Failed to save cruise");
+            message.error("Failed to save cruise. Please try again.");
+        } finally {
+            setCruiseLoading(false)
         }
     };
 
@@ -393,6 +446,18 @@ function AddCruise() {
                                                         <Input type="number" placeholder="Enter price" className="py-2" />
                                                     </Form.Item>
                                                 </Col>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Status</span>}
+                                                        name="status"
+                                                        initialValue="active"
+                                                    >
+                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
+                                                            <Select.Option value="active">Active</Select.Option>
+                                                            <Select.Option value="inactive">Inactive</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
                                             </Row>
 
                                             <Row gutter={24}>
@@ -438,33 +503,6 @@ function AddCruise() {
                                                         rules={[{ required: true, message: "Please enter number of nights" }]}
                                                     >
                                                         <Input type="number" placeholder="Enter number of nights" className="py-2" />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Cruise Type</span>}
-                                                        name="cruiseType"
-                                                        initialValue="domestic"
-                                                    >
-                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
-                                                            <Select.Option value="domestic">Domestic</Select.Option>
-                                                            <Select.Option value="international">International</Select.Option>
-                                                        </Select>
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Status</span>}
-                                                        name="status"
-                                                        initialValue="active"
-                                                    >
-                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
-                                                            <Select.Option value="active">Active</Select.Option>
-                                                            <Select.Option value="inactive">Inactive</Select.Option>
-                                                        </Select>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -547,63 +585,75 @@ function AddCruise() {
                                                 </Col>
                                             </Row>
 
-
-
                                             <Row gutter={24}>
                                                 <Col span={12}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Cruise Type</span>}
+                                                        name="cruiseType"
+                                                        initialValue="domestic"
+                                                    >
+                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
+                                                            <Select.Option value="domestic">Domestic</Select.Option>
+                                                            <Select.Option value="international">International</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item
+                                                        label={
+                                                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                                                Sailing Dates
+                                                            </span>
+                                                        }
+                                                    >
+                                                        <div className="flex gap-2 items-center">
+                                                            <RangePicker
+                                                                format="DD MMM YYYY"
+                                                                value={dateInput}
+                                                                onChange={(dates) => {
+                                                                    setDateInput(dates as [Dayjs, Dayjs] | null);
+                                                                }}
+                                                                className="flex-1"
+                                                            />
+                                                            <Button
+                                                                type="primary"
+                                                                onClick={handleAddSailingDate}
+                                                                disabled={!dateInput || !dateInput[0] || !dateInput[1]}
+                                                            >
+                                                                Add
+                                                            </Button>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                            {sailingDates.map((range, index) => (
+                                                                <Tag
+                                                                    key={index}
+                                                                    closable
+                                                                    onClose={() => handleDeleteSailingDate(index)}
+                                                                    className="py-1 px-3"
+                                                                >
+                                                                    {range[0].format("DD MMM YYYY")} - {range[1].format("DD MMM YYYY")}
+                                                                </Tag>
+                                                            ))}
+                                                        </div>
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
+                                                <Col span={4}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Image</span>}
                                                     >
                                                         <div className="space-y-3">
-                                                            <div className="flex gap-4 mb-4">
-                                                                <Button
-                                                                    onClick={() => setShowArchive(!showArchive)}
-                                                                    icon={<PictureOutlined />}
-                                                                    className="border-primary text-primary hover:bg-primary hover:text-white"
-                                                                >
-                                                                    {showArchive ? 'Hide Archive' : 'Show Archive'}
-                                                                </Button>
-                                                                <Button
-                                                                    onClick={() => {
-                                                                        const input = document.createElement('input');
-                                                                        input.type = 'file';
-                                                                        input.accept = 'image/*';
-                                                                        input.onchange = (e) => {
-                                                                            const file = (e.target as HTMLInputElement).files?.[0];
-                                                                            if (file) handleImageUpload(file);
-                                                                        };
-                                                                        input.click();
-                                                                    }}
-                                                                    icon={<UploadOutlined />}
-                                                                    loading={imageLoading}
-                                                                    className="bg-primary text-white hover:bg-primary-hb"
-                                                                >
-                                                                    {imageLoading ? 'Uploading...' : 'Upload Image'}
-                                                                </Button>
-                                                            </div>
-
-                                                            {showArchive && (
-                                                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
-                                                                    <div className="grid grid-cols-3 gap-2">
-                                                                        {archiveImages.map((image, index) => (
-                                                                            <div
-                                                                                key={index}
-                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
-                                                                                onClick={() => handleArchiveImageSelect(image.url)}
-                                                                            >
-                                                                                <img
-                                                                                    src={image.url}
-                                                                                    alt={image.name}
-                                                                                    className="w-full h-20 object-cover"
-                                                                                />
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                    {archiveImages.length === 0 && (
-                                                                        <p className="text-center text-gray-500 py-4">No archive images found</p>
-                                                                    )}
-                                                                </div>
-                                                            )}
+                                                            <Button
+                                                                onClick={() => setMediaDialogOpen(true)}
+                                                                icon={<PictureOutlined />}
+                                                                className="bg-primary text-white hover:bg-primary-hb"
+                                                                size="large"
+                                                            >
+                                                                Select Image
+                                                            </Button>
 
                                                             {imageUrl && (
                                                                 <div className="mt-2">
@@ -617,10 +667,7 @@ function AddCruise() {
                                                         </div>
                                                     </Form.Item>
                                                 </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
-                                                <Col span={12}>
+                                                <Col span={6}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Video</span>}
                                                     >
@@ -638,22 +685,36 @@ function AddCruise() {
                                                                 type="primary"
                                                                 className="bg-primary hover:bg-primary-hbr"
                                                                 loading={videoLoading}
+                                                                size="large"
+
                                                             >
                                                                 {videoLoading ? 'Uploading...' : 'Upload Video'}
                                                             </Button>
                                                         </Upload>
-                                                        {videoFileName && (
-                                                            <div className="mt-2 text-gray-600 dark:text-gray-300">
-                                                                Selected Video: <span className="font-medium">{videoFileName}</span>
-                                                            </div>
-                                                        )}
+
                                                         {videoUrl && (
-                                                            <div className="mt-2 text-gray-600 dark:text-gray-300">
-                                                                Video URL: <span className="font-medium text-xs break-all">{videoUrl}</span>
+                                                            <div className="mt-4">
+                                                                <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                                                                    <video
+                                                                        controls
+                                                                        className="w-full max-w-md h-auto"
+                                                                        style={{ maxHeight: '300px' }}
+                                                                        preload="metadata"
+                                                                    >
+                                                                        <source src={videoUrl} type="video/mp4" />
+                                                                        <source src={videoUrl} type="video/webm" />
+                                                                        <source src={videoUrl} type="video/ogg" />
+                                                                        Your browser does not support the video tag.
+                                                                    </video>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </Form.Item>
                                                 </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
+
                                             </Row>
                                         </div>
 
@@ -678,8 +739,10 @@ function AddCruise() {
                                                     type="primary"
                                                     htmlType="submit"
                                                     className="px-5 h-10 shadow-none bg-primary hover:bg-primary-hbr"
+                                                    loading={cruiseLoading}
+                                                    disabled={cruiseLoading}
                                                 >
-                                                    Create Cruise
+                                                    {cruiseLoading ? 'Creating Cruise...' : 'Create Cruise'}
                                                 </Button>
                                             </Space>
                                         </div>
@@ -702,9 +765,9 @@ function AddCruise() {
                 onCancel={() => setCategoryDialogOpen(false)}
                 footer={
                     <div className="flex justify-end gap-2 pr-6 pb-4">
-                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
-                        <Button type="primary" onClick={handleAddCategory}>
-                            OK
+                        <Button onClick={() => setCategoryDialogOpen(false)} disabled={categoryLoading}>Cancel</Button>
+                        <Button type="primary" onClick={handleAddCategory} loading={categoryLoading}>
+                            {categoryLoading ? 'Adding...' : 'OK'}
                         </Button>
                     </div>
                 }
@@ -750,9 +813,9 @@ function AddCruise() {
                 onOk={handleAddTag}
                 footer={
                     <div className="flex justify-end gap-2 pr-6 pb-4">
-                        <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
-                        <Button type="primary" onClick={handleAddCategory}>
-                            OK
+                        <Button onClick={() => setTagDialogOpen(false)} disabled={tagLoading}>Cancel</Button>
+                        <Button type="primary" onClick={handleAddTag} loading={tagLoading}>
+                            {tagLoading ? 'Adding...' : 'OK'}
                         </Button>
                     </div>
                 }
@@ -784,8 +847,125 @@ function AddCruise() {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            <Modal
+                title={
+                    <h3 className="text-lg font-semibold px-4 py-2">
+                        Select Image
+                    </h3>
+                }
+                open={mediaDialogOpen}
+                onCancel={() => setMediaDialogOpen(false)}
+                footer={null}
+                width="95%"
+                style={{ maxWidth: '1000px' }}
+                bodyStyle={{ padding: '16px 24px 24px' }}
+                className="responsive-modal"
+            >
+                <Tabs
+                    defaultActiveKey="upload"
+                    onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
+                    className="mt-2"
+                    items={[
+                        {
+                            key: 'upload',
+                            label: (
+                                <span className="flex items-center">
+                                    <CloudUploadOutlined className="mr-2" />
+                                    Upload New Image
+                                </span>
+                            ),
+                            children: (
+                                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
+                                    <label htmlFor="modal-image-upload" className="cursor-pointer text-center">
+                                        <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
+                                        <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
+                                        <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
+                                        <Button
+                                            type="primary"
+                                            icon={<CloudUploadOutlined />}
+                                            onClick={() => {
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.onchange = (e) => {
+                                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                                    if (file) {
+                                                        handleImageUpload(file).then(() => {
+                                                            setMediaDialogOpen(false);
+                                                        });
+                                                    }
+                                                };
+                                                input.click();
+                                            }}
+                                            className="bg-primary hover:bg-primary-hbr"
+                                            loading={imageLoading}
+                                        >
+                                            {imageLoading ? 'Uploading...' : 'Select File'}
+                                        </Button>
+                                    </label>
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'archive',
+                            label: (
+                                <span className="flex items-center">
+                                    <FileImageOutlined className="mr-2" />
+                                    Choose from Archive
+                                </span>
+                            ),
+                            children: (
+                                <div className="mt-4">
+                                    <div className="flex items-center justify-between mb-5 px-1">
+                                        <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
+                                        <label htmlFor="modal-archive-upload" className="cursor-pointer">
+                                            <input
+                                                id="modal-archive-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImageUpload(file);
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    <div className="border border-gray-200 dark:border-white/10 rounded-md">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
+                                            {archiveMediaImages.length > 0 ? (
+                                                archiveMediaImages.map((media) => (
+                                                    <div
+                                                        key={media.id}
+                                                        className="cursor-pointer border rounded p-2 transition-all hover:border-primary"
+                                                        onClick={() => handleMediaImageSelect(media.image)}
+                                                    >
+                                                        <img
+                                                            src={media.image}
+                                                            alt={media.name}
+                                                            className="w-full max-h-40 object-contain"
+                                                        />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-4 text-center py-8 text-gray-500 dark:text-white/60">
+                                                    <PictureOutlined className="text-4xl mb-2" />
+                                                    <p>No images in archive</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ),
+                        },
+                    ]}
+                />
+            </Modal>
+
         </>
     )
 }
 
-export default Protected(AddCruise, ["admin"])
+export default Protected(AddCruise, ["admin", "tours", "tours+media"])

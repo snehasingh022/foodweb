@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-<<<<<<< HEAD
-import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 import { listAll, ref as storageRef } from "firebase/storage"
 import {
   Row,
@@ -16,37 +14,33 @@ import {
   message,
   Space,
   Modal,
-  Spin
+  Spin,
+  Tabs
 } from 'antd';
 import {
   UploadOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
   PictureOutlined,
-  LoadingOutlined
+  CloudUploadOutlined,
+  FileImageOutlined,
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../../components/page-headers/index';
-import { collection, getDocs, query, orderBy, serverTimestamp, getDoc, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, serverTimestamp, getDoc, doc, updateDoc, addDoc, setDoc } from 'firebase/firestore';
 import { db, app } from '../../../../authentication/firebase';
 import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
 import Protected from '../../../../components/Protected/Protected';
 import { useRouter } from 'next/router'
 import { storage } from '@/lib/firebase-secondary';
+import { convertImageToWebP } from '@/components/imageConverter';
 
 const { Option } = Select;
-=======
-import { useRouter } from 'next/router';
-import Protected from '../../../../components/Protected/Protected';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../../../authentication/firebase';
-import { Spin, message } from 'antd';
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
+const { TabPane } = Tabs;
 
 function EditBlog() {
   const router = useRouter();
   const { id } = router.query;
-<<<<<<< HEAD
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [formChanged, setFormChanged] = useState(false);
@@ -76,11 +70,21 @@ function EditBlog() {
   const [imageType, setImageType] = useState(''); // 'main' or 'seo'
   const [archive, setArchive] = useState<any[]>([]);
   const [blogData, setBlogData] = useState<any>(null);
-  const [showArchive, setShowArchive] = useState(false);
-  const [showSeoArchive, setShowSeoArchive] = useState(false);
   const [selectedArchiveImage, setSelectedArchiveImage] = useState('');
   const [selectedSeoArchiveImage, setSelectedSeoArchiveImage] = useState('');
   const [archiveImages, setArchiveImages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false);
+  const [isTagLoading, setIsTagLoading] = useState(false);
+
+  // New state for modal-based image uploader
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [seoImageModalVisible, setSeoImageModalVisible] = useState(false);
+  const [mediaImages, setMediaImages] = useState<any[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [uploadingToMedia, setUploadingToMedia] = useState(false);
+  const [archiveOrUpload, setArchiveOrUpload] = useState<'upload' | 'archive'>('upload');
+
 
   const PageRoutes = [
     {
@@ -140,6 +144,7 @@ function EditBlog() {
       fetchCategories();
       fetchTags();
       fetchArchiveImages();
+      fetchMediaImages();
     }
   }, [id]);
 
@@ -162,6 +167,85 @@ function EditBlog() {
     }
   };
 
+  // Fetch images from media collection in Firestore
+  const fetchMediaImages = async () => {
+    try {
+      setMediaLoading(true);
+      const q = query(collection(db, "media"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const imagesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMediaImages(imagesData);
+    } catch (error) {
+      console.error("Error fetching media images:", error);
+      message.error("Failed to fetch media images");
+    } finally {
+      setMediaLoading(false);
+    }
+  };
+
+  // Store image data in media collection
+  const storeImageInMedia = async (imageUrl: string, fileName: string) => {
+    try {
+      const mediaRef = collection(db, "media");
+      await addDoc(mediaRef, {
+        image: imageUrl,
+        name: fileName,
+        createdAt: serverTimestamp(),
+      });
+      console.log("Image data stored in media collection");
+    } catch (error) {
+      console.error("Error storing image in media collection:", error);
+    }
+  };
+
+  // Updated image upload function that stores in database
+  const handleImageUploadToStorage = async (file: File, isForSeo: boolean = false) => {
+    setUploadingToMedia(true);
+    try {
+      if (!storage) {
+        throw new Error("Firebase Storage is not available");
+      }
+      const webpFile = await convertImageToWebP(file);
+      const storageRef = ref(storage, `prathviTravelsMedia/media/${webpFile.name}`);
+      await uploadBytes(storageRef, webpFile);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Generate media ID
+      const mediaId = `MID${Date.now()}`;
+
+      // Save to media collection in Firestore
+      await setDoc(doc(db, "media", mediaId), {
+        name: webpFile.name,
+        image: downloadURL,
+        createdAt: serverTimestamp(),
+      });
+
+      if (isForSeo) {
+        setSeoImageUrl(downloadURL);
+        setSeoImageModalVisible(false);
+      } else {
+        setImageUrl(downloadURL);
+        setImageModalVisible(false);
+      }
+
+      setFormChanged(true);
+
+      // Refresh media images
+      fetchMediaImages();
+
+      message.success("Image uploaded and stored successfully!");
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      message.error("Failed to upload image");
+    } finally {
+      setUploadingToMedia(false);
+    }
+  };
+
   const fetchBlogData = async () => {
     if (!id) return;
 
@@ -174,62 +258,51 @@ function EditBlog() {
         const data = blogDocSnap.data();
         setBlogData({ id: blogDocSnap.id, ...data });
 
-        // Set form values
+        // Extract category name from categoryDetails map
+        const categoryName = data.categoryDetails?.name || '';
+
+        // Extract tag names from tags map
+        const tagNames = data.tags ? Object.values(data.tags).map((tag: any) => tag.name) : [];
+
+        // Set form values based on your database schema
         form.setFieldsValue({
-          title: data.title,
-          slug: data.slug,
-          summary: data.summary,
-          category: data.category,
-          isFeatured: data.isFeatured || 'No',
-          seoTitle: data.seoTitle || '',
-          seoDescription: data.seoDescription || '',
+          title: data.title || '',
+          slug: data.slug || '',
+          summary: data.description || '', // Using description as summary
+          category: categoryName,
+          isFeatured: data.isFeatured ? 'Yes' : 'No',
+          seoTitle: data.seoDetails?.title || '',
+          seoDescription: data.seoDetails?.description || '',
         });
 
         // Set other state values
-        setImageUrl(data.image || '');
+        setImageUrl(data.imageURL || '');
         setEditorContent(data.content || '');
-        setSelectedTags(data.tags || []);
-        setSeoKeywords(data.seoKeywords || []);
-        setSeoImageUrl(data.seoImage || '');
-=======
-  const [loading, setLoading] = useState(true);
-  const [blog, setBlog] = useState<any>(null);
+        setSelectedTags(tagNames);
 
-  useEffect(() => {
-    if (id && typeof id === 'string') {
-      fetchBlog(id);
-    }
-  }, [id]);
+        // Handle SEO keywords - filter out empty strings
+        const keywords = data.seoDetails?.keywords || [];
+        const filteredKeywords = keywords.filter((keyword: string) => keyword.trim() !== '');
+        setSeoKeywords(filteredKeywords);
 
-  const fetchBlog = async (blogId: string) => {
-    try {
-      setLoading(true);
-      const blogDoc = await getDoc(doc(db, "blogs", blogId));
-      
-      if (blogDoc.exists()) {
-        setBlog({
-          id: blogDoc.id,
-          ...blogDoc.data()
-        });
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
+        setSeoImageUrl(data.seoDetails?.imageURL || '');
+
+        // Set selected archive images if they match current images
+        setSelectedArchiveImage(data.imageURL || '');
+        setSelectedSeoArchiveImage(data.seoDetails?.imageURL || '');
+
       } else {
         message.error("Blog not found");
         router.push('/admin/blogs');
       }
     } catch (error) {
-<<<<<<< HEAD
       console.error("Error fetching blog data:", error);
       message.error("Failed to fetch blog data");
-=======
-      console.error("Error fetching blog:", error);
-      message.error("Failed to fetch blog");
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     } finally {
       setLoading(false);
     }
   };
 
-<<<<<<< HEAD
   const fetchCategories = async () => {
     try {
       const q = query(collection(db, "categories"), orderBy("createdAt", "desc"));
@@ -262,26 +335,38 @@ function EditBlog() {
 
   const fetchArchiveImages = async () => {
     try {
-        if (!storage) return;
-        const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
-        const result = await listAll(archiveRef);
+      if (!storage) return;
+      const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
+      const result = await listAll(archiveRef);
 
-        const imagePromises = result.items.map(async (imageRef) => {
-            const url = await getDownloadURL(imageRef);
-            return {
-                name: imageRef.name,
-                url: url,
-                fullPath: imageRef.fullPath
-            };
-        });
+      const imagePromises = result.items.map(async (imageRef) => {
+        const url = await getDownloadURL(imageRef);
+        return {
+          name: imageRef.name,
+          url: url,
+          fullPath: imageRef.fullPath
+        };
+      });
 
-        const images = await Promise.all(imagePromises);
-        setArchiveImages(images);
+      const images = await Promise.all(imagePromises);
+      setArchiveImages(images);
     } catch (error) {
-        console.error("Error fetching archive images:", error);
-        message.error("Failed to fetch archive images");
+      console.error("Error fetching archive images:", error);
+      message.error("Failed to fetch archive images");
     }
-}
+  }
+
+  // Handle media image selection
+  const handleMediaImageSelect = (imageUrl: string, isForSeo: boolean = false) => {
+    if (isForSeo) {
+      setSeoImageUrl(imageUrl);
+      setSeoImageModalVisible(false);
+    } else {
+      setImageUrl(imageUrl);
+      setImageModalVisible(false);
+    }
+    setFormChanged(true);
+  };
 
   const handleImageUpload = async (file: File) => {
     setImageLoading(true);
@@ -289,9 +374,19 @@ function EditBlog() {
       if (!storage) {
         throw new Error("Firebase Storage is not available");
       }
-      const storageRef = ref(storage, `prathviTravelMedia/${file.name}`);
+      const storageRef = ref(storage, `prathviTravelsMedia/media/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
+
+      // Generate media ID
+      const mediaId = `MID${Date.now()}`;
+
+      // Save to media collection in Firestore
+      await setDoc(doc(db, "media", mediaId), {
+        name: file.name,
+        image: downloadURL,
+        createdAt: serverTimestamp(),
+      });
 
       setImageUrl(downloadURL);
       setFormChanged(true);
@@ -365,6 +460,7 @@ function EditBlog() {
   };
 
   const handleAddCategory = async () => {
+    setIsCategoryLoading(true);
     if (typeof window === "undefined" || newCategory.trim() === "") return;
 
     try {
@@ -392,10 +488,13 @@ function EditBlog() {
     } catch (error) {
       console.error("Error adding category:", error);
       message.error("Error adding category. Please try again.");
+    } finally {
+      setIsCategoryLoading(false);
     }
   };
 
   const handleAddTag = async () => {
+    setIsTagLoading(true);
     if (typeof window === "undefined" || newTag.trim() === "") return;
 
     try {
@@ -423,6 +522,8 @@ function EditBlog() {
     } catch (error) {
       console.error("Error adding tag:", error);
       message.error("Error adding tag. Please try again.");
+    } finally {
+      setIsTagLoading(false)
     }
   };
 
@@ -472,38 +573,73 @@ function EditBlog() {
   };
 
   const handleSubmit = async (values: any) => {
+    setIsLoading(true);
     if (typeof window === "undefined" || !id) return;
 
     try {
       const blogRef = doc(db, "blogs", id as string);
 
+      // Find selected category details
+      const selectedCategory = categories.find(cat => cat.name === values.category);
+
+      // Prepare tags object - convert selected tag names back to the map format
+      const tagsObject: any = {};
+      selectedTags.forEach(tagName => {
+        const tag = tags.find(t => t.name === tagName);
+        if (tag) {
+          tagsObject[tag.id] = {
+            name: tag.name,
+            slug: tag.slug,
+            description: tag.description
+          };
+        }
+      });
+
       const updatedBlogData = {
         title: values.title,
         slug: values.slug,
-        summary: values.summary,
+        description: values.summary, // Using summary as description
         content: editorContent,
-        category: values.category,
-        image: imageUrl,
-        isFeatured: values.isFeatured || 'No',
-        tags: selectedTags,
-        seoTitle: values.seoTitle || "",
-        seoDescription: values.seoDescription || "",
-        seoKeywords: seoKeywords,
-        seoImage: seoImageUrl,
+        imageURL: imageUrl,
+        isFeatured: values.isFeatured === 'Yes',
+        categoryDetails: selectedCategory ? {
+          categoryID: selectedCategory.id,
+          name: selectedCategory.name,
+          slug: selectedCategory.slug,
+          description: selectedCategory.description,
+          createdAt: selectedCategory.createdAt
+        } : null,
+        tags: tagsObject,
+        seoDetails: {
+          title: values.seoTitle || "",
+          description: values.seoDescription || "",
+          keywords: seoKeywords,
+          imageURL: seoImageUrl,
+        },
         updatedAt: serverTimestamp(),
       };
 
       await updateDoc(blogRef, updatedBlogData);
       setFormChanged(false);
       setSuccessModalVisible(true);
-      message.success("Blog created successfully");
+      message.success("Blog updated successfully");
       router.push('/admin/blogs');
 
     } catch (error) {
       console.error("Error updating blog:", error);
       message.error("Failed to update blog");
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -659,55 +795,14 @@ function EditBlog() {
                             label={<span className="text-dark dark:text-white/[.87] font-medium">Featured Image</span>}
                           >
                             <div className="space-y-3">
-                              <div className="flex gap-4 mb-4">
-                                <Button
-                                  onClick={() => setShowArchive(!showArchive)}
-                                  icon={<PictureOutlined />}
-                                  className="border-primary text-primary hover:bg-primary hover:text-white"
-                                >
-                                  {showArchive ? 'Hide Archive' : 'Show Archive'}
-                                </Button>
-                                <Button
-                                  onClick={() => {
-                                    const input = document.createElement('input');
-                                    input.type = 'file';
-                                    input.accept = 'image/*';
-                                    input.onchange = (e) => {
-                                      const file = (e.target as HTMLInputElement).files?.[0];
-                                      if (file) handleImageUpload(file);
-                                    };
-                                    input.click();
-                                  }}
-                                  icon={<UploadOutlined />}
-                                  loading={imageLoading}
-                                  className="bg-primary text-white hover:bg-primary-hb"
-                                >
-                                  {imageLoading ? 'Uploading...' : 'Upload Image'}
-                                </Button>
-                              </div>
-
-                              {showArchive && (
-                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
-                                  <div className="grid grid-cols-3 gap-2">
-                                    {archiveImages.map((image, index) => (
-                                      <div
-                                        key={index}
-                                        className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
-                                        onClick={() => handleArchiveImageSelect(image.url)}
-                                      >
-                                        <img
-                                          src={image.url}
-                                          alt={image.name}
-                                          className="w-full h-20 object-cover"
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {archiveImages.length === 0 && (
-                                    <p className="text-center text-gray-500 py-4">No archive images found</p>
-                                  )}
-                                </div>
-                              )}
+                              <Button
+                                onClick={() => setImageModalVisible(true)}
+                                icon={<PictureOutlined />}
+                                className="bg-primary text-white hover:bg-primary-hb w-1/4"
+                                block
+                              >
+                                Select Image
+                              </Button>
 
                               {imageUrl && (
                                 <div className="mt-2">
@@ -805,55 +900,13 @@ function EditBlog() {
 
                       <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">SEO Image</span>}>
                         <div className="space-y-3">
-                          <div className="flex gap-4 mb-4">
-                            <Button
-                              onClick={() => setShowSeoArchive(!showSeoArchive)}
-                              icon={<PictureOutlined />}
-                              className="border-primary text-primary hover:bg-primary hover:text-white"
-                            >
-                              {showSeoArchive ? 'Hide Archive' : 'Show Archive'}
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/*';
-                                input.onchange = (e) => {
-                                  const file = (e.target as HTMLInputElement).files?.[0];
-                                  if (file) handleSeoImageUpload(file);
-                                };
-                                input.click();
-                              }}
-                              icon={<UploadOutlined />}
-                              loading={imageLoading}
-                              className="bg-primary text-white hover:bg-primary-hb"
-                            >
-                              {imageLoading ? 'Uploading...' : 'Upload Image'}
-                            </Button>
-                          </div>
-
-                          {showSeoArchive && (
-                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
-                              <div className="grid grid-cols-3 gap-2">
-                                {archiveImages.map((image, index) => (
-                                  <div
-                                    key={index}
-                                    className={`cursor-pointer border-2 rounded-md overflow-hidden ${selectedSeoArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
-                                    onClick={() => handleSeoArchiveImageSelect(image.url)}
-                                  >
-                                    <img
-                                      src={image.url}
-                                      alt={image.name}
-                                      className="w-full h-20 object-cover"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                              {archiveImages.length === 0 && (
-                                <p className="text-center text-gray-500 py-4">No archive images found</p>
-                              )}
-                            </div>
-                          )}
+                          <Button
+                            onClick={() => setSeoImageModalVisible(true)}
+                            icon={<PictureOutlined />}
+                            className="bg-primary text-white hover:bg-primary-hb w-1/10"
+                          >
+                            Select SEO Image
+                          </Button>
 
                           {seoImageUrl && (
                             <div className="mt-2">
@@ -879,9 +932,10 @@ function EditBlog() {
                         <Button
                           type="primary"
                           htmlType="submit"
+                          loading={isLoading}
                           className="px-5 h-10 shadow-none bg-primary hover:bg-primary-hbr"
                         >
-                          Update Blog
+                          {isLoading ? "Updating..." : "Update Blog"}
                         </Button>
                       </Space>
                     </div>
@@ -905,8 +959,14 @@ function EditBlog() {
         footer={
           <div className="flex justify-end gap-2 pr-6 pb-4">
             <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
-            <Button type="primary" onClick={handleAddCategory}>
-              OK
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isCategoryLoading}
+              onClick={handleAddCategory}
+              className="px-5 h-10 shadow-none bg-primary hover:bg-primary-hbr"
+            >
+              {isCategoryLoading ? "Adding..." : "Add category"}
             </Button>
           </div>
         }
@@ -955,8 +1015,14 @@ function EditBlog() {
         footer={
           <div className="flex justify-end gap-2 pr-6 pb-4">
             <Button onClick={() => setTagDialogOpen(false)}>Cancel</Button>
-            <Button type="primary" onClick={handleAddTag}>
-              OK
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isTagLoading}
+              onClick={handleAddTag}
+              className="px-5 h-10 shadow-none bg-primary hover:bg-primary-hbr"
+            >
+              {isTagLoading ? "Adding..." : "Add tag"}
             </Button>
           </div>
         }
@@ -994,101 +1060,232 @@ function EditBlog() {
 
       {/* Image Dialog */}
       <Modal
-        title="Select from Archive"
-        open={imageDialogOpen}
-        onCancel={() => setImageDialogOpen(false)}
+        title={
+          <h3 className="text-lg font-semibold px-4 py-2">
+            Select Featured Image
+          </h3>
+        }
+        open={imageModalVisible}
+        onCancel={() => setImageModalVisible(false)}
         footer={null}
         width="95%"
         style={{ maxWidth: '1000px' }}
+        bodyStyle={{ padding: '16px 24px 24px' }}
         className="responsive-modal"
       >
-        <div className="flex justify-center gap-4 mb-4">
-          <Upload
-            name="image"
-            showUploadList={false}
-            beforeUpload={(file) => {
-              if (imageType === 'main') {
-                handleImageUpload(file);
-              } else {
-                handleSeoImageUpload(file);
-              }
-              handleArchiveImageUpload(file);
-              setImageDialogOpen(false);
-              return false;
-            }}
-          >
-            <Button icon={<UploadOutlined />} type="primary" className="bg-primary hover:bg-primary-hbr">
-              Upload New Image
-            </Button>
-          </Upload>
-        </div>
+        <Tabs
+          defaultActiveKey="upload"
+          onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
+          className="mt-2"
+          items={[
+            {
+              key: 'upload',
+              label: (
+                <span className="flex items-center">
+                  <CloudUploadOutlined className="mr-2" />
+                  Upload New Image
+                </span>
+              ),
+              children: (
+                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
+                  <label htmlFor="modal-upload-image" className="cursor-pointer text-center">
+                    <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
+                    <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
+                    <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
+                    <Button
+                      type="primary"
+                      icon={<CloudUploadOutlined />}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) handleImageUploadToStorage(file, false);
+                        };
+                        input.click();
+                      }}
+                      className="bg-primary hover:bg-primary-hbr"
+                      loading={uploadingToMedia}
+                    >
+                      {uploadingToMedia ? 'Uploading...' : 'Select File'}
+                    </Button>
+                  </label>
+                </div>
+              ),
+            },
+            {
+              key: 'archive',
+              label: (
+                <span className="flex items-center">
+                  <FileImageOutlined className="mr-2" />
+                  Choose from Archive
+                </span>
+              ),
+              children: (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-5 px-1">
+                    <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
+                    <label htmlFor="modal-archive-upload" className="cursor-pointer">
+                      <input
+                        id="modal-archive-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUploadToStorage(file, false);
+                        }}
+                      />
+                    </label>
+                  </div>
 
-        <Divider>Or Select from Archive</Divider>
-
-        <div className="grid grid-cols-4 gap-4 mt-4 max-h-[400px] overflow-y-auto">
-          {archive.map((item, index) => (
-            <div
-              key={index}
-              className="cursor-pointer border p-2 rounded hover:border-primary"
-              onClick={() => handleSetArchiveImage(item.ImageUrl)}
-            >
-              <img
-                src={item.ImageUrl}
-                alt="Archive item"
-                className="w-full h-24 object-cover"
-              />
-            </div>
-          ))}
-        </div>
+                  <div className="border border-gray-200 dark:border-white/10 rounded-md">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
+                      {mediaLoading ? (
+                        <div className="col-span-4 text-center py-8">
+                          <Spin size="large" />
+                        </div>
+                      ) : mediaImages.length > 0 ? (
+                        mediaImages.map((image) => (
+                          <div
+                            key={image.id}
+                            className="cursor-pointer border rounded p-2 transition-all hover:border-primary"
+                            onClick={() => handleMediaImageSelect(image.image, false)}
+                          >
+                            <img
+                              src={image.image}
+                              alt={image.name}
+                              className="w-full max-h-40 object-contain"
+                            />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-4 text-center py-8 text-gray-500 dark:text-white/60">
+                          <PictureOutlined className="text-4xl mb-2" />
+                          <p>No images in archive</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+        />
       </Modal>
 
-      {/* Confirm Dialog for Unsaved Changes */}
+
+
+      {/* Image Selection Modal for SEO Image */}
       <Modal
-        title="Unsaved Changes"
-        open={unsavedChangesModalVisible}
-        onCancel={() => setUnsavedChangesModalVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setUnsavedChangesModalVisible(false)}>
-            Stay on this page
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            className="bg-primary hover:bg-primary-hbr"
-            onClick={handleConfirmNavigation}
-          >
-            Discard changes
-          </Button>,
-        ]}
+        title={
+          <h3 className="text-lg font-semibold px-4 py-2">
+            Select SEO Image
+          </h3>
+        }
+        open={seoImageModalVisible}
+        onCancel={() => setSeoImageModalVisible(false)}
+        footer={null}
+        width="95%"
+        style={{ maxWidth: '1000px' }}
+        bodyStyle={{ padding: '16px 24px 24px' }}
+        className="responsive-modal"
       >
-        <p>You have unsaved changes. Are you sure you want to leave this page?</p>
+        <Tabs
+          defaultActiveKey="upload"
+          onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
+          className="mt-2"
+          items={[
+            {
+              key: 'upload',
+              label: (
+                <span className="flex items-center">
+                  <CloudUploadOutlined className="mr-2" />
+                  Upload New Image
+                </span>
+              ),
+              children: (
+                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
+                  <label htmlFor="modal-image-upload" className="cursor-pointer text-center">
+                    <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
+                    <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
+                    <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
+                    <Button
+                      type="primary"
+                      icon={<CloudUploadOutlined />}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            handleImageUploadToStorage(file, true).then(() => {
+                              setSeoImageModalVisible(false);
+                            });
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="bg-primary hover:bg-primary-hbr"
+                      loading={uploadingToMedia}
+                    >
+                      {uploadingToMedia ? 'Uploading...' : 'Select File'}
+                    </Button>
+                  </label>
+                </div>
+              ),
+            },
+            {
+              key: 'archive',
+              label: (
+                <span className="flex items-center">
+                  <FileImageOutlined className="mr-2" />
+                  Choose from Archive
+                </span>
+              ),
+              children: (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-5 px-1">
+                    <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
+                  </div>
+                  <div className="border border-gray-200 dark:border-white/10 rounded-md">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
+                      {mediaLoading ? (
+                        <div className="col-span-4 text-center py-8">
+                          <Spin size="large" />
+                        </div>
+                      ) : mediaImages.length > 0 ? (
+                        mediaImages.map((image) => (
+                          <div
+                            key={image.id}
+                            className="cursor-pointer border p-2 rounded hover:border-primary"
+                            onClick={() => handleMediaImageSelect(image.image, true)}
+                          >
+                            <img
+                              src={image.image}
+                              alt={image.name}
+                              className="w-full max-h-40 object-contain"
+                            />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-4 text-center py-8 text-gray-500 dark:text-white/60">
+                          <PictureOutlined className="text-4xl mb-2" />
+                          <p>No images in archive</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+        />
       </Modal>
     </>
   );
 }
 
-export default Protected(EditBlog, ["admin"]);
-=======
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Spin size="large" />
-      </div>
-    );
-  }
-
-  if (!blog) {
-    return null;
-  }
-
-  return (
-    <div>
-      <h1>Edit Blog: {blog.title}</h1>
-      <p>This page will be implemented to edit blog ID: {id}</p>
-      <button onClick={() => router.push('/admin/blogs')}>Back to Blogs</button>
-    </div>
-  );
-}
-
-export default Protected(EditBlog, ["admin"]); 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
+export default Protected(EditBlog, ["admin", "tours+media"]);

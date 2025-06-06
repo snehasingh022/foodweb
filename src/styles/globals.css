@@ -15,6 +15,28 @@
 
 }
 
+/* base track (grey when off) */
+.custom-switch .ant-switch {
+  background-color: rgb(150, 149, 149);
+}
+
+/* blue when ON */
+.custom-switch .ant-switch-checked {
+  background-color: blue;
+}
+
+.custom-switch{
+  background-color: rgb(170, 168, 168);
+}
+
+/* optional: smooth transitions */
+.custom-switch .ant-switch,
+.custom-switch .ant-switch-checked {
+  transition: background-color 0.3s ease;
+}
+
+
+
 h1, h2, h3, h4, h5, h6{
   @apply text-dark dark:text-white/[.87];
 }

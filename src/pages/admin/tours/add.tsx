@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import FirebaseFileUploader from '@/components/FirebaseFileUploader';
 import { listAll, ref as storageRef } from "firebase/storage"
 import { convertImageToWebP } from '@/components/imageConverter';
 import {
@@ -11,28 +10,28 @@ import {
     Form,
     Select,
     Tag,
-    Divider,
-    Upload,
     message,
     Space,
     Modal,
     DatePicker,
     Switch,
-    InputNumber
+    InputNumber,
+    Tabs,
+    Upload,
 } from 'antd';
 import {
-    UploadOutlined,
     PlusOutlined,
     ArrowLeftOutlined,
     PictureOutlined,
-    LoadingOutlined,
-    MinusCircleOutlined
+    MinusCircleOutlined,
+    FileImageOutlined,
+    CloudUploadOutlined,
+    UploadOutlined,
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../components/page-headers/index';
 import {
     collection,
     getDocs,
-    addDoc,
     query,
     orderBy,
     serverTimestamp,
@@ -40,12 +39,11 @@ import {
     doc
 } from 'firebase/firestore';
 import { db, app } from '../../../authentication/firebase';
-import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
+import { getDownloadURL, uploadBytes } from 'firebase/storage';
 import { Editor } from '@tinymce/tinymce-react';
 import Protected from '../../../components/Protected/Protected';
 import { useRouter } from 'next/router';
 import { storage } from '@/lib/firebase-secondary';
-
 const { Option } = Select;
 
 function AddTour() {
@@ -58,9 +56,7 @@ function AddTour() {
     const [selectedTags, setSelectedTags] = useState<{ [key: string]: any }>({});
     const [imageLoading, setImageLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState('');
-    const [editorContent, setEditorContent] = useState('');
     const [itineraryEditorContent, setItineraryEditorContent] = useState<{ [key: string]: string }>({});
-    const [keywordInput, setKeywordInput] = useState('');
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [newCategory, setNewCategory] = useState('');
     const [categorySlug, setCategorySlug] = useState('');
@@ -69,16 +65,120 @@ function AddTour() {
     const [newTag, setNewTag] = useState('');
     const [tagSlug, setTagSlug] = useState('');
     const [tagDescription, setTagDescription] = useState('');
-    const [imageDialogOpen, setImageDialogOpen] = useState(false);
-    const [imageType, setImageType] = useState(''); // 'main' or 'seo'
-    const [archive, setArchive] = useState<any[]>([]);
     const [itineraryImages, setItineraryImages] = useState<{ [key: string]: string[] }>({});
     const [tagForm] = Form.useForm();
-    const [archiveImages, setArchiveImages] = useState<any[]>([])
-    const [showArchive, setShowArchive] = useState(false)
-    const [selectedArchiveImage, setSelectedArchiveImage] = useState("")
-    const [itineraryShowArchive, setItineraryShowArchive] = useState<{ [key: string]: boolean }>({});
-    const [selectedItineraryArchiveImages, setSelectedItineraryArchiveImages] = useState<{ [key: string]: string }>({});
+    const [categoryLoading, setCategoryLoading] = useState(false);
+    const [tagLoading, setTagLoading] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
+    const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+    const [archiveMediaImages, setArchiveMediaImages] = useState<any[]>([]);
+    const [itineraryMediaDialogOpen, setItineraryMediaDialogOpen] = useState(false);
+    const [currentItineraryIndex, setCurrentItineraryIndex] = useState(0);
+    const [archiveOrUpload, setArchiveOrUpload] = useState<'upload' | 'archive'>('upload');
+    const [dontInput, setDontInput] = useState<string>('');
+    const [dontsInputs, setDontsInputs] = useState<string[]>([]);
+    const [includedInput, setIncludedInput] = useState('');
+    const [includedMoreInputs, setIncludedMoreInputs] = useState<string[]>([]);
+    const [notIncludedInput, setNotIncludedInput] = useState('');
+    const [notIncludedInputs, setNotIncludedInputs] = useState<string[]>([]);
+    const [doInput, setDoInput] = useState<string>('');
+    const [dosInputs, setDosInputs] = useState<string[]>([]);
+    const [selectedTourType, setSelectedTourType] = useState('domestic'); // Add state for tour type
+
+    // Video upload state variables
+    const [videoLoading, setVideoLoading] = useState(false);
+    const [videoUrl, setVideoUrl] = useState('');
+    const [videoFileName, setVideoFileName] = useState('');
+
+    const handleDoInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && doInput.trim()) {
+            e.preventDefault();
+            if (!dosInputs.includes(doInput.trim())) {
+                setDosInputs([...dosInputs, doInput.trim()]);
+            }
+            setDoInput('');
+        }
+    };
+
+    const handleDeleteDo = (doToDelete: string) => {
+        setDosInputs(dosInputs.filter((item) => item !== doToDelete));
+    };
+
+    const handleDontInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && dontInput.trim()) {
+            e.preventDefault();
+            const trimmed = dontInput.trim();
+            if (!dontsInputs.includes(trimmed)) {
+                setDontsInputs([...dontsInputs, trimmed]);
+                setDontInput('');
+            }
+        }
+    };
+
+    const handleDeleteDont = (dontToDelete: string) => {
+        setDontsInputs(dontsInputs.filter((item) => item !== dontToDelete));
+    };
+
+    const handleIncludedInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && includedInput.trim()) {
+            e.preventDefault();
+            const trimmed = includedInput.trim();
+            if (!includedMoreInputs.includes(trimmed)) {
+                setIncludedMoreInputs([...includedMoreInputs, trimmed]);
+                setIncludedInput('');
+            }
+        }
+    };
+
+    const handleNotIncludedInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && notIncludedInput.trim()) {
+            e.preventDefault();
+            const trimmed = notIncludedInput.trim();
+            if (!notIncludedInputs.includes(trimmed)) {
+                setNotIncludedInputs([...notIncludedInputs, trimmed]);
+                setNotIncludedInput('');
+            }
+        }
+    };
+
+    const handleDeleteIncluded = (itemToDelete: string) => {
+        setIncludedMoreInputs(includedMoreInputs.filter((item) => item !== itemToDelete));
+    };
+
+    const handleDeleteNotIncluded = (itemToDelete: string) => {
+        setNotIncludedInputs(notIncludedInputs.filter((item) => item !== itemToDelete));
+    };
+
+    // Handle tour type change
+    const handleTourTypeChange = (value: string) => {
+        setSelectedTourType(value);
+        // Clear themeType if switching to international
+        if (value === 'international') {
+            form.setFieldsValue({ themeType: undefined });
+        }
+    };
+
+    // Video upload handler
+    const handleVideoUpload = async (file: File) => {
+        try {
+            if (!storage) {
+                throw new Error("Firebase Storage is not available");
+            }
+            setVideoLoading(true);
+            const storageReference = storageRef(storage, `prathviTravelsMedia/media/${file.name}`);
+            await uploadBytes(storageReference, file);
+            const downloadURL = await getDownloadURL(storageReference);
+            form.setFieldsValue({ videoURL: downloadURL });
+            setVideoFileName(file.name);
+            setVideoUrl(downloadURL);
+            message.success("Video uploaded successfully!");
+        } catch (error) {
+            console.error("Error uploading video:", error);
+            message.error("Failed to upload video. Please try again.");
+        } finally {
+            setVideoLoading(false);
+        }
+    };
 
     const PageRoutes = [
         {
@@ -100,7 +200,7 @@ function AddTour() {
         if (typeof window !== "undefined") {
             fetchCategories();
             fetchTags();
-            fetchArchiveImages();
+            fetchMediaImages();
         }
     }, []);
 
@@ -142,35 +242,20 @@ function AddTour() {
         }
     };
 
-    const fetchArchiveImages = async () => {
+    const fetchMediaImages = async () => {
         try {
-            if (!storage) return;
-            const archiveRef = storageRef(storage, 'prathaviTravelsMedia');
-            const result = await listAll(archiveRef);
-
-            const imagePromises = result.items
-                .filter((item) => {
-                    // ✅ Filter for common image extensions
-                    const isImage = /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(item.name);
-                    return isImage;
-                })
-                .map(async (imageRef) => {
-                    const url = await getDownloadURL(imageRef);
-                    return {
-                        name: imageRef.name,
-                        url,
-                        fullPath: imageRef.fullPath,
-                    };
-                });
-
-            const images = await Promise.all(imagePromises);
-            setArchiveImages(images);
+            const q = query(collection(db, "media"), orderBy("createdAt", "desc"))
+            const querySnapshot = await getDocs(q)
+            const mediaData = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+            setArchiveMediaImages(mediaData)
         } catch (error) {
-            console.error("Error fetching archive images:", error);
-            message.error("Failed to fetch archive images");
+            console.error("Error fetching media images:", error)
+            message.error("Failed to fetch media images")
         }
-    };
-
+    }
 
     const handleImageUpload = async (file: File) => {
         try {
@@ -178,12 +263,16 @@ function AddTour() {
                 throw new Error("Firebase Storage is not available");
             }
             setImageLoading(true);
-
-            // Convert to WebP before uploading
             const webpFile = await convertImageToWebP(file);
-            const storageReference = storageRef(storage, `prathaviTravelsMedia/${webpFile.name}`);
+            const storageReference = storageRef(storage, `prathaviTravelsMedia/media/${webpFile.name}`);
             await uploadBytes(storageReference, webpFile);
             const downloadURL = await getDownloadURL(storageReference);
+            const mediaId = `MID${Date.now()}`;
+            await setDoc(doc(db, "media", mediaId), {
+                name: webpFile.name,
+                image: downloadURL,
+                createdAt: serverTimestamp(),
+            });
             setImageUrl(downloadURL);
             message.success("Image uploaded successfully!");
         } catch (error) {
@@ -194,22 +283,24 @@ function AddTour() {
         }
     };
 
-
     const handleAddCategory = async () => {
         if (typeof window === "undefined" || newCategory.trim() === "") return;
 
         try {
+            setCategoryLoading(true);
+            const categoryId = `CID${Date.now().toString().slice(-6)}`;
             const categoriesRef = collection(db, "categories");
-            const docRef = await addDoc(categoriesRef, {
+            const docRef = await setDoc(doc(db, 'categories', categoryId), {
                 name: newCategory,
                 slug: categorySlug,
                 description: categoryDescription,
                 createdAt: serverTimestamp(),
             });
+
             setCategories([
                 ...categories,
                 {
-                    id: docRef.id,
+                    id: categoryId,
                     name: newCategory,
                     slug: categorySlug,
                     description: categoryDescription,
@@ -223,20 +314,22 @@ function AddTour() {
         } catch (error) {
             console.error("Error adding category:", error);
             message.error("Error adding category. Please try again.");
+        } finally {
+            setCategoryLoading(false);
         }
     };
 
-    const handleArchiveImageSelect = (imageUrl: string) => {
+    const handleMediaImageSelect = (imageUrl: string) => {
         setImageUrl(imageUrl);
-        setSelectedArchiveImage(imageUrl);
-        setShowArchive(false);
-        message.success("Archive image selected!");
-    }
+        setMediaDialogOpen(false);
+        message.success("Image selected from archive!");
+    };
 
     const handleAddTag = async (values: any) => {
         if (typeof window === "undefined") return;
 
         try {
+            setTagLoading(true);
             const tagId = `TID${Date.now().toString().slice(-6)}`;
 
             // Check if tag with same name or slug already exists
@@ -259,6 +352,7 @@ function AddTour() {
             });
 
             const newTagData = {
+                id: tagId,
                 name: values.name.trim(),
                 slug: values.slug.trim(),
                 description: values.description.trim(),
@@ -266,7 +360,6 @@ function AddTour() {
 
             setTags([newTagData, ...tags]);
 
-            // Reset form and close modal
             setNewTag("");
             setTagSlug("");
             setTagDescription("");
@@ -277,42 +370,42 @@ function AddTour() {
         } catch (error) {
             console.error("Error adding tag:", error);
             message.error("Error adding tag. Please try again.");
+        } finally {
+            setTagLoading(false);
         }
     };
 
-    const handleItineraryArchiveImageSelect = (dayIndex: number, imageUrl: string) => {
+    const handleItineraryMediaImageSelect = (imageUrl: string) => {
         setItineraryImages(prev => {
-            const dayImages = prev[`${dayIndex + 1}`] || [];
+            const dayImages = prev[`${currentItineraryIndex + 1}`] || [];
             return {
                 ...prev,
-                [`${dayIndex + 1}`]: [...dayImages, imageUrl]
+                [`${currentItineraryIndex + 1}`]: [...dayImages, imageUrl]
             };
         });
-
-        setSelectedItineraryArchiveImages(prev => ({
-            ...prev,
-            [`${dayIndex}`]: imageUrl
-        }));
-
-        setItineraryShowArchive(prev => ({
-            ...prev,
-            [`${dayIndex}`]: false
-        }));
-
+        setItineraryMediaDialogOpen(false);
         message.success("Archive image selected!");
     };
 
-
-
     const handleItineraryImageUpload = async (dayIndex: number, file: File) => {
         try {
+            if (!storage) {
+                throw new Error("Firebase Storage is not available");
+            }
             setImageLoading(true);
 
-            // Convert to WebP before uploading
             const webpFile = await convertImageToWebP(file);
-            const storageReference = storageRef(storage, `prathaviTravelsMedia/${webpFile.name}`);
+            const storageReference = storageRef(storage, `prathaviTravelsMedia/media/${webpFile.name}`);
             await uploadBytes(storageReference, webpFile);
             const downloadURL = await getDownloadURL(storageReference);
+
+            const mediaId = `MID${Date.now()}`;
+
+            await setDoc(doc(db, "media", mediaId), {
+                name: webpFile.name,
+                image: downloadURL,
+                createdAt: serverTimestamp(),
+            });
 
             setItineraryImages(prev => {
                 const dayImages = prev[`${dayIndex + 1}`] || [];
@@ -322,6 +415,8 @@ function AddTour() {
                 };
             });
 
+            // Refresh media images
+            fetchMediaImages();
             message.success("Itinerary image uploaded successfully");
             return downloadURL;
         } catch (error) {
@@ -343,7 +438,6 @@ function AddTour() {
         message.success("Image removed successfully");
     };
 
-
     const handleSlugGeneration = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value;
         const slug = title
@@ -357,14 +451,16 @@ function AddTour() {
         if (typeof window === "undefined") return;
 
         try {
+            setSubmitLoading(true);
+
             // Process itineraries
             const processedItineraries: { [key: string]: any } = {};
             if (values.itineraries) {
                 values.itineraries.forEach((itinerary: any, index: number) => {
                     const dayKey = `Day${index + 1}`;
                     processedItineraries[dayKey] = {
-                        title: itinerary.title,
-                        description: itineraryEditorContent[`day-${index + 1}`] || itinerary.description, // Use rich editor content
+                        title: itinerary.title || `Day ${index + 1}`,
+                        description: itineraryEditorContent[`day-${index + 1}`] || itinerary.description || '',
                         imageURL: itineraryImages[`${index + 1}`] || []
                     };
                 });
@@ -376,14 +472,12 @@ function AddTour() {
                 processedTags[tagId] = tagData;
             });
 
-            // Generate custom tour ID
             const tourId = `TRID${Date.now().toString().slice(-6)}`;
 
-            // Create tour data
             const tourData = {
-                title: values.title,
-                slug: values.slug,
-                description: values.summary,
+                title: values.title || '',
+                slug: values.slug || '',
+                description: values.description || values.summary || '', 
                 categoryDetails: {
                     categoryID: values.categoryID || "",
                     name: values.categoryName || "",
@@ -391,9 +485,25 @@ function AddTour() {
                     description: values.categoryDescription || "",
                     createdAt: serverTimestamp()
                 },
-                imageURL: imageUrl,
+                imageURL: imageUrl || '',
+                videoURL: videoUrl || '', // Add video URL to tour data
                 isFeatured: values.isFeatured || false,
                 isStartDate: values.isStartDate || false,
+                isOffered: values.isOffered || false,
+                priceShow: values.priceShow || false,
+                dos: dosInputs.filter(item => item.trim() !== ''),
+                donts: dontsInputs.filter(item => item.trim() !== ''),
+                included: {
+                    breakfast: values.breakfast || false,
+                    lunch: values.lunch || false,
+                    dinner: values.dinner || false,
+                    hotel: values.hotel || false,
+                    flights: values.flights || false,
+                    transfers: values.transfers || false,
+                    sightseeing: values.sightseeing || false,
+                },
+                includedMore: includedMoreInputs.filter(item => item.trim() !== ''),
+                notIncluded: notIncludedInputs.filter(item => item.trim() !== ''),
                 itenaries: processedItineraries,
                 location: values.location || "",
                 numberofDays: values.numberOfDays || 0,
@@ -403,23 +513,31 @@ function AddTour() {
                 status: values.status || "active",
                 tags: processedTags,
                 tourType: values.tourType || "domestic",
-                flightIncluded: values.flightIncluded || false,
+                ...(values.tourType === 'domestic' && values.themeType ? { themeType: values.themeType } : {}),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
 
-            // Save with custom ID
-            await setDoc(doc(db, "tours", tourId), tourData);
+            // Additional validation to ensure no undefined values
+            const cleanedTourData = Object.fromEntries(
+                Object.entries(tourData).map(([key, value]) => [
+                    key,
+                    value === undefined ? '' : value
+                ])
+            );
+
+            await setDoc(doc(db, "tours", tourId), cleanedTourData);
             message.success("Tour created successfully");
             router.push("/admin/tours");
 
         } catch (error) {
             console.error("Error saving tour:", error);
             message.error("Failed to save tour");
+        } finally {
+            setSubmitLoading(false);
         }
     };
 
-    // Function to add a tag to selected tags
     const handleAddSelectedTag = (tagId: string, tagData: any) => {
         setSelectedTags(prev => ({
             ...prev,
@@ -427,7 +545,6 @@ function AddTour() {
         }));
     };
 
-    // Function to remove a tag from selected tags
     const handleRemoveSelectedTag = (tagId: string) => {
         const newSelectedTags = { ...selectedTags };
         delete newSelectedTags[tagId];
@@ -437,7 +554,6 @@ function AddTour() {
     const handleCategoryChange = (value: string | number) => {
         const selectedCategory = categories.find(category => category.id === value);
         if (selectedCategory) {
-            // Set the rest of the category details in the form
             form.setFieldsValue({
                 categoryName: selectedCategory.name,
                 categorySlug: selectedCategory.slug,
@@ -450,7 +566,6 @@ function AddTour() {
         if (!value || value <= 0) return;
 
         const currentItineraries = form.getFieldValue('itineraries') || [];
-
         if (value > currentItineraries.length) {
             const newItineraries = [...currentItineraries];
             for (let i = currentItineraries.length; i < value; i++) {
@@ -462,14 +577,12 @@ function AddTour() {
             const newItineraries = currentItineraries.slice(0, value);
             form.setFieldsValue({ itineraries: newItineraries });
 
-            // Clean up itinerary editor content for removed days
             const newItineraryEditorContent = { ...itineraryEditorContent };
             for (let i = value; i < currentItineraries.length; i++) {
                 delete newItineraryEditorContent[`day-${i + 1}`];
             }
             setItineraryEditorContent(newItineraryEditorContent);
 
-            // Clean up itinerary images for removed days
             const newItineraryImages = { ...itineraryImages };
             for (let i = value; i < currentItineraries.length; i++) {
                 delete newItineraryImages[`${i + 1}`];
@@ -479,20 +592,17 @@ function AddTour() {
     };
 
     const handleItineraryEditorChange = (content: string, index: number) => {
-        // Update the editor content state
         setItineraryEditorContent(prev => ({
             ...prev,
             [`day-${index + 1}`]: content
         }));
 
-        // Also update the form field value
         const itineraries = form.getFieldValue('itineraries');
         if (itineraries && itineraries[index]) {
             itineraries[index].description = content;
             form.setFieldsValue({ itineraries });
         }
     };
-
 
     return (
         <>
@@ -560,37 +670,69 @@ function AddTour() {
 
                                             <Row gutter={24}>
                                                 <Col span={8}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Start Date</span>}
-                                                        name="startDate"
-                                                    >
+                                                    <Form.Item className="mb-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-dark dark:text-white/[.87] font-medium">Start Date</span>
+                                                            <Form.Item
+                                                                name="isStartDate"
+                                                                valuePropName="checked"
+                                                                initialValue={false}
+                                                                noStyle
+                                                            >
+                                                                <Switch className="custom-switch" />
+                                                            </Form.Item>
+                                                        </div>
+                                                    </Form.Item>
+                                                    <Form.Item name="startDate" className="mb-4">
                                                         <DatePicker
-                                                            className="w-full py-2"
+                                                            className="w-full"
+                                                            style={{ height: 40 }}
                                                             format="YYYY-MM-DD"
                                                         />
                                                     </Form.Item>
                                                 </Col>
+
                                                 <Col span={8}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Use Start Date</span>}
-                                                        name="isStartDate"
-                                                        valuePropName="checked"
-                                                        initialValue={false}
-                                                    >
-                                                        <Switch className='bg-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none' />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={8}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Status</span>}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium mt-1">Status</span>}
                                                         name="status"
                                                         initialValue="active"
+                                                        className="mb-4 "
                                                     >
-                                                        <Select className="w-full">
+                                                        <Select
+                                                            className="w-full custom-select-height mt-1"
+                                                            dropdownStyle={{ borderRadius: "2px" }}
+                                                            size="large"
+                                                        >
                                                             <Option value="active">Active</Option>
                                                             <Option value="inactive">Inactive</Option>
-                                                            <Option value="draft">Draft</Option>
                                                         </Select>
+                                                    </Form.Item>
+                                                </Col>
+
+                                                <Col span={8}>
+                                                    <Form.Item className="mb-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-dark dark:text-white/[.87] font-medium">Price (₹)</span>
+                                                            <Form.Item
+                                                                name="priceShow"
+                                                                valuePropName="checked"
+                                                                noStyle
+                                                            >
+                                                                <Switch className="custom-switch" />
+                                                            </Form.Item>
+                                                        </div>
+                                                    </Form.Item>
+                                                    <Form.Item
+                                                        name="price"
+                                                        rules={[{ required: true, message: 'Please enter tour price' }]}
+                                                        className="mb-4"
+                                                    >
+                                                        <Input
+                                                            className="w-full"
+                                                            style={{ height: 40, width: '100%' }}
+                                                            placeholder="Enter price"
+                                                        />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -625,22 +767,6 @@ function AddTour() {
                                                 </Col>
                                                 <Col span={8}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Price (₹)</span>}
-                                                        name="price"
-                                                        rules={[{ required: true, message: 'Please enter tour price' }]}
-                                                    >
-                                                        <InputNumber
-                                                            className="w-full py-2"
-                                                            min={0}
-                                                            placeholder="Enter price"
-                                                        />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
-                                                <Col span={8}>
-                                                    <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Location</span>}
                                                         name="location"
                                                         rules={[{ required: true, message: 'Please enter tour location' }]}
@@ -651,39 +777,167 @@ function AddTour() {
                                                         />
                                                     </Form.Item>
                                                 </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
                                                 <Col span={8}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Tour Type</span>}
                                                         name="tourType"
+                                                        rules={[{ required: true, message: 'Please select tour type!' }]}
                                                         initialValue="domestic"
                                                     >
-                                                        <Select className="w-full">
+                                                        <Select
+                                                            className="w-full"
+                                                            placeholder="Select tour type"
+                                                            onChange={handleTourTypeChange}
+                                                        >
                                                             <Option value="domestic">Domestic</Option>
                                                             <Option value="international">International</Option>
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
                                                 <Col span={8}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Flight Included</span>}
-                                                        name="flightIncluded"
-                                                        valuePropName="checked"
-                                                        initialValue={false}
-                                                    >
-                                                        <Switch className='bg-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none' />
+                                                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Do's</span>}>
+                                                        <Input
+                                                            placeholder="Type a do and press Enter"
+                                                            value={doInput}
+                                                            onChange={(e) => setDoInput(e.target.value)}
+                                                            onKeyPress={handleDoInputKeyPress}
+                                                            className="py-2"
+                                                        />
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {dosInputs.map((item, index) => (
+                                                                <Tag
+                                                                    key={index}
+                                                                    closable
+                                                                    onClose={() => handleDeleteDo(item)}
+                                                                    className="m-1 py-1 px-3"
+                                                                >
+                                                                    {item}
+                                                                </Tag>
+                                                            ))}
+                                                        </div>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={8}>
+                                                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Don'ts</span>}>
+                                                        <Input
+                                                            placeholder="Type a don't and press Enter"
+                                                            value={dontInput}
+                                                            onChange={(e) => setDontInput(e.target.value)}
+                                                            onKeyPress={handleDontInputKeyPress}
+                                                            className="py-2"
+                                                        />
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {dontsInputs.map((item, index) => (
+                                                                <Tag
+                                                                    key={index}
+                                                                    closable
+                                                                    onClose={() => handleDeleteDont(item)}
+                                                                    className="m-1 py-1 px-3"
+                                                                >
+                                                                    {item}
+                                                                </Tag>
+                                                            ))}
+                                                        </div>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
 
                                             <Row gutter={24}>
                                                 <Col span={8}>
+                                                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Additional Included Items</span>}>
+                                                        <Input
+                                                            placeholder="Type included item and press Enter"
+                                                            value={includedInput}
+                                                            onChange={(e) => setIncludedInput(e.target.value)}
+                                                            onKeyPress={handleIncludedInputKeyPress}
+                                                            className="py-2"
+                                                        />
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {includedMoreInputs.map((item, index) => (
+                                                                <Tag
+                                                                    key={index}
+                                                                    closable
+                                                                    onClose={() => handleDeleteIncluded(item)}
+                                                                    className="m-1 py-1 px-3"
+                                                                >
+                                                                    {item}
+                                                                </Tag>
+                                                            ))}
+                                                        </div>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={8}>
+                                                    <Form.Item label={<span className="text-dark dark:text-white/[.87] font-medium">Not Included Items</span>}>
+                                                        <Input
+                                                            placeholder="Type not included item and press Enter"
+                                                            value={notIncludedInput}
+                                                            onChange={(e) => setNotIncludedInput(e.target.value)}
+                                                            onKeyPress={handleNotIncludedInputKeyPress}
+                                                            className="py-2"
+                                                        />
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {notIncludedInputs.map((item, index) => (
+                                                                <Tag
+                                                                    key={index}
+                                                                    closable
+                                                                    onClose={() => handleDeleteNotIncluded(item)}
+                                                                    className="m-1 py-1 px-3"
+                                                                >
+                                                                    {item}
+                                                                </Tag>
+                                                            ))}
+                                                        </div>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={4}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Featured</span>}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Show in Featured</span>}
                                                         name="isFeatured"
                                                         valuePropName="checked"
                                                         initialValue={false}
                                                     >
-                                                        <Switch className='bg-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none' />
+                                                        <Switch className="custom-switch" />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={4}>
+                                                    <Form.Item name="isOffered" valuePropName="checked" label="Show in Grab Offer">
+                                                        <Switch className="custom-switch" />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
+                                                <Col span={24}>
+                                                    <Form.Item
+                                                        label={
+                                                            <span className="text-dark dark:text-white/[.87] font-medium">
+                                                                Included Services
+                                                            </span>
+                                                        }
+                                                    >
+                                                        <Row gutter={50}>
+                                                            {[
+                                                                'breakfast',
+                                                                'lunch',
+                                                                'dinner',
+                                                                'hotel',
+                                                                'flights',
+                                                                'transfers',
+                                                                'sightseeing'
+                                                            ].map((service) => (
+                                                                <Col span={3} key={service}>
+                                                                    <label className="block text-sm font-medium text-dark dark:text-white/[.87] mb-1 capitalize">
+                                                                        {service}
+                                                                    </label>
+                                                                    <Form.Item name={service} valuePropName="checked" noStyle>
+                                                                        <Switch className="custom-switch" />
+                                                                    </Form.Item>
+                                                                </Col>
+                                                            ))}
+                                                        </Row>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -733,6 +987,28 @@ function AddTour() {
                                                         <Input />
                                                     </Form.Item>
                                                 </Col>
+                                                {selectedTourType === 'domestic' && (
+                                                    <Col span={8}>
+                                                        <Form.Item
+                                                            label={<span className="text-dark dark:text-white/[.87] font-medium">Theme Type</span>}
+                                                            name="themeType"
+                                                            rules={[
+                                                                {
+                                                                    required: selectedTourType === 'domestic',
+                                                                    message: 'Please select theme type'
+                                                                }
+                                                            ]}
+                                                        >
+                                                            <Select className="w-full" placeholder="Select theme type">
+                                                                <Option value="east">East</Option>
+                                                                <Option value="west">West</Option>
+                                                                <Option value="north">North</Option>
+                                                                <Option value="south">South</Option>
+                                                                <Option value="centre">Centre</Option>
+                                                            </Select>
+                                                        </Form.Item>
+                                                    </Col>
+                                                )}
                                             </Row>
 
 
@@ -776,61 +1052,21 @@ function AddTour() {
                                             </Row>
 
                                             <Row gutter={24}>
-                                                <Col span={12}>
+                                                <Col span={6}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Image</span>}
                                                     >
                                                         <div className="space-y-3">
                                                             <div className="flex gap-4 mb-4">
                                                                 <Button
-                                                                    onClick={() => setShowArchive(!showArchive)}
+                                                                    onClick={() => setMediaDialogOpen(true)}
                                                                     icon={<PictureOutlined />}
-                                                                    className="border-primary text-primary hover:bg-primary hover:text-white"
-                                                                >
-                                                                    {showArchive ? 'Hide Archive' : 'Show Archive'}
-                                                                </Button>
-                                                                <Button
-                                                                    onClick={() => {
-                                                                        const input = document.createElement('input');
-                                                                        input.type = 'file';
-                                                                        input.accept = 'image/*';
-                                                                        input.onchange = (e) => {
-                                                                            const file = (e.target as HTMLInputElement).files?.[0];
-                                                                            if (file) handleImageUpload(file);
-                                                                        };
-                                                                        input.click();
-                                                                    }}
-                                                                    icon={<UploadOutlined />}
-                                                                    loading={imageLoading}
                                                                     className="bg-primary text-white hover:bg-primary-hb"
+                                                                    size="large"
                                                                 >
-                                                                    {imageLoading ? 'Uploading...' : 'Upload Image'}
+                                                                    Select Image
                                                                 </Button>
                                                             </div>
-
-                                                            {showArchive && (
-                                                                <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
-                                                                    <div className="grid grid-cols-3 gap-2">
-                                                                        {archiveImages.map((image, index) => (
-                                                                            <div
-                                                                                key={index}
-                                                                                className={`cursor-pointer border-2 rounded-md overflow-hidden h-28 ${selectedArchiveImage === image.url ? 'border-primary' : 'border-gray-200'}`}
-                                                                                onClick={() => handleArchiveImageSelect(image.url)}
-                                                                            >
-                                                                                <img
-                                                                                    src={image.url}
-                                                                                    alt={image.name}
-                                                                                    className="w-full h-full object-cover"
-                                                                                />
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                    {archiveImages.length === 0 && (
-                                                                        <p className="text-center text-gray-500 py-4">No archive images found</p>
-                                                                    )}
-                                                                </div>
-                                                            )}
-
 
                                                             {imageUrl && (
                                                                 <div className="mt-2">
@@ -844,6 +1080,51 @@ function AddTour() {
                                                         </div>
                                                     </Form.Item>
                                                 </Col>
+
+                                                <Col span={6}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Video</span>}
+                                                    >
+                                                        <Upload
+                                                            name="video"
+                                                            accept="video/*"
+                                                            showUploadList={false}
+                                                            beforeUpload={(file) => {
+                                                                handleVideoUpload(file);
+                                                                return false;
+                                                            }}
+                                                        >
+                                                            <Button
+                                                                icon={<UploadOutlined />}
+                                                                type="primary"
+                                                                className="bg-primary hover:bg-primary-hbr "
+                                                                loading={videoLoading}
+                                                                size="large"
+                                                            >
+                                                                {videoLoading ? 'Uploading...' : 'Upload Video'}
+                                                            </Button>
+                                                        </Upload>
+
+                                                        {videoUrl && (
+                                                            <div className="mt-4">
+                                                                <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                                                                    <video
+                                                                        controls
+                                                                        className="w-full max-w-md h-auto"
+                                                                        style={{ maxHeight: '300px' }}
+                                                                        preload="metadata"
+                                                                    >
+                                                                        <source src={videoUrl} type="video/mp4" />
+                                                                        <source src={videoUrl} type="video/webm" />
+                                                                        <source src={videoUrl} type="video/ogg" />
+                                                                        Your browser does not support the video tag.
+                                                                    </video>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </Form.Item>
+                                                </Col>
+
                                             </Row>
                                         </div>
 
@@ -921,58 +1202,17 @@ function AddTour() {
                                                                     <div className="space-y-3">
                                                                         <div className="flex gap-4 mb-4">
                                                                             <Button
-                                                                                onClick={() => setItineraryShowArchive(prev => ({
-                                                                                    ...prev,
-                                                                                    [`${index}`]: !prev[`${index}`]
-                                                                                }))}
-                                                                                icon={<PictureOutlined />}
-                                                                                className="border-primary text-primary hover:bg-primary hover:text-white"
-                                                                            >
-                                                                                {itineraryShowArchive[`${index}`] ? 'Hide Archive' : 'Show Archive'}
-                                                                            </Button>
-                                                                            <Button
                                                                                 onClick={() => {
-                                                                                    const input = document.createElement('input');
-                                                                                    input.type = 'file';
-                                                                                    input.accept = 'image/*';
-                                                                                    input.onchange = (e) => {
-                                                                                        const file = (e.target as HTMLInputElement).files?.[0];
-                                                                                        if (file) handleItineraryImageUpload(index, file);
-                                                                                    };
-                                                                                    input.click();
+                                                                                    setCurrentItineraryIndex(index);
+                                                                                    setItineraryMediaDialogOpen(true);
                                                                                 }}
-                                                                                icon={<UploadOutlined />}
-                                                                                loading={imageLoading}
+                                                                                icon={<PictureOutlined />}
                                                                                 className="bg-primary text-white hover:bg-primary-hb"
+                                                                                size='large'
                                                                             >
-                                                                                {imageLoading ? 'Uploading...' : 'Upload Image'}
+                                                                                Select Image
                                                                             </Button>
                                                                         </div>
-
-                                                                        {itineraryShowArchive[`${index}`] && (
-                                                                            <div className="border rounded-md p-3 max-h-60 overflow-y-auto w-[45rem]"> {/* 👈 increased width from w-72 to w-96 */}
-                                                                                <div className="grid grid-cols-3 gap-3"> {/* 👈 slightly more spacing between images */}
-                                                                                    {archiveImages.map((image, imgIndex) => (
-                                                                                        <div
-                                                                                            key={imgIndex}
-                                                                                            className={`cursor-pointer border-2 rounded-md overflow-hidden h-28 ${selectedItineraryArchiveImages === image.url ? 'border-primary' : 'border-gray-200'}`} // 👈 increased image height a bit
-                                                                                            onClick={() => handleItineraryArchiveImageSelect(index, image.url)}
-                                                                                        >
-                                                                                            <img
-                                                                                                src={image.url}
-                                                                                                alt={image.name}
-                                                                                                className="w-full h-full object-cover object-center"
-                                                                                            />
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                                {archiveImages.length === 0 && (
-                                                                                    <p className="text-center text-gray-500 py-4">No archive images found</p>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
-
-
 
                                                                         {itineraryImages[`${index + 1}`] && itineraryImages[`${index + 1}`].length > 0 && (
                                                                             <div className="mt-2">
@@ -1030,9 +1270,10 @@ function AddTour() {
                                                 <Button
                                                     type="primary"
                                                     htmlType="submit"
+                                                    loading={submitLoading}
                                                     className="px-5 h-10 shadow-none bg-primary hover:bg-primary-hbr"
                                                 >
-                                                    Create Tour
+                                                    {submitLoading ? 'Creating...' : 'Create Tour'}
                                                 </Button>
                                             </Space>
                                         </div>
@@ -1041,27 +1282,31 @@ function AddTour() {
                             </div>
                         </Card>
                     </Col>
-                </Row>
-            </main>
+                </Row >
+            </main >
 
             {/* Category Dialog */}
-            <Modal
+            < Modal
                 title={
-                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    < div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700" >
                         <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
                             {"Add New Category"}
                         </span>
-                    </div>
+                    </div >
                 }
                 open={categoryDialogOpen}
                 onCancel={() => setCategoryDialogOpen(false)}
                 footer={
-                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                    < div className="flex justify-end gap-2 pr-6 pb-4" >
                         <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
-                        <Button type="primary" onClick={handleAddCategory}>
-                            OK
+                        <Button
+                            type="primary"
+                            onClick={handleAddCategory}
+                            loading={categoryLoading}
+                        >
+                            {categoryLoading ? 'Adding...' : 'Add Category'}
                         </Button>
-                    </div>
+                    </div >
                 }
                 width="95%"
                 style={{ maxWidth: '500px' }}
@@ -1091,16 +1336,16 @@ function AddTour() {
                         />
                     </Form.Item>
                 </Form>
-            </Modal>
+            </Modal >
 
             {/* Tag Dialog */}
-            <Modal
+            < Modal
                 title={
-                    <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    < div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700" >
                         <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
                             Add New Tag
                         </span>
-                    </div>
+                    </div >
                 }
                 open={tagDialogOpen}
                 onCancel={() => {
@@ -1112,10 +1357,9 @@ function AddTour() {
                     tagForm.resetFields();
                 }}
                 footer={
-                    <div className="flex justify-end gap-2 pr-6 pb-4">
+                    < div className="flex justify-end gap-2 pr-6 pb-4" >
                         <Button onClick={() => {
                             setTagDialogOpen(false);
-                            // Reset form fields when cancelled
                             setNewTag('');
                             setTagSlug('');
                             setTagDescription('');
@@ -1126,11 +1370,11 @@ function AddTour() {
                         <Button
                             type="primary"
                             onClick={() => tagForm.submit()}
-                            loading={false} // You can add loading state if needed
+                            loading={tagLoading}
                         >
-                            Add Tag
+                            {tagLoading ? 'Adding...' : 'Add Tag'}
                         </Button>
-                    </div>
+                    </div >
                 }
                 width="95%"
                 style={{ maxWidth: '500px' }}
@@ -1213,9 +1457,240 @@ function AddTour() {
                         />
                     </Form.Item>
                 </Form>
+            </Modal >
+
+            <Modal
+                title={
+                    <h3 className="text-lg font-semibold px-4 py-2">
+                        Select Image
+                    </h3>
+                }
+                open={mediaDialogOpen}
+                onCancel={() => setMediaDialogOpen(false)}
+                footer={null}
+                width="95%"
+                style={{ maxWidth: '1000px' }}
+                bodyStyle={{ padding: '16px 24px 24px' }}
+                className="responsive-modal"
+            >
+                <Tabs
+                    defaultActiveKey="upload"
+                    onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
+                    className="mt-2"
+                    items={[
+                        {
+                            key: 'upload',
+                            label: (
+                                <span className="flex items-center">
+                                    <CloudUploadOutlined className="mr-2" />
+                                    Upload New Image
+                                </span>
+                            ),
+                            children: (
+                                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
+                                    <label htmlFor="modal-image-upload" className="cursor-pointer text-center">
+                                        <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
+                                        <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
+                                        <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
+                                        <Button
+                                            type="primary"
+                                            icon={<CloudUploadOutlined />}
+                                            onClick={() => {
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.onchange = (e) => {
+                                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                                    if (file) {
+                                                        handleImageUpload(file).then(() => {
+                                                            setMediaDialogOpen(false);
+                                                        });
+                                                    }
+                                                };
+                                                input.click();
+                                            }}
+                                            className="bg-primary hover:bg-primary-hbr"
+                                            loading={imageLoading}
+                                        >
+                                            {imageLoading ? 'Uploading...' : 'Select File'}
+                                        </Button>
+                                    </label>
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'archive',
+                            label: (
+                                <span className="flex items-center">
+                                    <FileImageOutlined className="mr-2" />
+                                    Choose from Archive
+                                </span>
+                            ),
+                            children: (
+                                <div className="mt-4">
+                                    <div className="flex items-center justify-between mb-5 px-1">
+                                        <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
+                                        <label htmlFor="modal-archive-upload" className="cursor-pointer">
+                                            <input
+                                                id="modal-archive-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImageUpload(file);
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    <div className="border border-gray-200 dark:border-white/10 rounded-md">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
+                                            {archiveMediaImages.length > 0 ? (
+                                                archiveMediaImages.map((media) => (
+                                                    <div
+                                                        key={media.id}
+                                                        className="cursor-pointer border rounded p-2 transition-all hover:border-primary"
+                                                        onClick={() => handleMediaImageSelect(media.image)}
+                                                    >
+                                                        <img
+                                                            src={media.image}
+                                                            alt={media.name}
+                                                            className="w-full max-h-40 object-contain"
+                                                        />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-4 text-center py-8 text-gray-500 dark:text-white/60">
+                                                    <PictureOutlined className="text-4xl mb-2" />
+                                                    <p>No images in archive</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ),
+                        },
+                    ]}
+                />
+            </Modal>
+
+            <Modal
+                title={
+                    <h3 className="text-lg font-semibold px-4 py-2">
+                        Select Itinerary Image
+                    </h3>
+                }
+                open={itineraryMediaDialogOpen}
+                onCancel={() => setItineraryMediaDialogOpen(false)}
+                footer={null}
+                width="95%"
+                style={{ maxWidth: '1000px' }}
+                bodyStyle={{ padding: '16px 24px 24px' }}
+                className="responsive-modal"
+            >
+                <Tabs
+                    defaultActiveKey="upload"
+                    onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
+                    className="mt-2"
+                    items={[
+                        {
+                            key: 'upload',
+                            label: (
+                                <span className="flex items-center">
+                                    <CloudUploadOutlined className="mr-2" />
+                                    Upload New Image
+                                </span>
+                            ),
+                            children: (
+                                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
+                                    <label htmlFor="modal-itinerary-upload" className="cursor-pointer text-center">
+                                        <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
+                                        <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
+                                        <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
+                                        <Button
+                                            type="primary"
+                                            icon={<CloudUploadOutlined />}
+                                            onClick={() => {
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.onchange = (e) => {
+                                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                                    if (file) {
+                                                        handleItineraryImageUpload(currentItineraryIndex, file).then(() => {
+                                                            setItineraryMediaDialogOpen(false);
+                                                        });
+                                                    }
+                                                };
+                                                input.click();
+                                            }}
+                                            className="bg-primary hover:bg-primary-hbr"
+                                            loading={imageLoading}
+                                        >
+                                            {imageLoading ? 'Uploading...' : 'Select File'}
+                                        </Button>
+                                    </label>
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'archive',
+                            label: (
+                                <span className="flex items-center">
+                                    <FileImageOutlined className="mr-2" />
+                                    Choose from Archive
+                                </span>
+                            ),
+                            children: (
+                                <div className="mt-4">
+                                    <div className="flex items-center justify-between mb-5 px-1">
+                                        <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
+                                        <label htmlFor="modal-itinerary-archive-upload" className="cursor-pointer">
+                                            <input
+                                                id="modal-itinerary-archive-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleItineraryImageUpload(currentItineraryIndex, file);
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    <div className="border border-gray-200 dark:border-white/10 rounded-md">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
+                                            {archiveMediaImages.length > 0 ? (
+                                                archiveMediaImages.map((media) => (
+                                                    <div
+                                                        key={media.id}
+                                                        className="cursor-pointer border rounded p-2 transition-all hover:border-primary"
+                                                        onClick={() => handleItineraryMediaImageSelect(media.image)}
+                                                    >
+                                                        <img
+                                                            src={media.image}
+                                                            alt={media.name}
+                                                            className="w-full max-h-40 object-contain"
+                                                        />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-4 text-center py-8 text-gray-500 dark:text-white/60">
+                                                    <PictureOutlined className="text-4xl mb-2" />
+                                                    <p>No images in archive</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ),
+                        },
+                    ]}
+                />
             </Modal>
         </>
     );
 }
-
-export default Protected(AddTour, ["admin"]);
+export default Protected(AddTour, ["admin", "tours", "tours+media"]);

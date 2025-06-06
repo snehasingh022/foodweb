@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Row,
@@ -14,9 +13,8 @@ import {
   Tabs,
   Spin,
   Tag,
+  Switch,
   InputRef,
-  Dropdown,
-  MenuProps,
   Typography
 } from 'antd';
 import {
@@ -25,11 +23,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
-  MoreOutlined,
-  ReloadOutlined,
-  FilterOutlined,
-  CheckCircleOutlined,
-  PaperClipOutlined
+  PaperClipOutlined,
+  GiftOutlined
 } from '@ant-design/icons';
 import { collection, getDocs, doc, deleteDoc, query, orderBy, where, getDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
@@ -40,7 +35,6 @@ import { useMediaQuery } from 'react-responsive';
 
 const { Text } = Typography;
 
-// Tour interface
 interface Tour {
   id: string;
   name: string;
@@ -73,6 +67,25 @@ interface Tour {
   imageURL?: string;
   itenaries?: Record<string, any>;
   tourType?: string;
+  isOffered?: boolean;
+  priceShow?: boolean;
+  videoURL?: string;
+  themeType?: string;
+  categoryDetails?: Record<string, any>;
+  included?: {
+    breakfast?: boolean;
+    dinner?: boolean;
+    flights?: boolean;
+    hotel?: boolean;
+    lunch?: boolean;
+    sightseeing?: boolean;
+    transfers?: boolean;
+  };
+  includedMore?: string[];
+  notIncluded?: string[];
+  dos?: string[];
+  donts?: string[];
+  tags?: Record<string, any>;
 }
 
 function Tours() {
@@ -84,28 +97,22 @@ function Tours() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [tourToDelete, setTourToDelete] = useState<Tour | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
-
-  // Added for View Details Modal
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [currentTour, setCurrentTour] = useState<Tour | null>(null);
   const [tourDetailLoading, setTourDetailLoading] = useState(false);
-
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const searchInputRef = useRef<InputRef>(null);
+  const [offeredFilter, setOfferedFilter] = useState(false);
+  const [featuredFilter, setFeaturedFilter] = useState(false);
 
-  // Fetch tours from Firestore
   const fetchTours = async () => {
     if (typeof window === "undefined") return;
 
     try {
       setLoading(true);
       console.log("Querying Firestore for tours...");
-
-      // Create a query against the collection
       const toursCollection = collection(db, "tours");
       const toursQuery = query(toursCollection, orderBy("createdAt", "desc"));
-
-      // Get the snapshot
       const snapshot = await getDocs(toursQuery);
 
       if (snapshot.empty) {
@@ -115,7 +122,6 @@ function Tours() {
         return;
       }
 
-      // Map the documents to our Tour interface
       const data = snapshot.docs.map((doc) => {
         const docData = doc.data();
         return {
@@ -146,6 +152,17 @@ function Tours() {
           isStartDate: docData.isStartDate || false,
           startDate: docData.startDate || null,
           tourType: docData.tourType || '',
+          isOffered: docData.isOffered || false,
+          priceShow: docData.priceShow || false,
+          videoURL: docData.videoURL || '',
+          themeType: docData.themeType || '',
+          categoryDetails: docData.categoryDetails || {},
+          included: docData.included || {},
+          includedMore: docData.includedMore || [],
+          notIncluded: docData.notIncluded || [],
+          dos: docData.dos || [],
+          donts: docData.donts || [],
+          tags: docData.tags || {},
         };
       });
 
@@ -159,18 +176,12 @@ function Tours() {
     }
   };
 
+
   useEffect(() => {
     console.log("Fetching tours on component mount...");
     fetchTours();
   }, []);
 
-  // Show delete confirmation modal
-  const showDeleteModal = (record: Tour) => {
-    setTourToDelete(record);
-    setDeleteModalVisible(true);
-  };
-
-  // Confirm delete action
   const confirmDelete = async () => {
     try {
       setSubmitLoading(true);
@@ -189,15 +200,15 @@ function Tours() {
     }
   };
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchText(value);
   };
 
-  // Filter data based on active status and search text
   const filteredData = tours.filter((tour) => {
     const matchesStatus = activeFilter === 'all' || tour.status === activeFilter;
+    const matchesOffered = !offeredFilter || tour.isOffered === true;
+    const matchesFeatured = !featuredFilter || tour.isFeatured === true || tour.featured === true;
     const searchLower = searchText.toLowerCase();
 
     const matchesSearch =
@@ -207,41 +218,14 @@ function Tours() {
       (tour.location && tour.location.toLowerCase().includes(searchLower)) ||
       (tour.description && tour.description.toLowerCase().includes(searchLower));
 
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch && matchesOffered && matchesFeatured;
   });
-
-  // Action menu for mobile view
-  const getActionMenu = (record: Tour): MenuProps => {
-    return {
-      items: [
-        {
-          key: '1',
-          label: 'View',
-          icon: <EyeOutlined />,
-          onClick: () => handleViewDetails(record),
-        },
-        {
-          key: '2',
-          label: 'Edit',
-          icon: <EditOutlined />,
-          onClick: () => router.push(`/admin/tours/edit/${record.id}`),
-        },
-        {
-          key: '3',
-          label: 'Delete',
-          icon: <DeleteOutlined />,
-          danger: true,
-          onClick: () => showDeleteModal(record),
-        },
-      ],
-    };
-  };
 
   const handleDelete = async (id: string) => {
     if (typeof window === "undefined") return;
 
     Modal.confirm({
-      icon: null, // Removes default icon
+      icon: null,
       title: (
         <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
@@ -257,7 +241,7 @@ function Tours() {
       okText: 'Yes, delete it',
       okType: 'danger',
       cancelText: 'Cancel',
-      className: 'custom-confirm-modal', // Use this class for styling buttons
+      className: 'custom-confirm-modal',
       onOk: async () => {
         try {
           await deleteDoc(doc(db, "tours", id));
@@ -272,13 +256,11 @@ function Tours() {
 
   };
 
-  // Handle edit button click
   const handleEdit = (record: Tour) => {
     console.log("Editing tour with ID:", record.id);
     router.push(`/admin/tours/edit/${record.id}`);
   };
 
-  // Table columns with responsive adjustments
   const getColumns = () => {
     const baseColumns: any = [
       {
@@ -294,8 +276,8 @@ function Tours() {
         render: (text: string, record: Tour) => {
           const titleText = text || record.name || 'N/A';
           const words = titleText.split(' ');
-          const truncatedTitle = words.length > 4 
-            ? words.slice(0, 4).join(' ') + '...' 
+          const truncatedTitle = words.length > 4
+            ? words.slice(0, 4).join(' ') + '...'
             : titleText;
           return <span className="font-medium">{truncatedTitle}</span>;
         },
@@ -371,7 +353,6 @@ function Tours() {
     return baseColumns;
   };
 
-  // Tab items for filtering
   const tabItems = [
     {
       key: 'all',
@@ -387,31 +368,17 @@ function Tours() {
     },
   ];
 
-  // Function to get itinerary details
-  const getItineraryPreview = () => {
-    if (!currentTour || !currentTour.itenaries) return "No itinerary available";
-
-    const days = Object.keys(currentTour.itenaries).sort();
-    if (days.length === 0) return "No itinerary available";
-
-    // Return the first day's title only
-    const firstDay = days[0];
-    return currentTour.itenaries[firstDay]?.title || "Itinerary available";
-  };
-
   const handleViewDetails = async (record: Tour) => {
     try {
       setTourDetailLoading(true);
       setCurrentTour(record);
 
-      // For detailed view, we fetch the complete document with all data
       const tourRef = doc(db, "tours", record.id);
       const tourSnap = await getDoc(tourRef);
 
       if (tourSnap.exists()) {
         const tourData = tourSnap.data() as Tour;
 
-        // Process the data to ensure all properties are properly set
         const processedTour = {
           ...record,
           ...tourData,
@@ -434,31 +401,23 @@ function Tours() {
     }
   };
 
-  // Helper function to process itineraries data
   const processItineraries = (itenaries: Record<string, any>) => {
     const processed: Record<string, any> = {};
 
-    // Process each day's data
     Object.keys(itenaries).forEach(day => {
       const dayData = itenaries[day];
 
       processed[day] = {
         ...dayData,
-        // Ensure imageURL is always an array
         imageURL: Array.isArray(dayData.imageURL) ? dayData.imageURL :
           (dayData.imageURL ? [dayData.imageURL] : [])
       };
     });
-
     return processed;
   };
 
-  // Helper function to process tags data
   const processTags = (tags: Record<string, any>) => {
-    // If tags is empty, return empty object
     if (!tags || Object.keys(tags).length === 0) return {};
-
-    // Return as is if it's already in the correct format
     return tags;
   };
 
@@ -510,21 +469,43 @@ function Tours() {
             </div>
           </Col>
         </Row>
-
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
               <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
                 <div className="p-6 sm:p-[30px]">
-                  <Tabs
-                    activeKey={activeFilter}
-                    onChange={(key) => setActiveFilter(key as 'active' | 'inactive' | 'all')}
-                    items={tabItems}
-                    className="mb-4"
-                    size={isMobile ? 'small' : 'middle'}
-                    centered={isMobile}
-                  />
-
+                  <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <Tabs
+                      activeKey={activeFilter}
+                      onChange={(key) => setActiveFilter(key as 'active' | 'inactive' | 'all')}
+                      items={tabItems}
+                      size={isMobile ? 'small' : 'middle'}
+                      centered={isMobile}
+                      className="flex-1 min-w-0"
+                    />
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded border">
+                        <GiftOutlined className="text-orange-500" />
+                        <span className="text-sm">Offered</span>
+                        <Switch
+                          size="small"
+                          className="custom-switch"
+                          checked={offeredFilter}
+                          onChange={setOfferedFilter}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded border">
+                        <span className="text-purple-500">⭐</span>
+                        <span className="text-sm">Featured</span>
+                        <Switch
+                          size="small"
+                          className="custom-switch"
+                          checked={featuredFilter}
+                          onChange={setFeaturedFilter}
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <div className="table-responsive">
                     <Table
                       dataSource={filteredData}
@@ -542,49 +523,13 @@ function Tours() {
                       rowKey="id"
                     />
                   </div>
-=======
-import React from 'react';
-import { Row, Col, Card } from 'antd';
-import { PageHeaders } from '../../../components/page-headers/index';
-import Protected from '../../../components/Protected/Protected';
-
-function Tours() {
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Tours',
-    },
-  ];
-
-  return (
-    <>
-      <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        title="Tours"
-        routes={PageRoutes}
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
-        <Row gutter={25}>
-          <Col sm={24} xs={24}>
-            <Card className="h-full">
-              <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold mb-4">Tours Management</h2>
-                  <p>Tours listing and management will be implemented here.</p>
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 </div>
               </div>
             </Card>
           </Col>
         </Row>
       </main>
-<<<<<<< HEAD
 
-      {/* Delete Confirmation Modal */}
       <Modal
         title={
           <div className="flex items-center gap-2 text-danger">
@@ -624,7 +569,6 @@ function Tours() {
         </div>
       </Modal>
 
-      {/* Tour Details Modal */}
       <Modal
         title={
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -669,7 +613,6 @@ function Tours() {
         {currentTour ? (
           <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
             <Spin spinning={tourDetailLoading}>
-              {/* Tour Image Preview */}
               {currentTour.imageURL && (
                 <div className="mb-6 rounded-lg overflow-hidden">
                   <img
@@ -680,7 +623,6 @@ function Tours() {
                   />
                 </div>
               )}
-
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div className="border-b pb-2">
                   <Text type="secondary" className="text-sm">Title:</Text>
@@ -696,7 +638,7 @@ function Tours() {
                 </div>
                 <div className="border-b pb-2">
                   <Text type="secondary" className="text-sm">Price:</Text>
-                  <div className="mt-1">
+                  <div className="mt-1 flex items-center gap-2">
                     <Text strong className="text-base">
                       {currentTour.price ? `₹${currentTour.price.toLocaleString()}` : 'N/A'}
                     </Text>
@@ -744,11 +686,33 @@ function Tours() {
                     </Tag>
                   </div>
                 </div>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Special Offer:</Text>
+                  <div className="mt-1">
+                    <Tag color={currentTour.isOffered ? 'orange' : 'default'} icon={currentTour.isOffered ? <GiftOutlined /> : null}>
+                      {currentTour.isOffered ? 'Offered' : 'Not Offered'}
+                    </Tag>
+                  </div>
+                </div>
+                <div className="border-b pb-2">
+                  <Text type="secondary" className="text-sm">Theme Type:</Text>
+                  <div className="mt-1">
+                    <Text strong className="text-base">{currentTour.themeType || 'N/A'}</Text>
+                  </div>
+                </div>
                 {currentTour.isStartDate && currentTour.startDate && (
                   <div className="border-b pb-2 col-span-2">
                     <Text type="secondary" className="text-sm">Start Date:</Text>
                     <div className="mt-1">
                       <Text strong className="text-base">{currentTour.startDate}</Text>
+                    </div>
+                  </div>
+                )}
+                {currentTour.videoURL && (
+                  <div className="border-b pb-2 col-span-2">
+                    <Text type="secondary" className="text-sm">Video URL:</Text>
+                    <div className="mt-1">
+                      <Text copyable className="text-base">{currentTour.videoURL}</Text>
                     </div>
                   </div>
                 )}
@@ -760,14 +724,77 @@ function Tours() {
                 </div>
               </div>
 
-              <div className="mb-6 border-b pb-4">
-                <Text type="secondary" className="text-sm">Description:</Text>
-                <div className="mt-2 p-5 bg-regularBG dark:bg-[#323440] rounded-md border border-gray-100 dark:border-gray-700">
-                  <Text className="text-base whitespace-pre-line">{currentTour.description || 'No description available.'}</Text>
+              {/* Inclusions Section */}
+              {currentTour.included && Object.keys(currentTour.included).length > 0 && (
+                <div className="mb-6 border-b pb-4">
+                  <Text strong className="text-lg mb-3 block">What's Included</Text>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {Object.entries(currentTour.included).map(([key, value]) => (
+                      <Tag key={key} color={value ? 'green' : 'red'} className="mb-1">
+                        {key.charAt(0).toUpperCase() + key.slice(1)}: {value ? 'Yes' : 'No'}
+                      </Tag>
+                    ))}
+                  </div>
+                  {currentTour.includedMore && currentTour.includedMore.length > 0 && (
+                    <div className="mt-3">
+                      <Text type="secondary" className="text-sm block mb-2">Additional Inclusions:</Text>
+                      <div className="flex flex-wrap gap-1">
+                        {currentTour.includedMore.map((item, index) => (
+                          <Tag key={index} color="cyan">{item}</Tag>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
-              {/* Itinerary Section */}
+              {/* Not Included Section */}
+              {currentTour.notIncluded && currentTour.notIncluded.length > 0 && (
+                <div className="mb-6 border-b pb-4">
+                  <Text strong className="text-lg mb-3 block">What's Not Included</Text>
+                  <div className="flex flex-wrap gap-1">
+                    {currentTour.notIncluded.map((item, index) => (
+                      <Tag key={index} color="red">{item}</Tag>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Do's and Don'ts Section */}
+              {((currentTour.dos && currentTour.dos.length > 0) || (currentTour.donts && currentTour.donts.length > 0)) && (
+                <div className="mb-6 border-b pb-4">
+                  <Text strong className="text-lg mb-3 block">Guidelines</Text>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {currentTour.dos && currentTour.dos.length > 0 && (
+                      <div>
+                        <Text type="secondary" className="text-sm block mb-2">Do's:</Text>
+                        <div className="space-y-1">
+                          {currentTour.dos.map((item, index) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <span className="text-green-500 text-xs mt-1">✓</span>
+                              <Text className="text-sm">{item}</Text>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {currentTour.donts && currentTour.donts.length > 0 && (
+                      <div>
+                        <Text type="secondary" className="text-sm block mb-2">Don'ts:</Text>
+                        <div className="space-y-1">
+                          {currentTour.donts.map((item, index) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <span className="text-red-500 text-xs mt-1">✗</span>
+                              <Text className="text-sm">{item}</Text>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {currentTour.itenaries && Object.keys(currentTour.itenaries).length > 0 && (
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
@@ -780,14 +807,12 @@ function Tours() {
                     type="card"
                     items={Object.keys(currentTour.itenaries)
                       .sort((a, b) => {
-                        // Extract numbers from Day1, Day2, etc.
                         const numA = parseInt(a.replace('Day', ''));
                         const numB = parseInt(b.replace('Day', ''));
                         return numA - numB;
                       })
                       .map(day => {
                         const itinerary = currentTour.itenaries?.[day];
-
                         return {
                           key: day,
                           label: `Day ${day.replace('Day', '')}`,
@@ -804,7 +829,6 @@ function Tours() {
                                 </Text>
                               </div>
 
-                              {/* Day Images */}
                               {itinerary?.imageURL && itinerary.imageURL.length > 0 && (
                                 <div>
                                   <Text type="secondary" className="text-sm mb-2 block">Day Images:</Text>
@@ -818,7 +842,6 @@ function Tours() {
                                         />
                                       </div>
                                     ))}
-
                                   </div>
                                 </div>
                               )}
@@ -831,9 +854,7 @@ function Tours() {
                 </div>
               )}
 
-              {/* Additional Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Created & Updated Information */}
                 <Card size="small" title="Timestamps" className="w-full">
                   <div className="flex flex-col gap-2">
                     <div>
@@ -853,7 +874,6 @@ function Tours() {
                   </div>
                 </Card>
 
-                {/* Tags Information if available */}
                 {(currentTour as any).tags && Object.keys((currentTour as any).tags).length > 0 && (
                   <Card size="small" title="Tags" className="w-full">
                     <div className="flex flex-wrap gap-2">
@@ -873,14 +893,8 @@ function Tours() {
           </div>
         )}
       </Modal>
-=======
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     </>
   );
 }
 
-<<<<<<< HEAD
-export default Protected(Tours, ["admin"]);
-=======
-export default Protected(Tours, ["admin"]); 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
+export default Protected(Tours, ["admin", "tours", "tours+media"]);

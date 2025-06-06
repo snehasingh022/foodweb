@@ -1,19 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, Input, Button, Table, Modal, Form, message, Switch, Space, Tabs, Tooltip, Divider, Badge, Dropdown, MenuProps, Typography, Radio, Select, Spin } from 'antd';
 import type { InputRef } from 'antd';
-<<<<<<< HEAD
 import {
   SearchOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-=======
-import { 
-  SearchOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   ExclamationCircleOutlined,
   MoreOutlined,
   FilterOutlined,
@@ -66,11 +58,7 @@ function Coupons() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState<Coupon | null>(null);
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
   // Responsive detection
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const searchInputRef = useRef<InputRef>(null);
@@ -80,7 +68,6 @@ function Coupons() {
     try {
       setLoading(true);
       console.log("Querying Firestore for coupons...");
-<<<<<<< HEAD
 
       // Create a query against the collection
       const couponsCollection = collection(db, "coupons");
@@ -89,36 +76,18 @@ function Coupons() {
       // Get the snapshot
       const snapshot = await getDocs(couponsQuery);
 
-=======
-      
-      // Create a query against the collection
-      const couponsCollection = collection(db, "coupons");
-      const couponsQuery = query(couponsCollection, orderBy("updatedAt", "desc"));
-      
-      // Get the snapshot
-      const snapshot = await getDocs(couponsQuery);
-      
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       if (snapshot.empty) {
         console.log("No coupons found in collection");
         setCoupons([]);
         setLoading(false);
         return;
       }
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       // Log the raw data for debugging
       snapshot.docs.forEach(doc => {
         console.log(`Document ${doc.id}:`, doc.data());
       });
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       // Map the documents to our Coupon interface
       const data = snapshot.docs.map((doc) => {
         const docData = doc.data();
@@ -133,11 +102,7 @@ function Coupons() {
           updatedAt: docData.updatedAt || null,
         };
       });
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       console.log("Processed coupons:", data);
       setCoupons(data);
       setLoading(false);
@@ -156,13 +121,8 @@ function Coupons() {
   // Filter data based on active status and search text
   const filteredData = coupons.filter((coupon) => {
     const matchesStatus = activeFilter === 'all' || coupon.status === activeFilter;
-<<<<<<< HEAD
     const matchesSearch =
       coupon.id.toLowerCase().includes(searchText.toLowerCase()) ||
-=======
-    const matchesSearch = 
-      coupon.id.toLowerCase().includes(searchText.toLowerCase()) || 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       coupon.name.toLowerCase().includes(searchText.toLowerCase());
     return matchesStatus && matchesSearch;
   });
@@ -178,11 +138,7 @@ function Coupons() {
       // Generate the coupon ID with CID + 6 digits
       const couponId = generateCouponId();
       console.log("Creating coupon with ID:", couponId);
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       await setDoc(doc(db, "coupons", couponId), {
         name: values.name,
         minimumPrice: values.minimumPrice,
@@ -206,11 +162,7 @@ function Coupons() {
   const handleEditCoupon = async (values: CouponFormValues) => {
     try {
       console.log("Updating coupon with ID:", editId, "Values:", values);
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       const ref = doc(db, "coupons", editId);
       await updateDoc(ref, {
         name: values.name,
@@ -339,7 +291,6 @@ function Coupons() {
         dataIndex: 'createdAt',
         key: 'createdAt',
         responsive: ['md'] as any,
-<<<<<<< HEAD
         render: (createdAt: Coupon['createdAt']) =>
           createdAt && typeof createdAt.toDate === 'function'
             ? new Date(createdAt.toDate()).toLocaleString()
@@ -347,15 +298,6 @@ function Coupons() {
       }
     ];
 
-=======
-        render: (createdAt: Coupon['createdAt']) => 
-          createdAt && typeof createdAt.toDate === 'function' 
-            ? new Date(createdAt.toDate()).toLocaleString() 
-            : '',
-      }
-    ];
-    
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     // Different action column based on screen size
     if (isMobile) {
       baseColumns.push({
@@ -375,7 +317,6 @@ function Coupons() {
         render: (_: any, record: Coupon) => (
           <Space>
             <Tooltip title="Edit">
-<<<<<<< HEAD
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -388,22 +329,6 @@ function Coupons() {
                 type="text"
                 icon={<DeleteOutlined />}
                 className="text-red-600 hover:text-red-800"
-=======
-              <Button 
-                type="primary" 
-                size="small" 
-                icon={<EditOutlined />}
-                onClick={() => showModal(record)}
-                className="bg-primary hover:bg-primary-hbr"
-              />
-            </Tooltip>
-            <Tooltip title="Delete">
-              <Button 
-                type="primary" 
-                danger
-                size="small" 
-                icon={<DeleteOutlined />}
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 onClick={() => showDeleteModal(record)}
               />
             </Tooltip>
@@ -411,11 +336,7 @@ function Coupons() {
         ),
       });
     }
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     return baseColumns;
   };
 
@@ -481,22 +402,8 @@ function Coupons() {
                 </h1>
               </div>
               <div className="flex items-center gap-2">
-<<<<<<< HEAD
                 <Button
                   type="primary"
-=======
-                <Input 
-                  placeholder="Search coupons..." 
-                  prefix={<SearchOutlined />} 
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 250 }}
-                  className="py-2 text-base font-medium"
-                  ref={searchInputRef}
-                />
-                <Button 
-                  type="primary" 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   onClick={() => {
                     setCurrentCoupon(null);
                     setIsModalVisible(true);
@@ -506,7 +413,6 @@ function Coupons() {
                 >
                   {!isMobile && "Add Coupon"}
                 </Button>
-<<<<<<< HEAD
                 <Input
                   placeholder="Search coupons..."
                   prefix={<SearchOutlined />}
@@ -529,18 +435,11 @@ function Coupons() {
                     Refresh
                   </Button>
                 )}
-=======
-                {loading && <Spin />}
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               </div>
             </div>
           </Col>
         </Row>
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Row gutter={25}>
           <Col sm={24} xs={24}>
             <Card className="h-full mb-8">
@@ -554,21 +453,13 @@ function Coupons() {
                     size={isMobile ? 'small' : 'middle'}
                     centered={isMobile}
                   />
-<<<<<<< HEAD
 
-=======
-                  
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   <div className="table-responsive">
                     <Table
                       dataSource={filteredData}
                       columns={getColumns()}
                       loading={loading}
-<<<<<<< HEAD
                       pagination={{
-=======
-                      pagination={{ 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                         pageSize: isMobile ? 5 : 10,
                         showSizeChanger: false,
                         responsive: true,
@@ -614,11 +505,7 @@ function Coupons() {
         maskClosable={false}
       >
         <Divider className="my-2" />
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
         <Form
           form={form}
           layout="vertical"
@@ -654,23 +541,14 @@ function Coupons() {
                   { required: true, message: 'Please input the coupon name' },
                 ]}
               >
-<<<<<<< HEAD
                 <Input
                   placeholder="e.g. Summer Discount"
-=======
-                <Input 
-                  placeholder="e.g. Summer Discount" 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   size={isMobile ? 'middle' : 'large'}
                   className="rounded-md"
                 />
               </Form.Item>
             </Col>
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
             <Col span={24}>
               <Form.Item
                 name="percentageDiscount"
@@ -681,19 +559,11 @@ function Coupons() {
                 }
                 rules={[
                   { required: true, message: 'Please input the discount percentage' },
-<<<<<<< HEAD
                   {
                     pattern: /^[0-9]+$/,
                     message: 'Please enter numbers only'
                   },
                   {
-=======
-                  { 
-                    pattern: /^[0-9]+$/, 
-                    message: 'Please enter numbers only' 
-                  },
-                  { 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                     validator: (_: any, value: string) => {
                       if (value && parseInt(value) > 100) {
                         return Promise.reject('Discount cannot be more than 100%');
@@ -703,25 +573,15 @@ function Coupons() {
                   }
                 ]}
               >
-<<<<<<< HEAD
                 <Input
                   placeholder="e.g. 20"
                   addonAfter="%"
-=======
-                <Input 
-                  placeholder="e.g. 20" 
-                  addonAfter="%" 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   size={isMobile ? 'middle' : 'large'}
                   className="rounded-md"
                 />
               </Form.Item>
             </Col>
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
             <Col span={24}>
               <Form.Item
                 name="minimumPrice"
@@ -732,26 +592,15 @@ function Coupons() {
                 }
                 rules={[
                   { required: true, message: 'Please input the minimum price' },
-<<<<<<< HEAD
                   {
                     pattern: /^[0-9]+$/,
                     message: 'Please enter numbers only'
-=======
-                  { 
-                    pattern: /^[0-9]+$/, 
-                    message: 'Please enter numbers only' 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   }
                 ]}
                 help="Minimum amount required for coupon to be applicable"
               >
-<<<<<<< HEAD
                 <Input
                   placeholder="e.g. 1000"
-=======
-                <Input 
-                  placeholder="e.g. 1000" 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                   size={isMobile ? 'middle' : 'large'}
                   className="rounded-md"
                   addonBefore="₹"
@@ -775,13 +624,8 @@ function Coupons() {
                   className="rounded-md w-full"
                   dropdownStyle={{ padding: '8px' }}
                   options={[
-<<<<<<< HEAD
                     {
                       value: 'active',
-=======
-                    { 
-                      value: 'active', 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                       label: (
                         <div className="flex items-center gap-2">
                           <Badge status="success" />
@@ -789,13 +633,8 @@ function Coupons() {
                         </div>
                       )
                     },
-<<<<<<< HEAD
                     {
                       value: 'inactive',
-=======
-                    { 
-                      value: 'inactive', 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                       label: (
                         <div className="flex items-center gap-2">
                           <Badge status="error" />
@@ -820,15 +659,9 @@ function Coupons() {
             >
               Cancel
             </Button>
-<<<<<<< HEAD
             <Button
               type="primary"
               htmlType="submit"
-=======
-            <Button 
-              type="primary" 
-              htmlType="submit" 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
               loading={submitLoading}
               size={isMobile ? 'middle' : 'large'}
               className="min-w-[80px] sm:min-w-[100px]"
@@ -842,22 +675,15 @@ function Coupons() {
       {/* Delete Confirmation Modal */}
       <Modal
         title={
-<<<<<<< HEAD
           <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
               Confirm Delete
             </span>
-=======
-          <div className="flex items-center gap-2 text-danger">
-            <DeleteOutlined />
-            <span>Confirm Delete</span>
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
           </div>
         }
         open={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
         footer={[
-<<<<<<< HEAD
           <Button
             key="cancel"
             onClick={() => setDeleteModalVisible(false)}
@@ -874,22 +700,6 @@ function Coupons() {
             onClick={confirmDelete}
             size={isMobile ? 'middle' : 'large'}
             className="mr-4 mb-4"
-=======
-          <Button 
-            key="back" 
-            onClick={() => setDeleteModalVisible(false)} 
-            size={isMobile ? 'middle' : 'large'}
-          >
-            Cancel
-          </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
-            danger 
-            loading={submitLoading} 
-            onClick={confirmDelete}
-            size={isMobile ? 'middle' : 'large'}
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
           >
             Delete
           </Button>,
@@ -899,17 +709,9 @@ function Coupons() {
         className="responsive-modal"
         centered
       >
-<<<<<<< HEAD
         <p className="p-3">
           Are you sure you want to delete the booking <strong>{couponToDelete?.id}</strong>? This action cannot be undone.
         </p>
-=======
-        <Divider className="my-2" />
-        <div className="p-4 bg-danger-transparent rounded-lg mb-4">
-          <p className="mb-2 font-medium">Are you sure you want to delete the coupon code <strong>{couponToDelete?.id}</strong>?</p>
-          <p className="text-danger">This action cannot be undone.</p>
-        </div>
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
       </Modal>
     </>
   );

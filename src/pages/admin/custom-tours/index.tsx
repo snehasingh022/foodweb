@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import {
   Row,
@@ -115,7 +114,7 @@ function CustomTours() {
           title: docData.title || '',
           description: docData.description || '',
           location: docData.location || '',
-          locationType: docData.locationType || 'domestic',
+          locationType: (docData.locationType === 'international' ? 'international' : 'domestic') as 'domestic' | 'international',
           price: docData.price || 0,
           images: docData.images || [],
           createdAt: docData.createdAt || null,
@@ -123,8 +122,10 @@ function CustomTours() {
           place: docData.place || '',
         };
       });
+      
 
       console.log("Processed custom tours:", customToursData);
+      console.log("Location types found:", customToursData.map(tour => ({ id: tour.id, title: tour.title, locationType: tour.locationType })));
       setCustomTours(customToursData);
     } catch (error) {
       console.error("Error fetching custom tours:", error);
@@ -190,6 +191,8 @@ function CustomTours() {
           ...tourData,
           id: record.id,
           key: record.id,
+          // Ensure locationType is normalized
+          locationType: (tourData.locationType === 'international') ? 'international' : 'domestic',
         });
       }
 
@@ -279,31 +282,47 @@ function CustomTours() {
 
   // Filter data based on location type and search text
   const filteredCustomTours = customTours.filter((tour) => {
-    const matchesType = activeFilter === 'all' || tour.locationType === activeFilter;
-    const searchLower = searchText.toLowerCase();
+    // Location type filter - fixed logic
+    let matchesType = true;
+    if (activeFilter !== 'all') {
+      matchesType = tour.locationType === activeFilter;
+    }
 
-    const matchesSearch =
-      (tour.title && tour.title.toLowerCase().includes(searchLower)) ||
-      (tour.location && tour.location.toLowerCase().includes(searchLower)) ||
-      (tour.componentID && tour.componentID.toLowerCase().includes(searchLower)) ||
-      (tour.place && tour.place.toLowerCase().includes(searchLower));
+    // Search filter
+    let matchesSearch = true;
+
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase().trim();
+      matchesSearch =
+        !!(tour.title && tour.title.toLowerCase().includes(searchLower)) ||
+        !!(tour.location && tour.location.toLowerCase().includes(searchLower)) ||
+        !!(tour.componentID && tour.componentID.toLowerCase().includes(searchLower)) ||
+        !!(tour.place && tour.place.toLowerCase().includes(searchLower)) ||
+        !!(tour.description && tour.description.toLowerCase().includes(searchLower));
+    }
+    
 
     return matchesType && matchesSearch;
   });
 
-  // Tab items for filtering
+  // Get counts for each tab
+  const domesticCount = customTours.filter(tour => tour.locationType === 'domestic').length;
+  const internationalCount = customTours.filter(tour => tour.locationType === 'international').length;
+  const totalCount = customTours.length;
+
+  // Tab items for filtering with counts
   const locationTabItems = [
     {
       key: 'all',
-      label: 'All Tours',
+      label: `All Tours `,
     },
     {
       key: 'domestic',
-      label: 'Domestic',
+      label: `Domestic `,
     },
     {
       key: 'international',
-      label: 'International',
+      label: `International `,
     },
   ];
 
@@ -315,6 +334,13 @@ function CustomTours() {
     }
     return moment(date).format('MMM DD, YYYY HH:mm');
   };
+
+  // Debug logging
+  console.log('Current filter:', activeFilter);
+  console.log('Total tours:', customTours.length);
+  console.log('Filtered tours:', filteredCustomTours.length);
+  console.log('Domestic tours:', domesticCount);
+  console.log('International tours:', internationalCount);
 
   return (
     <>
@@ -338,6 +364,7 @@ function CustomTours() {
                 <Input
                   placeholder="Search custom tours..."
                   prefix={<SearchOutlined />}
+                  value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   style={{ width: 250 }}
                   className="py-2 text-base font-medium"
@@ -380,7 +407,9 @@ function CustomTours() {
                       columns={columns}
                       pagination={{
                         pageSize: isMobile ? 5 : 10,
-                        showSizeChanger: false,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} tours`,
                         responsive: true,
                         size: isMobile ? 'small' : 'default',
                       }}
@@ -391,47 +420,12 @@ function CustomTours() {
                       size={isMobile ? 'small' : 'middle'}
                     />
                   </div>
-=======
-import React from 'react';
-import { Row, Col, Card } from 'antd';
-import { PageHeaders } from '../../../components/page-headers/index';
-import Protected from '../../../components/Protected/Protected';
-
-function CustomTours() {
-  const PageRoutes = [
-    {
-      path: '/admin',
-      breadcrumbName: 'Dashboard',
-    },
-    {
-      path: '',
-      breadcrumbName: 'Custom Tours',
-    },
-  ];
-
-  return (
-    <>
-      <PageHeaders
-        className="flex items-center justify-between px-8 xl:px-[15px] pt-2 pb-6 sm:pb-[30px] bg-transparent sm:flex-col"
-        title="Custom Tours"
-        routes={PageRoutes}
-      />
-      <main className="min-h-[715px] lg:min-h-[580px] px-8 xl:px-[15px] pb-[30px] bg-transparent">
-        <Row gutter={25}>
-          <Col sm={24} xs={24}>
-            <Card className="h-full">
-              <div className="bg-white dark:bg-white/10 m-0 p-0 text-theme-gray dark:text-white/60 text-[15px] rounded-10 relative h-full">
-                <div className="p-[25px]">
-                  <h2 className="text-dark dark:text-white/[.87] text-[16px] font-semibold mb-4">Custom Tours Management</h2>
-                  <p>Custom tours creation and management will be implemented here.</p>
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
                 </div>
               </div>
             </Card>
           </Col>
         </Row>
       </main>
-<<<<<<< HEAD
 
       {/* Custom Tour Details Modal */}
       <Modal
@@ -601,14 +595,8 @@ function CustomTours() {
           </div>
         )}
       </Modal>
-=======
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12
     </>
   );
 }
 
-<<<<<<< HEAD
 export default Protected(CustomTours, ["admin"]);
-=======
-export default Protected(CustomTours, ["admin"]); 
->>>>>>> 5681274c2906af108c3d9270f21d0e25c6c88d12

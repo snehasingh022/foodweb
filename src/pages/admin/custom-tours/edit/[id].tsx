@@ -13,6 +13,8 @@ import {
     Modal,
     Image,
     InputNumber,
+    Tabs,
+    Divider,
     Spin
 } from 'antd';
 import {
@@ -20,12 +22,15 @@ import {
     ArrowLeftOutlined,
     DeleteOutlined,
     PlusOutlined,
-    LoadingOutlined
+    PictureOutlined,
+    LoadingOutlined,
+    CloudUploadOutlined,
+    FileImageOutlined,
 } from '@ant-design/icons';
 import { PageHeaders } from '../../../../components/page-headers/index';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, addDoc, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../../authentication/firebase';
-import { getDownloadURL, ref, uploadBytes, listAll } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import Protected from '../../../../components/Protected/Protected';
 import { storage } from '@/lib/firebase-secondary';
 import { useRouter } from 'next/router';
@@ -45,6 +50,13 @@ interface TourData {
     updatedAt: any;
 }
 
+interface MediaItem {
+    id?: string;
+    name: string;
+    image: string;
+    createdAt: any;
+}
+
 function EditCustomTour() {
     const router = useRouter();
     const { id } = router.query;
@@ -53,11 +65,14 @@ function EditCustomTour() {
     // State variables
     const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [imageLoading, setImageLoading] = useState(false);
-    const [archiveImages, setArchiveImages] = useState<{ name: string; url: string }[]>([]);
-    const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [archiveImages, setArchiveImages] = useState<MediaItem[]>([]);
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<"upload" | "archive">("upload");
     const [loading, setLoading] = useState(true);
     const [tourData, setTourData] = useState<TourData | null>(null);
     const [saving, setSaving] = useState(false);
+    const [archiveOrUpload, setArchiveOrUpload] = useState<'upload' | 'archive'>('upload');
+
 
     const PageRoutes = [
         {
@@ -116,22 +131,20 @@ function EditCustomTour() {
 
     const fetchArchiveImages = async () => {
         try {
-            if (!storage) {
-                throw new Error("Firebase Storage is not available");
-            }
+            const mediaQuery = query(
+                collection(db, 'media'),
+                orderBy('createdAt', 'desc')
+            );
+            const querySnapshot = await getDocs(mediaQuery);
+            const images: MediaItem[] = [];
 
-            const archiveRef = ref(storage, 'prathviTravelsMedia');
-            const result = await listAll(archiveRef);
-
-            const imagePromises = result.items.map(async (imageRef) => {
-                const url = await getDownloadURL(imageRef);
-                return {
-                    name: imageRef.name,
-                    url: url
-                };
+            querySnapshot.forEach((doc) => {
+                images.push({
+                    id: doc.id,
+                    ...doc.data()
+                } as MediaItem);
             });
 
-            const images = await Promise.all(imagePromises);
             setArchiveImages(images);
         } catch (error) {
             console.error("Error fetching archive images:", error);
@@ -147,12 +160,23 @@ function EditCustomTour() {
             }
 
             const timestamp = Date.now();
-            const storageRef = ref(storage, `prathviTravelsMedia/${timestamp}-${file.name}`);
+            const fileName = `${timestamp}-${file.name}`;
+            const storageRef = ref(storage, `media/${fileName}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
+            // Store in media collection
+            await addDoc(collection(db, 'media'), {
+                name: file.name,
+                image: downloadURL,
+                createdAt: serverTimestamp()
+            });
+
             setImageUrls(prev => [...prev, downloadURL]);
-            setArchiveImages(prev => [...prev, { name: `${timestamp}-${file.name}`, url: downloadURL }]);
+
+            // Refresh archive images to include the newly uploaded image
+            await fetchArchiveImages();
+
             message.success("Image uploaded successfully!");
 
         } catch (error) {
@@ -168,10 +192,22 @@ function EditCustomTour() {
     };
 
     const handleAddFromArchive = (imageUrl: string) => {
-        if (!imageUrls.includes(imageUrl)) {
+        const isSelected = imageUrls.includes(imageUrl);
+
+        if (isSelected) {
+            // Remove the image if it's already selected
+            setImageUrls(prev => prev.filter(url => url !== imageUrl));
+            message.success("Image removed from selection!");
+        } else {
+            // Add the image if it's not selected
             setImageUrls(prev => [...prev, imageUrl]);
             message.success("Image added from archive!");
         }
+    };
+
+    const handleModalClose = () => {
+        setImageModalOpen(false);
+        setActiveTab("upload");
     };
 
     const handleSubmit = async (values: any) => {
@@ -363,51 +399,39 @@ function EditCustomTour() {
                                                 Tour Images
                                             </h3>
 
-                                            <div className="flex gap-4 mb-4">
-                                                <Upload {...uploadProps}>
-                                                    <Button
-                                                        icon={<UploadOutlined />}
-                                                        loading={imageLoading}
-                                                        className="bg-primary text-white hover:bg-primary-hbr"
-                                                    >
-                                                        Upload New Images
-                                                    </Button>
-                                                </Upload>
-
+                                            <div className="mb-4">
                                                 <Button
-                                                    icon={<PlusOutlined />}
-                                                    onClick={() => setImageDialogOpen(true)}
-                                                    className="border-primary text-primary hover:bg-primary hover:text-white"
+                                                    onClick={() => setImageModalOpen(true)}
+                                                    className="bg-primary text-white hover:bg-primary-hbr"
+                                                    size="large"
                                                 >
-                                                    Select from Archive
+                                                    Upload Images
                                                 </Button>
                                             </div>
 
-                                            <div className="mx-auto mt-4 pl-4"> {/* Added left padding */}
+                                            <div className="mx-auto mt-4 pl-4">
                                                 {imageUrls.length > 0 && (
-                                                    <div className="flex flex-wrap" style={{ gap: '16px 8px' }}> {/* Controlled horizontal/vertical gaps */}
+                                                    <div className="flex flex-wrap" style={{ gap: '16px 8px' }}>
                                                         {imageUrls.map((url, index) => (
                                                             <div
                                                                 key={index}
                                                                 className="flex items-center"
                                                                 style={{
-                                                                    width: 'calc((100% - 32px) / 3)', // Exactly 3 items per row accounting for gaps
-                                                                    marginRight: '4px', // Right margin between items
-                                                                    marginBottom: '16px' // Bottom margin between rows
+                                                                    width: 'calc((100% - 32px) / 3)',
+                                                                    marginRight: '4px',
+                                                                    marginBottom: '16px'
                                                                 }}
                                                             >
-                                                                {/* Image container with natural width */}
                                                                 <div className="rounded-lg overflow-hidden border-2 border-gray-200 hover:border-primary transition-colors">
                                                                     <Image
                                                                         src={url}
                                                                         alt={`Tour image ${index + 1}`}
-                                                                        className="max-h-[200px] w-auto" // Natural width with constrained height
+                                                                        className="max-h-[200px] w-auto"
                                                                         preview={true}
-                                                                        style={{ display: 'block' }} // Ensures proper image sizing
+                                                                        style={{ display: 'block' }}
                                                                     />
                                                                 </div>
 
-                                                                {/* Delete Button + Index - now positioned absolutely */}
                                                                 <div className="relative ml-1">
                                                                     <Button
                                                                         type="primary"
@@ -435,7 +459,7 @@ function EditCustomTour() {
                                                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                     <p className="mt-2 text-gray-500">No images uploaded yet</p>
-                                                    <p className="text-sm text-gray-400">Upload images or select from archive</p>
+                                                    <p className="text-sm text-gray-400">Click "Upload Images" to add images</p>
                                                 </div>
                                             )}
                                         </div>
@@ -467,90 +491,123 @@ function EditCustomTour() {
                 </Row>
             </main>
 
-            {/* Archive Images Modal */}
+            {/* Image Upload Modal */}
             <Modal
-                title={
-                    <div className="flex items-center gap-2 px-2 py-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-                            <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
-                        </svg>
-                        <span className="text-lg font-medium">Select Images from Archive</span>
-                    </div>
-                }
-                open={imageDialogOpen}
-                onCancel={() => setImageDialogOpen(false)}
+                title={<h3 className="text-lg font-semibold px-4 py-2">Select Image</h3>}
+                open={imageModalOpen}
+                onCancel={handleModalClose}
                 footer={null}
-                width="90%"
-                style={{ maxWidth: '1200px' }}
+                width="95%"
+                style={{ maxWidth: '1000px' }}
+                bodyStyle={{ padding: '16px 24px 24px' }}
                 className="responsive-modal"
             >
-                <div className="max-h-[70vh] overflow-y-auto pl-4">
-                    {archiveImages.length > 0 ? (
-                        <div className="flex flex-wrap gap-x-6 gap-y-4">
-                            {archiveImages.map((image, index) => {
-                                const isSelected = imageUrls.includes(image.url);
-                                return (
-                                    <div
-                                        key={index}
-                                        className="relative group cursor-pointer"
-                                        style={{
-                                            marginRight: '16px',
-                                            marginBottom: '16px'
-                                        }}
-                                        onClick={() => {
-                                            if (isSelected) {
-                                                // Remove if already selected
-                                                handleRemoveImage(imageUrls.indexOf(image.url));
-                                            } else {
-                                                // Add if not selected
-                                                handleAddFromArchive(image.url);
-                                            }
-                                        }}
-                                    >
-                                        <div className={`rounded-lg overflow-hidden border-2 transition-colors ${isSelected ? 'border-primary' : 'border-gray-200 hover:border-primary'
-                                            }`}>
-                                            <Image
-                                                src={image.url}
-                                                alt={image.name}
-                                                className="max-h-[200px] w-auto"
-                                                preview={false}
-                                                style={{ display: 'block' }}
+                <Tabs
+                    defaultActiveKey="upload"
+                    onChange={(key) => setArchiveOrUpload(key as 'upload' | 'archive')}
+                    className="mt-2"
+                    items={[
+                        {
+                            key: 'upload',
+                            label: (
+                                <span className="flex items-center">
+                                    <CloudUploadOutlined className="mr-2" />
+                                    Upload New Image
+                                </span>
+                            ),
+                            children: (
+                                <div className="flex items-center justify-center bg-gray-50 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 hover:border-primary rounded-lg p-12 cursor-pointer transition-colors duration-300 mt-4">
+                                    <label htmlFor="modal-image-upload" className="cursor-pointer text-center">
+                                        <CloudUploadOutlined className="text-5xl mb-5 text-gray-400" />
+                                        <p className="text-gray-700 dark:text-white/80 font-medium mb-2">Click to upload an image</p>
+                                        <p className="text-sm text-gray-500 dark:text-white/60 mb-5">PNG, JPG or JPEG (max. 2MB)</p>
+                                        <Button
+                                            type="primary"
+                                            icon={<CloudUploadOutlined />}
+                                            onClick={() => {
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.onchange = (e) => {
+                                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                                    if (file) {
+                                                        handleImageUpload(file).then(() => {
+                                                            handleModalClose();
+                                                        });
+                                                    }
+                                                };
+                                                input.click();
+                                            }}
+                                            className="bg-primary hover:bg-primary-hbr"
+                                            loading={imageLoading}
+                                        >
+                                            {imageLoading ? 'Uploading...' : 'Select File'}
+                                        </Button>
+                                    </label>
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'archive',
+                            label: (
+                                <span className="flex items-center">
+                                    <FileImageOutlined className="mr-2" />
+                                    Choose from Archive
+                                </span>
+                            ),
+                            children: (
+                                <div className="mt-4">
+                                    <div className="flex items-center justify-between mb-5 px-1">
+                                        <h4 className="text-dark dark:text-white/[.87] font-medium">Image Archive</h4>
+                                        <label htmlFor="modal-archive-upload" className="cursor-pointer">
+                                            <input
+                                                id="modal-archive-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        handleImageUpload(file).then(() => {
+                                                            handleModalClose();
+                                                        });
+                                                    }
+                                                }}
                                             />
-                                        </div>
-
-                                        {/* Selection indicator (always visible if selected) */}
-                                        {isSelected && (
-                                            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                                                <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                                                    <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
-                                                </svg>
-                                            </div>
-                                        )}
-
-                                        {/* Click-to-toggle hint (only shown on hover for unselected items) */}
-                                        {!isSelected && (
-                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
-                                                <div className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    Click to select
-                                                </div>
-                                            </div>
-                                        )}
+                                        </label>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8">
-                            <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="mt-4 text-gray-500">No images found in archive</p>
-                            <p className="text-sm text-gray-400">Upload some images first to populate the archive</p>
-                        </div>
-                    )}
-                </div>
+
+                                    <div className="border border-gray-200 dark:border-white/10 rounded-md">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-5 max-h-96 overflow-y-auto">
+                                            {archiveImages.length > 0 ? (
+                                                archiveImages.map((image, index) => (
+                                                    <div
+                                                        key={image.id || index}
+                                                        className="cursor-pointer border rounded p-2 transition-all hover:border-primary"
+                                                        onClick={() => handleAddFromArchive(image.image)}
+                                                    >
+                                                        <img
+                                                            src={image.image}
+                                                            alt={image.name}
+                                                            className="w-full max-h-40 object-contain"
+                                                        />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-4 text-center py-8 text-gray-500 dark:text-white/60">
+                                                    <PictureOutlined className="text-4xl mb-2" />
+                                                    <p>No images in archive</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ),
+                        },
+                    ]}
+                />
             </Modal>
+
         </>
     );
 }

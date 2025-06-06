@@ -21,6 +21,7 @@ export const AuthContextProvider = ({
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [userRoles, setUserRoles] = useState<string[]>([])
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -30,7 +31,8 @@ export const AuthContextProvider = ({
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
-          role: 'user' // Default role
+          role: 'user', // Default role
+          roles: ['user'] // Default roles array
         }
 
         // Check user's role in the database
@@ -48,27 +50,39 @@ export const AuthContextProvider = ({
               const adminDoc = adminSnapshot.docs[0];
               const adminData = adminDoc.data();
               
-              // Check if the user's role is admin or helpdesk
-              if (adminData.roles && adminData.roles.includes("admin")) {
-                // Set user as admin
+              // Set user roles from database
+              const dbRoles = adminData.roles || [];
+              setUserRoles(dbRoles);
+              
+              // Determine primary role and admin status
+              if (dbRoles.includes("admin")) {
                 setIsAdmin(true);
                 userData.role = "admin";
-              } else if (adminData.roles && adminData.roles.includes("helpdesk")) {
-                // User has helpdesk role
+              } else if (dbRoles.includes("helpdesk")) {
                 userData.role = "helpdesk";
                 setIsAdmin(false);
+              } else if (dbRoles.includes("tours+media")) {
+                userData.role = "tours+media";
+                setIsAdmin(false);
+              } else if (dbRoles.includes("tours")) {
+                userData.role = "tours";
+                setIsAdmin(false);
               } else {
-                // Default to whatever role is in the database or 'user'
-                userData.role = adminData.roles?.[0] || "user";
+                // Default to first role or 'user'
+                userData.role = dbRoles[0] || "user";
                 setIsAdmin(false);
               }
+              
+              userData.roles = dbRoles;
             } else {
               // User is not in admins collection
               setIsAdmin(false);
+              setUserRoles(['user']);
             }
           } catch (error) {
             console.error("Error checking user role:", error);
             setIsAdmin(false);
+            setUserRoles(['user']);
           }
         }
         
@@ -77,6 +91,7 @@ export const AuthContextProvider = ({
       } else {
         setCurrentUser(null)
         setIsAdmin(false)
+        setUserRoles([])
       }
       setLoading(false)
     })
@@ -98,7 +113,8 @@ export const AuthContextProvider = ({
   
         setCurrentUser({
           ...user,
-          role: 'user' // Default role for new users
+          role: 'user', // Default role for new users
+          roles: ['user']
         });
   
         console.log('Signup successful:', user);
@@ -116,6 +132,7 @@ export const AuthContextProvider = ({
       const result = await signInWithEmailAndPassword(auth, email, password);
       
       let userRole = 'user';
+      let userRoles = ['user'];
       let isUserAdmin = false;
 
       // Check user's role in admin collection
@@ -131,17 +148,24 @@ export const AuthContextProvider = ({
           const adminDoc = adminSnapshot.docs[0];
           const adminData = adminDoc.data();
           
-          if (adminData.roles && adminData.roles.includes("admin")) {
-            // User has admin role
+          const dbRoles = adminData.roles || [];
+          userRoles = dbRoles;
+          
+          if (dbRoles.includes("admin")) {
             userRole = "admin";
             isUserAdmin = true;
-          } else if (adminData.roles && adminData.roles.includes("helpdesk")) {
-            // User has helpdesk role
+          } else if (dbRoles.includes("helpdesk")) {
             userRole = "helpdesk";
             isUserAdmin = false;
+          } else if (dbRoles.includes("tours+media")) {
+            userRole = "tours+media";
+            isUserAdmin = false;
+          } else if (dbRoles.includes("tours")) {
+            userRole = "tours";
+            isUserAdmin = false;
           } else {
-            // Default to whatever role is in the database
-            userRole = adminData.roles?.[0] || "user";
+            // Default to first role or 'user'
+            userRole = dbRoles[0] || "user";
             isUserAdmin = false;
           }
         } else {
@@ -151,13 +175,15 @@ export const AuthContextProvider = ({
         }
         
         setIsAdmin(isUserAdmin);
+        setUserRoles(userRoles);
         
         // Update the current user with role information
         setCurrentUser({
           uid: result.user.uid,
           email: result.user.email,
           displayName: result.user.displayName,
-          role: userRole
+          role: userRole,
+          roles: userRoles
         });
       }
       
@@ -171,11 +197,12 @@ export const AuthContextProvider = ({
   const logout = async () => {
     setCurrentUser(null)
     setIsAdmin(false)
+    setUserRoles([])
     await signOut(auth)
   }
 
   return (
-    <AuthContext.Provider value={{ currentUser, isAdmin, login, signup, logout }}>
+    <AuthContext.Provider value={{ currentUser, isAdmin, userRoles, login, signup, logout }}>
       {loading ? null : children}
     </AuthContext.Provider>
   )

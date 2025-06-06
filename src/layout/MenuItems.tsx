@@ -1,47 +1,8 @@
 import {
-  Uil500px,
-  UilAirplay,
-  UilArrowGrowth,
-  UilAt,
-  UilBagAlt,
-  UilBookAlt,
-  UilBookOpen,
-  UilBookReader,
-  UilChartBar,
-  UilChat,
-  UilCheckSquare,
-  UilCircle,
   UilClipboardAlt,
-  UilClock,
-  UilCompactDisc,
   UilCreateDashboard,
-  UilDatabase,
-  UilDocumentLayoutLeft,
-  UilEdit,
-  UilEnvelope,
-  UilExchange,
-  UilExclamationOctagon,
-  UilExpandArrowsAlt,
-  UilFile,
-  UilFileShieldAlt,
-  UilHeadphones,
-  UilIcons,
-  UilImages,
-  UilLayerGroup,
-  UilMap,
-  UilPresentation,
-  UilQuestionCircle,
-  UilSearch,
-  UilServer,
-  UilSetting,
-  UilShoppingCart,
-  UilSquareFull,
-  UilTable,
-  UilUsdCircle,
   UilUsersAlt,
-  UilWindowSection,
   UilEllipsisV,
-  UilTicket,
   UilMoneyBill,
   UilTagAlt,
   UilUsersAlt as UilTeam,
@@ -61,7 +22,6 @@ import { Menu } from 'antd';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
-import versions from '../demoData/changelog.json';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../authentication/AuthContext';
 
@@ -73,16 +33,19 @@ function MenuItems() {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
     
-    // Determine if user is helpdesk role
-    const [userRole, setUserRole] = useState('');
+    const [userRoles, setUserRoles] = useState<string[]>([]);
     
     useEffect(() => {
-      if (currentUser?.role) {
-        setUserRole(currentUser.role);
+      if (currentUser?.roles) {
+        setUserRoles(currentUser.roles);
       }
     }, [currentUser]);
 
-    const isHelpdesk = userRole === 'helpdesk';
+    // Check user permissions
+    const isAdmin = userRoles.includes('admin');
+    const isHelpdesk = userRoles.includes('helpdesk');
+    const isTours = userRoles.includes('tours');
+    const isToursMedia = userRoles.includes('tours+media');
 
     interface RootState {
       ChangeLayoutMode: {
@@ -110,10 +73,9 @@ function MenuItems() {
     );
 
     useEffect(() => {
-      // Check if the current route matches the base path.
       if (pathname === path) {
-        setOpenKeys(['dashboard']); // active menu key.
-        setOpenItems(['demo-1']); // active menu item.
+        setOpenKeys(['dashboard']); 
+        setOpenItems(['demo-1']); 
       }
     }, [pathname]);
 
@@ -181,9 +143,8 @@ function MenuItems() {
         };
     }
 
-    // Create only the dashboard and support items for helpdesk users
-    const helpdeskItems = [
-        // Dashboard (minimal version)
+    // Base menu items that everyone can see
+    const baseItems = [
         getItem(
           <Link href={`${path}`}>
             {t('Dashboard')}
@@ -192,39 +153,10 @@ function MenuItems() {
           !topMenu && <UilCreateDashboard />,
           null,
         ),
-        
-        // SECTION: SUPPORT (Only section accessible to helpdesk users)
-        getItem(
-          !topMenu && (
-            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
-              {t('Support')}
-            </p>
-          ),
-          'support-title',
-          null,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/helpdesk`}>
-            {t('Helpdesk')}
-          </Link>,
-          'helpdesk',
-          !topMenu && <UilHelpdesk />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/queries`}>
-            {t('Queries')}
-          </Link>,
-          'queries',
-          !topMenu && <UilComment />,
-          null,
-        ),
     ];
 
-    // The full menu items for admin and other roles
+    // Admin-only items (full access)
     const adminItems = [
-        // SECTION 1: MAIN MENU
         getItem(
           !topMenu && (
             <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
@@ -235,14 +167,7 @@ function MenuItems() {
           null,
           null,
         ),
-        getItem(
-          <Link href={`${path}`}>
-            {t('Dashboard')}
-          </Link>,
-          'dashboard-main',
-          !topMenu && <UilCreateDashboard />,
-          null,
-        ),
+        ...baseItems,
         getItem(
           <Link href={`${path}/users`}>
             {t('Users')}
@@ -283,8 +208,10 @@ function MenuItems() {
           !topMenu && <UilTeam />,
           null,
         ),
-        
-        // SECTION 2: TOURS
+    ];
+
+    // Tours-related items
+    const toursItems = [
         getItem(
           !topMenu && (
             <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
@@ -319,8 +246,10 @@ function MenuItems() {
           !topMenu && <UilCustomTours />,
           null,
         ),
-        
-        // SECTION 3: SUPPORT
+    ];
+
+    // Support items
+    const supportItems = [
         getItem(
           !topMenu && (
             <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
@@ -347,8 +276,10 @@ function MenuItems() {
           !topMenu && <UilComment />,
           null,
         ),
-        
-        // SECTION 4: MEDIA
+    ];
+
+    // Media items
+    const mediaItems = [
         getItem(
           !topMenu && (
             <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
@@ -357,6 +288,14 @@ function MenuItems() {
           ),
           'media-title',
           null,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/homeslider`}>
+            {t('Homeslider')}
+          </Link>,
+          'homeslider',
+          !topMenu && <UilPalette />,
           null,
         ),
         getItem(
@@ -391,18 +330,42 @@ function MenuItems() {
           !topMenu && <UilImageV />,
           null,
         ),
-        getItem(
-          <Link href={`${path}/graphics`}>
-            {t('Graphics')}
-          </Link>,
-          'graphics',
-          !topMenu && <UilPalette />,
-          null,
-        ),
     ];
-    
-    // Select the appropriate items based on user role
-    const items = isHelpdesk ? helpdeskItems : adminItems;
+
+    // Build menu items based on user roles
+    let items: any[] = [];
+
+    if (isAdmin) {
+        // Admin gets everything
+        items = [
+            ...adminItems,
+            ...toursItems,
+            ...supportItems,
+            ...mediaItems
+        ];
+    } else if (isHelpdesk) {
+        // Helpdesk gets dashboard and support only
+        items = [
+            ...baseItems,
+            ...supportItems
+        ];
+    } else if (isToursMedia) {
+        // Tours+Media gets dashboard, tours, and media
+        items = [
+            ...baseItems,
+            ...toursItems,
+            ...mediaItems
+        ];
+    } else if (isTours) {
+        // Tours gets dashboard and tours only
+        items = [
+            ...baseItems,
+            ...toursItems
+        ];
+    } else {
+        // Default fallback - just dashboard
+        items = baseItems;
+    }
 
     return (
         <Menu
