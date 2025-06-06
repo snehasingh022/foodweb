@@ -6,7 +6,8 @@ import {
   UilPen,
   UilTimes,
 } from '@iconscout/react-unicons';
-import FontAwesome from 'react-fontawesome';
+import { FaFacebook } from 'react-icons/fa';
+
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { changeMenuMode, changeDirectionMode, changeLayoutMode } from '@/redux/themeLayout/actionCreator';
@@ -145,7 +146,7 @@ const Customizer = (props:any) => {
                     className='p-0 border-none shadow-none'
                   >
                     <Image src='/img/ltr.png' alt="" width="141" height="87" />
-                    <FontAwesome
+                    <FaFacebook
                       className={!rtl ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
                     />
@@ -160,7 +161,7 @@ const Customizer = (props:any) => {
                     className='p-0 border-none shadow-none'
                   >
                     <Image src='/img/rtl.png' alt="" width="141" height="87" />
-                    <FontAwesome
+                    <FaFacebook
                       className={rtl ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
                     />
@@ -183,7 +184,7 @@ const Customizer = (props:any) => {
                     className='p-0 border-none shadow-none'
                   >
                     <Image src='/img/light.png' alt="" width="141" height="87" />
-                    <FontAwesome
+                    <FaFacebook
                       className={layoutMode === 'lightMode' ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
                     />
@@ -199,7 +200,7 @@ const Customizer = (props:any) => {
                     className='p-0 border-none shadow-none'
                   >
                     <Image src='/img/dark.png' alt="" width="141" height="87" />
-                    <FontAwesome
+                    <FaFacebook
                       className={layoutMode === 'darkMode' ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
                     />
@@ -221,7 +222,7 @@ const Customizer = (props:any) => {
                     className='p-0 border-none shadow-none'
                   >
                     <Image src='/img/side.png' alt="" width="141" height="87" />
-                    <FontAwesome
+                    <FaFacebook
                       className={!topMenu ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
                     />
@@ -236,7 +237,7 @@ const Customizer = (props:any) => {
                     className='p-0 border-none shadow-none'
                   >
                     <Image src='/img/top.png' alt="" width="141" height="87" />
-                    <FontAwesome
+                    <FaFacebook
                       className={topMenu ? 'block absolute top-4 end-4 text-success' : 'hidden'}
                       name="check-circle"
                     />

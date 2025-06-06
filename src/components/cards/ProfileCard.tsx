@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import FontAwesome from 'react-fontawesome';
+import { FaFacebook } from 'react-icons/fa';
 
 function ProfileCard( image:string, bgImage:string, title:string, tag:string ) {
   return (
@@ -22,7 +22,7 @@ function ProfileCard( image:string, bgImage:string, title:string, tag:string ) {
                 className="flex items-center justify-center w-[32px] h-[32px] rounded-6 leading-[1] bg-facebook"
                 href="#"
               >
-                <FontAwesome className="text-[16px] text-white" name="facebook" />
+                <FaFacebook className="text-[16px] text-white" name="facebook" />
               </Link>
             </li>
             <li className="text-twitter">
@@ -30,7 +30,7 @@ function ProfileCard( image:string, bgImage:string, title:string, tag:string ) {
                 className="flex items-center justify-center w-[32px] h-[32px] rounded-6 leading-[1] bg-twitter"
                 href="#"
               >
-                <FontAwesome className="text-[16px] text-white" name="twitter" />
+                <FaFacebook className="text-[16px] text-white" name="twitter" />
               </Link>
             </li>
             <li className="text-dribbble">
@@ -38,7 +38,7 @@ function ProfileCard( image:string, bgImage:string, title:string, tag:string ) {
                 className="flex items-center justify-center w-[32px] h-[32px] rounded-6 leading-[1] bg-dribbble"
                 href="#"
               >
-                <FontAwesome className="text-[16px] text-white" name="dribbble" />
+                <FaFacebook className="text-[16px] text-white" name="dribbble" />
               </Link>
             </li>
           </ul>

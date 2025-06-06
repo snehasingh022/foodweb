@@ -6,7 +6,8 @@ import {
     UilEdit,
     UilTrashAlt,
 } from '@iconscout/react-unicons'
-import FontAwesome from 'react-fontawesome'
+import { FaFacebook } from 'react-icons/fa';
+
 import DropDown from '@/components/dropdown'
 import socialMediaLinks from '@/demoData/socialMediaLinks.json'
 
@@ -16,49 +17,49 @@ interface User {
         designation: string
         img: string
     };
-    actions?: React.ReactNode; 
+    actions?: React.ReactNode;
 }
 
 function TeamCard({ user }: User) {
     const { name, designation, img } = user
 
     const moreContent = [
-      {
-          key: '1',
-          label: (
-              <Link
-                  className="group flex items-center text-theme-gray dark:text-white/60 hover:bg-primary-transparent hover:text-primary px-3 py-1.5 text-sm gap-[10px] [&>svg]:w-[14px] [&>svg]:h-[14px] [&>svg]:text-light-extra dark:[&>svg]:text-white/60"
-                  href="#"
-              >
-                  <UilEye className="group-hover:text-primary" />
-                  View
-              </Link>
-          ),
-      },
-      {
-          key: '2',
-          label: (
-              <Link
-                  className="group flex items-center text-theme-gray dark:text-white/60 hover:bg-primary-transparent hover:text-primary px-3 py-1.5 text-sm gap-[10px] [&>svg]:w-[14px] [&>svg]:h-[14px] [&>svg]:text-light-extra dark:[&>svg]:text-white/60"
-                  href="#"
-              >
-                  <UilEdit className="group-hover:text-primary" />
-                  Edit
-              </Link>
-          ),
-      },
-      {
-          key: '3',
-          label: (
-              <Link
-                  className="group flex items-center text-theme-gray dark:text-white/60 hover:bg-primary-transparent hover:text-primary px-3 py-1.5 text-sm gap-[10px] [&>svg]:w-[14px] [&>svg]:h-[14px] [&>svg]:text-light-extra dark:[&>svg]:text-white/60"
-                  href="#"
-              >
-                  <UilTrashAlt className="group-hover:text-primary" />
-                  Delete
-              </Link>
-          ),
-      },
+        {
+            key: '1',
+            label: (
+                <Link
+                    className="group flex items-center text-theme-gray dark:text-white/60 hover:bg-primary-transparent hover:text-primary px-3 py-1.5 text-sm gap-[10px] [&>svg]:w-[14px] [&>svg]:h-[14px] [&>svg]:text-light-extra dark:[&>svg]:text-white/60"
+                    href="#"
+                >
+                    <UilEye className="group-hover:text-primary" />
+                    View
+                </Link>
+            ),
+        },
+        {
+            key: '2',
+            label: (
+                <Link
+                    className="group flex items-center text-theme-gray dark:text-white/60 hover:bg-primary-transparent hover:text-primary px-3 py-1.5 text-sm gap-[10px] [&>svg]:w-[14px] [&>svg]:h-[14px] [&>svg]:text-light-extra dark:[&>svg]:text-white/60"
+                    href="#"
+                >
+                    <UilEdit className="group-hover:text-primary" />
+                    Edit
+                </Link>
+            ),
+        },
+        {
+            key: '3',
+            label: (
+                <Link
+                    className="group flex items-center text-theme-gray dark:text-white/60 hover:bg-primary-transparent hover:text-primary px-3 py-1.5 text-sm gap-[10px] [&>svg]:w-[14px] [&>svg]:h-[14px] [&>svg]:text-light-extra dark:[&>svg]:text-white/60"
+                    href="#"
+                >
+                    <UilTrashAlt className="group-hover:text-primary" />
+                    Delete
+                </Link>
+            ),
+        },
     ]
 
     return (
@@ -99,7 +100,7 @@ function TeamCard({ user }: User) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
-                                    <FontAwesome
+                                    <FaFacebook 
                                         className="text-current"
                                         name={link.icon}
                                     />
