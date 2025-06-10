@@ -16,7 +16,7 @@ import {
   Typography,
   Spin
 } from 'antd';
-import { collection, query, getDocs, doc, getDoc, updateDoc,limit, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, updateDoc, limit, orderBy, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../../../authentication/firebase';
 import moment from 'moment';
 import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
@@ -68,6 +68,16 @@ interface Ticket {
   };
 }
 
+interface EmailLog {
+  ticketId: string;
+  customerEmail: string;
+  subject: string;
+  messageContent: string;
+  status: 'success' | 'failed';
+  timestamp: any;
+  errorMessage?: string;
+}
+
 function Helpdesk() {
   const [loading, setLoading] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -83,11 +93,104 @@ function Helpdesk() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [responseModalVisible, setResponseModalVisible] = useState(false);
   const [responseForm] = Form.useForm();
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     fetchTickets();
     setClicked(currentTab);
   }, [currentTab]);
+
+  // Log email activity to Firebase
+  const logEmailActivity = async (emailLog: EmailLog) => {
+    try {
+      const emailLogRef = doc(collection(db, 'emailLogs'));
+      await setDoc(emailLogRef, {
+        ...emailLog,
+        timestamp: serverTimestamp()
+      });
+      console.log('Email activity logged successfully');
+    } catch (error) {
+      console.error('Error logging email activity:', error);
+    }
+  };
+
+// Fixed sendEmailNotification function - replace the existing one in your helpdesk component
+const sendEmailNotification = async (
+  email: string, 
+  subject: string, 
+  messageContent: string
+) => {
+  try {
+    console.log("Sending email notification to:", email);
+    
+    const response = await fetch("/api/mail/send", {
+      method: "POST",
+      body: JSON.stringify({
+        email: email,
+        message: messageContent,
+        subject: subject,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log("Response status:", response.status);
+
+    // Read the response body only once
+    const responseText = await response.text();
+
+    // Try to parse as JSON
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse JSON response:", responseText);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}...`);
+    }
+
+    if (response.ok && result.status === 'success') {
+      console.log('Email notification sent successfully');
+      message.success('Email notification sent successfully!');
+      setEmailSent(true);
+      
+      await logEmailActivity({
+        ticketId: currentTicket?.helpDeskID || currentTicket?.id || '',
+        customerEmail: email,
+        subject,
+        messageContent,
+        status: 'success',
+        timestamp: serverTimestamp()
+      });
+      
+      return true;
+    } else {
+      throw new Error(result.error || `Server error: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Error sending email notification:', error);
+    let errorMessage = 'Unknown error occurred';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    message.error(`Error sending email notification: ${errorMessage}`);
+    
+    // Log failed email
+    await logEmailActivity({
+      ticketId: currentTicket?.helpDeskID || currentTicket?.id || '',
+      customerEmail: email,
+      subject,
+      messageContent,
+      status: 'failed',
+      timestamp: serverTimestamp(),
+      errorMessage: errorMessage
+    });
+    
+    return false;
+  }
+};
 
   const formatCategory = (category: string) => {
     if (!category) return '';
@@ -150,7 +253,7 @@ function Helpdesk() {
         const tabStatus = currentTab === 'reopened' ? 'Re-Opened' : currentTab.charAt(0).toUpperCase() + currentTab.slice(1);
         if (
           normalizedStatus === tabStatus ||
-          searchText.trim() !== '' 
+          searchText.trim() !== ''
         ) {
           ticketList.push(ticket);
         }
@@ -210,81 +313,6 @@ function Helpdesk() {
     (item.helpDeskID?.toLowerCase().includes(searchText.toLowerCase()) || false)
   );
 
-  // Updated ZeptoMail email sending function
-  const sendZeptoMailNotification = async (email: string, subject: string, messageContent: string) => {
-    try {
-      const response = await fetch('https://api.zeptomail.in/v1.1/email', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Zoho-enczapikey PHtE6r0ORui43jYq9kcF4KK7FsL1Nol/qbtkJFJDs4tGWfQFGE1SqY9/lmK3qUojUfkTQKOcm9k65LiYsb6HcW7vYzwfWmqyqK3sx/VYSPOZsbq6x00ftF8ffkXZV4Htd9Rs0iPVs9rTNA==',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: {
-            address: 'noreply@wecofy.com',
-            name: 'Wecofy Support Team'
-          },
-          to: [
-            {
-              email_address: {
-                address: email,
-                name: currentTicket?.customerName || 'Valued Customer'
-              }
-            }
-          ],
-          subject: subject,
-          htmlbody: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
-              <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <div style="text-align: center; margin-bottom: 30px;">
-                  <h1 style="color: #333; margin: 0;">Wecofy Support</h1>
-                  <div style="width: 50px; height: 3px; background-color: #007bff; margin: 10px auto;"></div>
-                </div>
-                
-                <h2 style="color: #333; margin-bottom: 20px;">Ticket Update Notification</h2>
-                
-                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
-                  <p style="margin: 0; color: #666;"><strong>Ticket ID:</strong> ${currentTicket?.helpDeskID || currentTicket?.id}</p>
-                  <p style="margin: 10px 0 0 0; color: #666;"><strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">RESOLVED</span></p>
-                </div>
-                
-                <div style="margin-bottom: 25px;">
-                  <h3 style="color: #333; margin-bottom: 10px;">Our Response:</h3>
-                  <div style="background-color: #e9ecef; padding: 15px; border-radius: 6px; border-left: 4px solid #007bff;">
-                    <p style="margin: 0; color: #333; line-height: 1.6;">${messageContent}</p>
-                  </div>
-                </div>
-                
-                <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
-                  <p style="color: #666; margin: 0;">Thank you for choosing Wecofy!</p>
-                  <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">This is an automated message. Please do not reply to this email.</p>
-                </div>
-              </div>
-            </div>
-          `,
-          track_clicks: true,
-          track_opens: true
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('ZeptoMail notification sent successfully:', result);
-        message.success('Email notification sent successfully!');
-        return true;
-      } else {
-        const errorData = await response.json();
-        console.error('Failed to send ZeptoMail notification:', errorData);
-        message.error('Failed to send email notification');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error sending ZeptoMail notification:', error);
-      message.error('Error sending email notification');
-      return false;
-    }
-  };
-
   const getActionButtons = (record: Ticket) => {
     const actions = [];
     if (record.status === 'Opened') {
@@ -295,10 +323,11 @@ function Helpdesk() {
           size="small"
           onClick={() => {
             setCurrentTicket(record);
+            setEmailSent(false);
             setResponseModalVisible(true);
             setTimeout(() => {
               responseForm.setFieldsValue({
-                status: 'resolved', 
+                status: 'resolved',
                 message: '',
                 attachmentURL: ''
               });
@@ -318,10 +347,11 @@ function Helpdesk() {
           size="small"
           onClick={() => {
             setCurrentTicket(record);
+            setEmailSent(false);
             setResponseModalVisible(true);
             setTimeout(() => {
               responseForm.setFieldsValue({
-                status: 'closed', 
+                status: 'closed',
                 message: '',
                 attachmentURL: ''
               });
@@ -420,7 +450,7 @@ function Helpdesk() {
       : 'N/A';
   };
 
-  // Updated handleResponseSubmit function
+  // Updated handleResponseSubmit function with simplified email integration
   const handleResponseSubmit = async (values: any) => {
     try {
       setSubmitLoading(true);
@@ -430,7 +460,7 @@ function Helpdesk() {
       }
 
       const ticketRef = doc(db, 'helpdesk', currentTicket.id);
-      const status = values.status || 'resolved'; 
+      const status = values.status || 'resolved';
       const responseType = status.toLowerCase().replace('-', '');
 
       const responseData = {
@@ -451,20 +481,61 @@ function Helpdesk() {
         updatedAt: serverTimestamp()
       });
 
-      // Send email notification only when ticket is resolved
-      if (status.toLowerCase() === 'resolved' && currentTicket.email) {
-        const emailSubject = `Your Ticket ${currentTicket.helpDeskID || currentTicket.id} Has Been Resolved`;
+      const statusDisplay = status.charAt(0).toUpperCase() + status.slice(1);
+
+      // Send email notification for resolved and closed tickets
+      if ((status.toLowerCase() === 'resolved' || status.toLowerCase() === 'closed') && currentTicket.email) {
+        const emailSubject = `${currentTicket.helpDeskID || currentTicket.id}: Issue ${statusDisplay}`;
         
-        // Send ZeptoMail notification
-        await sendZeptoMailNotification(currentTicket.email, emailSubject, values.message);
+        // Create HTML email content
+        const htmlContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+            <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #333; margin: 0;">Wecofy Support Team</h1>
+                <div style="width: 50px; height: 3px; background-color: #007bff; margin: 10px auto;"></div>
+              </div>
+              
+              <h2 style="color: #333; margin-bottom: 20px;">Ticket Update Notification</h2>
+              
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #666;"><strong>Ticket ID:</strong> ${currentTicket.helpDeskID || currentTicket.id}</p>
+                <p style="margin: 10px 0 0 0; color: #666;"><strong>Customer Name:</strong> ${currentTicket.customerName}</p>
+                <p style="margin: 10px 0 0 0; color: #666;"><strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">${statusDisplay}</span></p>
+              </div>
+              
+              <div style="margin-bottom: 25px;">
+                <h3 style="color: #333; margin-bottom: 10px;">Our Response:</h3>
+                <div style="background-color: #e9ecef; padding: 15px; border-radius: 6px; border-left: 4px solid #007bff;">
+                  <p style="margin: 0; color: #333; line-height: 1.6;">${values.message}</p>
+                </div>
+              </div>
+              
+              <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
+                <p style="color: #666; margin: 0;">Thank you for choosing us!</p>
+                <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">This is an automated message. Please do not reply to this email.</p>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Send email notification
+        await sendEmailNotification(
+          currentTicket.email, 
+          emailSubject, 
+          htmlContent
+        );
       }
 
-      const statusDisplay = status.charAt(0).toUpperCase() + status.slice(1);
       message.success(`Ticket ${status.toLowerCase()} successfully`);
-      
-      setResponseModalVisible(false);
-      responseForm.resetFields();
-      fetchTickets(); 
+
+      // Only close modal if email was sent successfully or no email was required
+      if (emailSent || !currentTicket.email || (status.toLowerCase() !== 'resolved' && status.toLowerCase() !== 'closed')) {
+        setResponseModalVisible(false);
+        responseForm.resetFields();
+        setEmailSent(false);
+        fetchTickets();
+      }
     } catch (error) {
       console.error(`Error updating ticket: ${error}`);
       message.error(`Failed to update ticket`);
@@ -654,6 +725,7 @@ function Helpdesk() {
         onCancel={() => {
           setResponseModalVisible(false);
           responseForm.resetFields();
+          setEmailSent(false);
         }}
         footer={null}
         width={650}
@@ -679,6 +751,7 @@ function Helpdesk() {
                   rows={4}
                   placeholder="Enter your response..."
                   className="w-full"
+                  disabled={emailSent}
                 />
               </Form.Item>
 
@@ -710,20 +783,33 @@ function Helpdesk() {
 
               <Form.Item className="mb-0 flex justify-end">
                 <Space>
-                  <Button onClick={() => setResponseModalVisible(false)}>
+                  <Button onClick={() => {
+                    setResponseModalVisible(false);
+                    setEmailSent(false);
+                  }}>
                     Cancel
                   </Button>
                   <Button
                     type="primary"
                     htmlType="submit"
                     loading={submitLoading}
+                    disabled={emailSent && !responseForm.getFieldValue('message')}
+                    className="flex items-center gap-2"
                   >
-                    {(() => {
-                      const status = responseForm.getFieldValue('status');
-                      if (status === 'resolved') return 'Resolve';
-                      if (status === 'closed') return 'Close';
-                      return 'Update';
-                    })()}
+                    {emailSent ? (
+                      <>
+                        ✓ Sent
+                      </>
+                    ) : submitLoading ? (
+                      'Processing...'
+                    ) : (
+                      (() => {
+                        const status = responseForm.getFieldValue('status');
+                        if (status === 'resolved') return 'Resolve';
+                        if (status === 'closed') return 'Close';
+                        return 'Update';
+                      })()
+                    )}
                   </Button>
                 </Space>
               </Form.Item>
