@@ -114,11 +114,10 @@ function EditTour() {
     ];
 
     const themeTypeOptions = [
-        { value: 'east', label: 'East' },
-        { value: 'west', label: 'West' },
-        { value: 'north', label: 'North' },
-        { value: 'south', label: 'South' },
-        { value: 'centre', label: 'Centre' },
+        { value: 'east', label: 'East & North East India' },
+        { value: 'west', label: 'Rajasthan, West & Central India' },
+        { value: 'north', label: 'North India' },
+        { value: 'south', label: 'South India' },
     ];
 
     useEffect(() => {
@@ -1139,11 +1138,10 @@ function EditTour() {
                                                                 placeholder="Select theme type"
                                                                 allowClear
                                                             >
-                                                                <Option value="east">East</Option>
-                                                                <Option value="west">West</Option>
-                                                                <Option value="north">North</Option>
-                                                                <Option value="south">South</Option>
-                                                                <Option value="centre">Centre</Option>
+                                                                <Option value="east">East & North East India</Option>
+                                                                <Option value="west">Rajasthan, West & Central India</Option>
+                                                                <Option value="north">North India</Option>
+                                                                <Option value="south">South India</Option>
                                                             </Select>
                                                         </Form.Item>
                                                     </Col>

@@ -1,6 +1,4 @@
-export const dynamic = "force-dynamic"; // For Next.js route behavior
-
-import { NextRequest } from "next/server";
+import { NextApiRequest, NextApiResponse } from 'next';
 const nodemailer = require('nodemailer');
 
 const transport = nodemailer.createTransport({
@@ -18,16 +16,17 @@ type EmailBody = {
     message: string;
 };
 
-export async function POST(request: NextRequest): Promise<Response> {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ status: "error", error: "Method not allowed" });
+    }
+
     try {
-        const body: EmailBody = await request.json();
+        const body: EmailBody = req.body;
 
         // Simple validation
         if (!body.email || !body.subject || !body.message) {
-            return new Response(
-                JSON.stringify({ status: "error", error: "Missing required fields." }),
-                { status: 400 }
-            );
+            return res.status(400).json({ status: "error", error: "Missing required fields." });
         }
 
         const mailOptions = {
@@ -40,22 +39,12 @@ export async function POST(request: NextRequest): Promise<Response> {
         await transport.sendMail(mailOptions);
         console.log("Mail sent successfully to", body.email);
 
-        return new Response(JSON.stringify({ status: "success" }), {
-            status: 200,
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
+        return res.status(200).json({ status: "success" });
     } catch (error: any) {
         console.error("Error sending mail:", error);
-        return new Response(
-            JSON.stringify({ status: "error", error: error.message || "Internal Server Error" }),
-            {
-                status: 500,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        return res.status(500).json({ 
+            status: "error", 
+            error: error.message || "Internal Server Error" 
+        });
     }
 }

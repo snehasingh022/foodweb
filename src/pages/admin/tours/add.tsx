@@ -1000,11 +1000,10 @@ function AddTour() {
                                                             ]}
                                                         >
                                                             <Select className="w-full" placeholder="Select theme type">
-                                                                <Option value="east">East</Option>
-                                                                <Option value="west">West</Option>
-                                                                <Option value="north">North</Option>
-                                                                <Option value="south">South</Option>
-                                                                <Option value="centre">Centre</Option>
+                                                                <Option value="east">East & North East India</Option>
+                                                                <Option value="west">Rajasthan, West & Central India</Option>
+                                                                <Option value="north">North India</Option>
+                                                                <Option value="south">South India</Option>
                                                             </Select>
                                                         </Form.Item>
                                                     </Col>
