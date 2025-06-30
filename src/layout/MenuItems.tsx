@@ -16,6 +16,7 @@ import {
   UilApps,
   UilImageV,
   UilPalette,
+  UilMegaphone,
 } from '@iconscout/react-unicons';
 import React, { useState, useEffect } from 'react';
 import { Menu } from 'antd';
@@ -296,6 +297,14 @@ function MenuItems() {
           </Link>,
           'homeslider',
           !topMenu && <UilPalette />,
+          null,
+        ),
+        getItem(
+          <Link href={`${path}/media/advertisement`}>
+            {t('Advertisements')}
+          </Link>,
+          'advertisements',
+          !topMenu && <UilMegaphone />,
           null,
         ),
         getItem(
