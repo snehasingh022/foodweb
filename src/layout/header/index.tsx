@@ -80,8 +80,8 @@ const HeaderTop = () => {
                   className="w-full max-w-[120px] xs:max-w-[100px]"
                   src={
                     layoutMode === 'lightMode'
-                      ? '/img_adm/logo-05.png'
-                      : '/img_adm/logo-05.png'
+                      ? ''
+                      : ''
                   }
                   alt="Logo"
                   width="140" 

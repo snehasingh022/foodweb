@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Select, Input, message, Spin, Tabs, Space, InputNumber } from 'antd';
 import { PageHeaders } from '../../../components/page-headers/index';
-import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, CloudUploadOutlined, FileImageOutlined, SearchOutlined, EditOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import Protected from '../../../components/Protected/Protected';
 
@@ -46,6 +46,11 @@ function Graphics() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [firebaseInitialized, setFirebaseInitialized] = useState(true);
   const [fileUploading, setFileUploading] = useState(false);
+  
+  // Set preferences modal states
+  const [preferencesModalOpen, setPreferencesModalOpen] = useState(false);
+  const [editableImages, setEditableImages] = useState<SliderImage[]>([]);
+  const [preferencesLoading, setPreferencesLoading] = useState(false);
 
   const PageRoutes = [
     {
@@ -387,6 +392,83 @@ function Graphics() {
     setAddImageModalOpen(true);
   };
 
+  // Function to open preferences modal
+  const handleOpenPreferencesModal = () => {
+    setEditableImages([...data]); // Create a copy of current data
+    setPreferencesModalOpen(true);
+  };
+
+  // Function to handle position change in preferences modal
+  const handlePositionChange = (imageIndex: number, newPosition: number) => {
+    const updatedImages = [...editableImages];
+    updatedImages[imageIndex] = {
+      ...updatedImages[imageIndex],
+      position: newPosition
+    };
+    setEditableImages(updatedImages);
+  };
+
+  // Function to save all preferences
+  const handleSavePreferences = async () => {
+    if (!firebaseInitialized) {
+      message.error('Firebase is not initialized yet');
+      return;
+    }
+
+    // Validate that all positions are unique and valid
+    const positions = editableImages.map(img => img.position);
+    const uniquePositions = new Set(positions);
+    
+    if (uniquePositions.size !== positions.length) {
+      message.error('All positions must be unique');
+      return;
+    }
+
+    if (positions.some(pos => !pos || pos < 1)) {
+      message.error('All positions must be valid numbers (minimum 1)');
+      return;
+    }
+
+    try {
+      setPreferencesLoading(true);
+
+      // Dynamic import of Firestore functions
+      const { doc, updateDoc } = await import('firebase/firestore');
+
+      // Use the main Firebase database with homeCarousel
+      const docRef = doc(db, 'sliderImages', carouselName);
+
+      // Sort images by position to ensure correct order
+      const sortedImages = editableImages.sort((a: SliderImage, b: SliderImage) => {
+        const posA = a.position || 999;
+        const posB = b.position || 999;
+        return posA - posB;
+      });
+
+      await updateDoc(docRef, {
+        images: sortedImages,
+      });
+
+      message.success('Carousel positions updated successfully');
+      
+      // Close modal and refresh data
+      setPreferencesModalOpen(false);
+      await fetchSliderImages();
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      message.error('Failed to update positions');
+    } finally {
+      setPreferencesLoading(false);
+    }
+  };
+
+  // Function to close preferences modal
+  const handleClosePreferencesModal = () => {
+    setPreferencesModalOpen(false);
+    setEditableImages([]);
+    setPreferencesLoading(false);
+  };
+
   // Display loading state if Firebase is not yet initialized
   if (!firebaseInitialized) {
     return (
@@ -408,7 +490,7 @@ function Graphics() {
             <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
               <div className="flex-1">
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Home Carousel Images</h1>
-                <p className="text-sm text-gray-500 mt-1">Images are displayed in order by position</p>
+                <p className="text-sm text-gray-500 mt-1">Images are displayed in order by position. Use "Set Preferences" to reorder all carousel items at once.</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -419,6 +501,15 @@ function Graphics() {
                 >
                   Add Image
                 </Button>
+                <Button
+                  type="default"
+                  icon={<EditOutlined />}
+                  onClick={handleOpenPreferencesModal}
+                  className="h-10 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 inline-flex items-center justify-center rounded-[4px] px-[20px] text-gray-700 dark:text-white/[.87]"
+                  disabled={data.length === 0}
+                >
+                  Set Preferences
+                </Button>
                 {loading && <Spin />}
               </div>
             </div>
@@ -426,13 +517,15 @@ function Graphics() {
         </Row>
 
         {/* Data table */}
-        {/* Data table */}
         <Card className="mt-4">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 dark:bg-white/10">
-                  <th className="px-4 py-5 font-medium text-center text-light dark:text-white/60">Position</th>
+                  <th className="px-4 py-5 font-medium text-center text-light dark:text-white/60">
+                    Position
+                    <div className="text-xs font-normal text-gray-500 mt-1">Click edit to reorder</div>
+                  </th>
                   <th className="px-4 py-5 font-medium text-center text-light dark:text-white/60">Image</th>
                   <th className="px-4 py-5 font-medium text-left text-light dark:text-white/60">
                     Redirection URL
@@ -492,6 +585,7 @@ function Graphics() {
                               icon={<DeleteOutlined />}
                               className="text-red-600 hover:text-red-800"
                               onClick={() => handleDeleteImage(item)}
+                              title="Delete Image"
                             >
                             </Button>
                           </div>
@@ -683,6 +777,99 @@ function Graphics() {
           alt="Preview"
           className="w-full h-auto max-h-[80vh] object-contain"
         />
+      </Modal>
+
+      {/* Set Preferences Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-semibold text-dark dark:text-white/[.87]">
+              Set Carousel Preferences
+            </span>
+          </div>
+        }
+        open={preferencesModalOpen}
+        onCancel={handleClosePreferencesModal}
+        width={800}
+        bodyStyle={{ padding: '24px 28px' }}
+        footer={[
+          <Button
+            key="back"
+            size="large"
+            onClick={handleClosePreferencesModal}
+            className="min-w-[100px] font-medium mb-4"
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={preferencesLoading}
+            className="min-w-[160px] font-medium mb-4 mr-4"
+            onClick={handleSavePreferences}
+          >
+            Save Preferences
+          </Button>
+        ]}
+      >
+        <div className="mt-4 px-2">
+          <div className="mb-6">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Reorder your carousel images by changing their positions. Lower numbers appear first in the carousel.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {editableImages.map((image, index) => (
+              <div key={`${image.imageUrl}-${index}`} className="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex-shrink-0">
+                  <img
+                    src={image.imageUrl}
+                    alt="Carousel"
+                    className="w-20 h-20 object-cover rounded border"
+                  />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                    Redirection URL:
+                  </div>
+                  <div className="text-xs text-gray-500 break-all mb-3">
+                    {image.redirectionURL}
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0">
+                  <label className="block text-sm font-medium text-dark dark:text-white/[.87] mb-2">
+                    Position
+                  </label>
+                  <InputNumber
+                    min={1}
+                    max={editableImages.length}
+                    value={image.position}
+                    onChange={(value) => handlePositionChange(index, value || 1)}
+                    size="large"
+                    className="w-20"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {editableImages.length > 0 && (
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-blue-700 dark:text-blue-300 font-medium">Quick Tips:</span>
+              </div>
+              <ul className="text-sm text-blue-600 dark:text-blue-300 space-y-1">
+                <li>• Position 1 appears first in the carousel</li>
+                <li>• Each position number must be unique</li>
+                <li>• Images will be automatically sorted by position</li>
+              </ul>
+            </div>
+          )}
+        </div>
       </Modal>
     </>
   );

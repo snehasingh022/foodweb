@@ -10,7 +10,7 @@ const Footer = () => {
           <span className="inline-block w-full font-medium admin-footer__copyright md:text-center text-theme-gray dark:text-white/60 md:mb-[10px]">
             © 2025
             <span className="mx-[4px] text-black">
-              Parthvi Travles
+              Foodweb Partners
             </span>
           </span>
         </Col>

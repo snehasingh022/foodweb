@@ -8,6 +8,7 @@ import { PageHeaders } from "../../../components/page-headers/index"
 import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, setDoc, doc } from "firebase/firestore"
 import { db} from "../../../authentication/firebase"
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage"
+import { Editor } from "@tinymce/tinymce-react"
 import Protected from "../../../components/Protected/Protected"
 import { useRouter } from "next/router"
 import { storage } from "@/lib/firebase-secondary";
@@ -43,6 +44,7 @@ function AddCruise() {
     const [categoryLoading, setCategoryLoading] = useState(false)
     const [tagLoading, setTagLoading] = useState(false)
     const [cruiseLoading, setCruiseLoading] = useState(false)
+    const [editorContent, setEditorContent] = useState('')
 
     const PageRoutes = [
         {
@@ -300,16 +302,10 @@ function AddCruise() {
             setCruiseLoading(true)
             const cruiseId = `CRID${Date.now().toString().slice(-6)}`;
 
-            // Convert sailing dates to proper format - each date range should be an object with start and end dates
-            const formattedSailingDates = sailingDates.map(dateRange => ({
-                startDate: dateRange[0].toDate(), // Convert Dayjs to Date
-                endDate: dateRange[1].toDate()    // Convert Dayjs to Date
-            }));
-
             const cruiseData = {
                 title: values.title,
                 slug: values.slug,
-                description: values.description || "",
+                description: editorContent || "",
                 categoryDetails: {
                     categoryID: values.categoryID || "",
                     name: values.categoryName || "",
@@ -321,13 +317,8 @@ function AddCruise() {
                 isFeatured: values.isFeatured === "Yes", // Convert to boolean
                 cruiseType: values.cruiseType || "domestic",
                 location: values.location || "",
-                numberofDays: Number.parseInt(values.numberofDays) || 0,
-                numberofNights: Number.parseInt(values.numberofNights) || 0,
-                price: values.price || "0", // Store as string
-                startDate: values.startDate ? values.startDate.toDate() : null,
                 status: values.status || "active",
                 videoURL: values.videoURL || "",
-                sailingDates: formattedSailingDates, // Use formatted sailing dates
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -414,38 +405,7 @@ function AddCruise() {
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
-
                                             <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Start Date</span>}
-                                                        name="startDate"
-                                                        rules={[{ required: true, message: "Please select start date" }]}
-                                                    >
-                                                        <DatePicker className="w-full py-2" format="YYYY-MM-DD" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">End Date</span>}
-                                                        name="endDate"
-                                                        rules={[{ required: true, message: "Please select end date" }]}
-                                                    >
-                                                        <DatePicker className="w-full py-2" format="YYYY-MM-DD" />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Price (₹)</span>}
-                                                        name="price"
-                                                        rules={[{ required: true, message: "Please enter cruise price" }]}
-                                                    >
-                                                        <Input type="number" placeholder="Enter price" className="py-2" />
-                                                    </Form.Item>
-                                                </Col>
                                                 <Col span={12}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Status</span>}
@@ -458,9 +418,6 @@ function AddCruise() {
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Location</span>}
@@ -470,6 +427,9 @@ function AddCruise() {
                                                         <Input placeholder="Enter cruise location" className="py-2" />
                                                     </Form.Item>
                                                 </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Featured</span>}
@@ -482,27 +442,16 @@ function AddCruise() {
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Number of Days</span>}
-                                                        name="numberofDays"
-                                                        rules={[{ required: true, message: "Please enter number of days" }]}
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Cruise Type</span>}
+                                                        name="cruiseType"
+                                                        initialValue="domestic"
                                                     >
-                                                        <Input type="number" placeholder="Enter number of days" className="py-2" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={
-                                                            <span className="text-dark dark:text-white/[.87] font-medium">Number of Nights</span>
-                                                        }
-                                                        name="numberofNights"
-                                                        rules={[{ required: true, message: "Please enter number of nights" }]}
-                                                    >
-                                                        <Input type="number" placeholder="Enter number of nights" className="py-2" />
+                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
+                                                            <Select.Option value="domestic">Domestic</Select.Option>
+                                                            <Select.Option value="international">International</Select.Option>
+                                                        </Select>
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -585,60 +534,7 @@ function AddCruise() {
                                                 </Col>
                                             </Row>
 
-                                            <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Cruise Type</span>}
-                                                        name="cruiseType"
-                                                        initialValue="domestic"
-                                                    >
-                                                        <Select className="w-full" dropdownStyle={{ borderRadius: "6px" }}>
-                                                            <Select.Option value="domestic">Domestic</Select.Option>
-                                                            <Select.Option value="international">International</Select.Option>
-                                                        </Select>
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={
-                                                            <span className="text-dark dark:text-white/[.87] font-medium">
-                                                                Sailing Dates
-                                                            </span>
-                                                        }
-                                                    >
-                                                        <div className="flex gap-2 items-center">
-                                                            <RangePicker
-                                                                format="DD MMM YYYY"
-                                                                value={dateInput}
-                                                                onChange={(dates) => {
-                                                                    setDateInput(dates as [Dayjs, Dayjs] | null);
-                                                                }}
-                                                                className="flex-1"
-                                                            />
-                                                            <Button
-                                                                type="primary"
-                                                                onClick={handleAddSailingDate}
-                                                                disabled={!dateInput || !dateInput[0] || !dateInput[1]}
-                                                            >
-                                                                Add
-                                                            </Button>
-                                                        </div>
 
-                                                        <div className="flex flex-wrap gap-2 mt-2">
-                                                            {sailingDates.map((range, index) => (
-                                                                <Tag
-                                                                    key={index}
-                                                                    closable
-                                                                    onClose={() => handleDeleteSailingDate(index)}
-                                                                    className="py-1 px-3"
-                                                                >
-                                                                    {range[0].format("DD MMM YYYY")} - {range[1].format("DD MMM YYYY")}
-                                                                </Tag>
-                                                            ))}
-                                                        </div>
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
 
                                             <Row gutter={24}>
                                                 <Col span={4}>
@@ -724,7 +620,24 @@ function AddCruise() {
                                                 label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
                                                 name="description"
                                             >
-                                                <Input.TextArea rows={3} placeholder="Write a brief summary of the blog" className="text-base" />
+                                                <Editor
+                                                    value={editorContent}
+                                                    onEditorChange={(content) => setEditorContent(content)}
+                                                    apiKey="vk693p6lgtcyd2xpc283y9knpg1zphq39p5uqwd5y4coapxo"
+                                                    init={{
+                                                        height: 300,
+                                                        menubar: false,
+                                                        plugins: [
+                                                            'lists link image',
+                                                            'charmap emoticons',
+                                                            'table',
+                                                            'code',
+                                                            'help'
+                                                        ],
+                                                        toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image | help',
+                                                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                                                    }}
+                                                />
                                             </Form.Item>
                                         </div>
                                         <div className="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">

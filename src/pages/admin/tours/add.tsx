@@ -18,6 +18,7 @@ import {
     InputNumber,
     Tabs,
     Upload,
+    Radio,
 } from 'antd';
 import {
     PlusOutlined,
@@ -84,6 +85,7 @@ function AddTour() {
     const [doInput, setDoInput] = useState<string>('');
     const [dosInputs, setDosInputs] = useState<string[]>([]);
     const [selectedTourType, setSelectedTourType] = useState('domestic'); // Add state for tour type
+    const [isSpiritualTour, setIsSpiritualTour] = useState(false); // Add state for spiritual tour
 
     // Video upload state variables
     const [videoLoading, setVideoLoading] = useState(false);
@@ -501,6 +503,7 @@ function AddTour() {
                     flights: values.flights || false,
                     transfers: values.transfers || false,
                     sightseeing: values.sightseeing || false,
+                    accommodation: values.accommodation || false,
                 },
                 includedMore: includedMoreInputs.filter(item => item.trim() !== ''),
                 notIncluded: notIncludedInputs.filter(item => item.trim() !== ''),
@@ -514,6 +517,7 @@ function AddTour() {
                 tags: processedTags,
                 tourType: values.tourType || "domestic",
                 ...(values.tourType === 'domestic' && values.themeType ? { themeType: values.themeType } : {}),
+                isSpiritual: values.isSpiritual || false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -727,6 +731,7 @@ function AddTour() {
                                                         name="price"
                                                         rules={[{ required: true, message: 'Please enter tour price' }]}
                                                         className="mb-4"
+                                                        initialValue={0}
                                                     >
                                                         <Input
                                                             className="w-full"
@@ -775,6 +780,19 @@ function AddTour() {
                                                             placeholder="Enter tour location"
                                                             className="py-2"
                                                         />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
+                                                <Col span={8}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Is Spiritual Tour</span>}
+                                                        name="isSpiritual"
+                                                        valuePropName="checked"
+                                                        initialValue={false}
+                                                    >
+                                                        <Switch className="custom-switch" />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -926,7 +944,8 @@ function AddTour() {
                                                                 'hotel',
                                                                 'flights',
                                                                 'transfers',
-                                                                'sightseeing'
+                                                                'sightseeing',
+                                                                'accommodation'
                                                             ].map((service) => (
                                                                 <Col span={3} key={service}>
                                                                     <label className="block text-sm font-medium text-dark dark:text-white/[.87] mb-1 capitalize">
@@ -987,27 +1006,6 @@ function AddTour() {
                                                         <Input />
                                                     </Form.Item>
                                                 </Col>
-                                                {selectedTourType === 'domestic' && (
-                                                    <Col span={8}>
-                                                        <Form.Item
-                                                            label={<span className="text-dark dark:text-white/[.87] font-medium">Theme Type</span>}
-                                                            name="themeType"
-                                                            rules={[
-                                                                {
-                                                                    required: selectedTourType === 'domestic',
-                                                                    message: 'Please select theme type'
-                                                                }
-                                                            ]}
-                                                        >
-                                                            <Select className="w-full" placeholder="Select theme type">
-                                                                <Option value="east">East & North East India</Option>
-                                                                <Option value="west">Rajasthan, West & Central India</Option>
-                                                                <Option value="north">North India</Option>
-                                                                <Option value="south">South India</Option>
-                                                            </Select>
-                                                        </Form.Item>
-                                                    </Col>
-                                                )}
                                             </Row>
 
 

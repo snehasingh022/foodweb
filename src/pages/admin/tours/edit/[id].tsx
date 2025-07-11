@@ -167,6 +167,7 @@ function EditTour() {
                     flights: tourData.included?.flights || false,
                     transfers: tourData.included?.transfers || false,
                     sightseeing: tourData.included?.sightseeing || false,
+                    accommodation: tourData.included?.accommodation || false,
                     videoURL: tourData.videoURL || "",
                 });
             }, 100);
@@ -291,6 +292,7 @@ function EditTour() {
                     flights: data.included?.flights || false,
                     transfers: data.included?.transfers || false,
                     sightseeing: data.included?.sightseeing || false,
+                    accommodation: data.included?.accommodation || false,
                     videoURL: data.videoURL || "",
                 });
 
@@ -667,9 +669,11 @@ function EditTour() {
                     flights: values.flights || false,
                     transfers: values.transfers || false,
                     sightseeing: values.sightseeing || false,
+                    accommodation: values.accommodation || false,
                 },
                 updatedAt: serverTimestamp(),
                 createdAt: tourData.createdAt || serverTimestamp(),
+                isSpiritual: values.isSpiritual || false,
             };
 
             const tourDocRef = doc(db, "tours", id as string);
@@ -915,8 +919,17 @@ function EditTour() {
                                                 </Col>
                                             </Row>
 
-
                                             <Row gutter={24}>
+                                                <Col span={8}>
+                                                    <Form.Item
+                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Is Spiritual Tour</span>}
+                                                        name="isSpiritual"
+                                                        valuePropName="checked"
+                                                        initialValue={false}
+                                                    >
+                                                        <Switch className="custom-switch" />
+                                                    </Form.Item>
+                                                </Col>
                                                 <Col span={8}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Tour Type</span>}
@@ -1061,7 +1074,8 @@ function EditTour() {
                                                                 'hotel',
                                                                 'flights',
                                                                 'transfers',
-                                                                'sightseeing'
+                                                                'sightseeing',
+                                                                'accommodation'
                                                             ].map((service) => (
                                                                 <Col span={3} key={service}>
                                                                     <label className="block text-sm font-medium text-dark dark:text-white/[.87] mb-1 capitalize">
@@ -1121,33 +1135,7 @@ function EditTour() {
                                                         <Input />
                                                     </Form.Item>
                                                 </Col>
-                                                {tourType === 'domestic' && (
-                                                    <Col span={8}>
-                                                        <Form.Item
-                                                            label={<span className="text-dark dark:text-white/[.87] font-medium">Theme Type</span>}
-                                                            name="themeType"
-                                                            rules={[
-                                                                {
-                                                                    required: tourType === 'domestic',
-                                                                    message: 'Please select theme type'
-                                                                }
-                                                            ]}
-                                                        >
-                                                            <Select
-                                                                className="w-full"
-                                                                placeholder="Select theme type"
-                                                                allowClear
-                                                            >
-                                                                <Option value="east">East & North East India</Option>
-                                                                <Option value="west">Rajasthan, West & Central India</Option>
-                                                                <Option value="north">North India</Option>
-                                                                <Option value="south">South India</Option>
-                                                            </Select>
-                                                        </Form.Item>
-                                                    </Col>
-                                                )}
                                             </Row>
-
 
                                             <Row gutter={24}>
                                                 <Col span={24}>

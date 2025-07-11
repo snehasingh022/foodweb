@@ -106,7 +106,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         '/admin/blogs',
         '/admin/tags',
         '/admin/categories',
-        '/admin/media'
+        '/admin/media',
+        
       ];
 
       const helpdeskPaths = [

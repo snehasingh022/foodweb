@@ -4,6 +4,7 @@ import {
   UilUsersAlt,
   UilEllipsisV,
   UilMoneyBill,
+  UilSetting,
   UilTagAlt,
   UilUsersAlt as UilTeam,
   UilPlaneDeparture,
@@ -17,6 +18,7 @@ import {
   UilImageV,
   UilPalette,
   UilMegaphone,
+  UilStar,
 } from '@iconscout/react-unicons';
 import React, { useState, useEffect } from 'react';
 import { Menu } from 'antd';
@@ -25,6 +27,7 @@ import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../authentication/AuthContext';
+
 
 import { changeMenuMode, changeDirectionMode, changeLayoutMode } from '../redux/themeLayout/actionCreator';
 
@@ -171,96 +174,21 @@ function MenuItems() {
         ...baseItems,
         getItem(
           <Link href={`${path}/users`}>
-            {t('Users')}
+            {t('Referrals')}
           </Link>,
-          'users',
+          'referral',
           !topMenu && <UilUsersAlt />,
           null,
         ),
         getItem(
           <Link href={`${path}/bookings`}>
-            {t('Bookings')}
+            {t('Sales')}
           </Link>,
-          'bookings',
+          'sales',
           !topMenu && <UilClipboardAlt />,
           null,
         ),
-        getItem(
-          <Link href={`${path}/payments`}>
-            {t('Payments')}
-          </Link>,
-          'payments',
-          !topMenu && <UilMoneyBill />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/coupons`}>
-            {t('Coupons')}
-          </Link>,
-          'coupons',
-          !topMenu && <UilTagAlt />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/team`}>
-            {t('Team')}
-          </Link>,
-          'team',
-          !topMenu && <UilTeam />,
-          null,
-        ),
-    ];
-
-    // Tours-related items
-    const toursItems = [
-        getItem(
-          !topMenu && (
-            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
-              {t('Tours')}
-            </p>
-          ),
-          'tours-title',
-          null,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/tours`}>
-            {t('Tours')}
-          </Link>,
-          'tours',
-          !topMenu && <UilPlaneDeparture />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/cruises`}>
-            {t('Cruises')}
-          </Link>,
-          'cruises',
-          !topMenu && <UilShip />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/custom-tours`}>
-            {t('Custom Tours')}
-          </Link>,
-          'custom-tours',
-          !topMenu && <UilCustomTours />,
-          null,
-        ),
-    ];
-
-    // Support items
-    const supportItems = [
-        getItem(
-          !topMenu && (
-            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
-              {t('Support')}
-            </p>
-          ),
-          'support-title',
-          null,
-          null,
-        ),
+        
         getItem(
           <Link href={`${path}/helpdesk`}>
             {t('Helpdesk')}
@@ -270,77 +198,36 @@ function MenuItems() {
           null,
         ),
         getItem(
-          <Link href={`${path}/queries`}>
-            {t('Queries')}
+          <Link href={`${path}/payments`}>
+            {t('Payouts')}
           </Link>,
-          'queries',
-          !topMenu && <UilComment />,
+          'payouts',
+          !topMenu && <UilMoneyBill />,
           null,
         ),
-    ];
-
-    // Media items
-    const mediaItems = [
         getItem(
+          <Link href={`${path}/coupons`}>
+            {t('Affiliates')}
+          </Link>,
+          'affiliates',
+          !topMenu && <UilTagAlt />,
+          null,
+        ),
+         getItem(
+          <Link href={`${path}/pages/settings`}>
+            {t('Settings')}
+          </Link>,
+          'settings',
           !topMenu && (
-            <p className="flex text-[12px] font-medium uppercase text-theme-gray mt-[20px] dark:text-white/60 pe-[15px]">
-              {t('Media')}
-            </p>
+            <Link className="menuItem-icon" href={`${path}/pages/settings`}>
+              <UilSetting />
+            </Link>
           ),
-          'media-title',
           null,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/homeslider`}>
-            {t('Homeslider')}
-          </Link>,
-          'homeslider',
-          !topMenu && <UilPalette />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/media/advertisement`}>
-            {t('Advertisements')}
-          </Link>,
-          'advertisements',
-          !topMenu && <UilMegaphone />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/blogs`}>
-            {t('Blogs')}
-          </Link>,
-          'blogs',
-          !topMenu && <UilNewspaper />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/tags`}>
-            {t('Tags')}
-          </Link>,
-          'tags',
-          !topMenu && <UilTag />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/categories`}>
-            {t('Categories')}
-          </Link>,
-          'categories',
-          !topMenu && <UilApps />,
-          null,
-        ),
-        getItem(
-          <Link href={`${path}/media`}>
-            {t('Media')}
-          </Link>,
-          'media',
-          !topMenu && <UilImageV />,
-          null,
-        ),
+        )
     ];
 
+    
     // Build menu items based on user roles
     let items: any[] = [];
 
@@ -348,28 +235,25 @@ function MenuItems() {
         // Admin gets everything
         items = [
             ...adminItems,
-            ...toursItems,
-            ...supportItems,
-            ...mediaItems
+           
         ];
     } else if (isHelpdesk) {
         // Helpdesk gets dashboard and support only
         items = [
             ...baseItems,
-            ...supportItems
+            
         ];
     } else if (isToursMedia) {
         // Tours+Media gets dashboard, tours, and media
         items = [
             ...baseItems,
-            ...toursItems,
-            ...mediaItems
+            
         ];
     } else if (isTours) {
         // Tours gets dashboard and tours only
         items = [
             ...baseItems,
-            ...toursItems
+            
         ];
     } else {
         // Default fallback - just dashboard

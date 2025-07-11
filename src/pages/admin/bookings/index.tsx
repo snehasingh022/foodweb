@@ -17,6 +17,9 @@ interface Booking {
   email: string;
   status: string;
   bookingType: string; // To determine if it's a tour or cruise
+  numberofTravellers?: number;
+  preferredDate?: any;
+  customRequirement?: string;
   tourDetails?: {
     title?: string;
     location?: string;
@@ -44,6 +47,7 @@ interface Booking {
     duration?: string;
     price?: string;
     description?: string;
+    startDate?: any;
     categoryDetails?: any;
     tags?: any;
     imageURL?: string;
@@ -83,6 +87,9 @@ interface Booking {
     email?: string;
     uid?: string;
     userID?: string;
+    numberofTravellers?: number;
+    preferredDate?: any;
+    customRequirement?: string;
   };
 }
 function Bookings() {
@@ -137,20 +144,21 @@ function Bookings() {
           email: docData.userDetails?.email || '',
           status: docData.status || '',
           bookingType: bookingType,
+          numberofTravellers: docData.userDetails?.numberofTravellers || 0,
+          preferredDate: docData.userDetails?.preferredDate || null,
+          customRequirement: docData.userDetails?.customRequirement || '',
 
           // FIXED TOUR DETAILS MAPPING:
           tourDetails: bookingType === 'tour' ? {
             title: docData.tourDetails?.title || '',
-            location: docData.tourDetails?.location || '', // This might not exist in your schema
+            location: docData.tourDetails?.location || '',
             tourType: docData.tourDetails?.tourType || '',
             price: docData.tourDetails?.price || 0,
-            // Parse duration string to extract days/nights
-            numberofDays: docData.tourDetails?.duration ?
-              parseInt(docData.tourDetails.duration.match(/(\d+)\s*Days?/i)?.[1] || '0') : 0,
-            numberofNights: docData.tourDetails?.duration ?
-              parseInt(docData.tourDetails.duration.match(/(\d+)\s*Nights?/i)?.[1] || '0') : 0,
+            // Use the correct field names from tour schema
+            numberofDays: docData.tourDetails?.numberofDays || 0,
+            numberofNights: docData.tourDetails?.numberofNights || 0,
             duration: docData.tourDetails?.duration || '',
-            category: docData.tourDetails?.category || '',
+            category: docData.tourDetails?.categoryDetails?.name || docData.tourDetails?.category || '',
             description: docData.tourDetails?.description || '',
             startDate: docData.tourDetails?.startDate || null,
             itenaries: docData.tourDetails?.itenaries || {},
@@ -168,10 +176,11 @@ function Bookings() {
           // FIXED CRUISE DETAILS MAPPING:
           cruiseDetails: bookingType === 'cruise' ? {
             title: docData.cruiseDetails?.title || '',
-            category: docData.cruiseDetails?.category || '',
+            category: docData.cruiseDetails?.categoryDetails?.name || docData.cruiseDetails?.category || '',
             duration: docData.cruiseDetails?.duration || '',
             price: docData.cruiseDetails?.price || '',
             description: docData.cruiseDetails?.description || '',
+            startDate: docData.cruiseDetails?.startDate || null,
             categoryDetails: docData.cruiseDetails?.categoryDetails || {},
             tags: docData.cruiseDetails?.tags || {},
             imageURL: docData.cruiseDetails?.imageURL || '',
@@ -713,7 +722,44 @@ function Bookings() {
                   {formatDate(selectedBooking.createdAt)}
                 </span>
               </Descriptions.Item>
+              <Descriptions.Item
+                label={<span className="text-gray-600 dark:text-gray-400">Number of Travellers</span>}
+              >
+                <span className="font-medium">{selectedBooking.numberofTravellers || 'N/A'}</span>
+              </Descriptions.Item>
+              <Descriptions.Item
+                label={<span className="text-gray-600 dark:text-gray-400">Preferred Date</span>}
+              >
+                <span>
+                  {selectedBooking.preferredDate
+                    ? (() => {
+                        // If it's a YYYY-MM-DD string, format it nicely
+                        const d = new Date(selectedBooking.preferredDate);
+                        return isNaN(d.getTime())
+                          ? selectedBooking.preferredDate
+                          : d.toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            });
+                      })()
+                    : 'N/A'}
+                </span>
+              </Descriptions.Item>
             </Descriptions>
+
+            {selectedBooking.customRequirement && (
+              <>
+                <Divider orientation="left" className="mt-6 mb-3">
+                  <span className="text-gray-600 dark:text-gray-300 text-base">Custom Requirements</span>
+                </Divider>
+                <div className="custom-requirements-card bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {selectedBooking.customRequirement}
+                  </p>
+                </div>
+              </>
+            )}
 
             <Divider orientation="left" className="mt-6 mb-3">
               <span className="text-gray-600 dark:text-gray-300 text-base">User Information</span>
@@ -800,6 +846,9 @@ function Bookings() {
                 }
               </Descriptions.Item>
               <Descriptions.Item label="Category">{selectedBooking.tourDetails.category || 'N/A'}</Descriptions.Item>
+              <Descriptions.Item label="Itinerary Days">
+                {selectedBooking.tourDetails.itenaries ? Object.keys(selectedBooking.tourDetails.itenaries).length : 0} Days
+              </Descriptions.Item>
               <Descriptions.Item label="Flight Included">
                 <Tag color={selectedBooking.tourDetails.flightIncluded ? 'green' : 'red'}>
                   {selectedBooking.tourDetails.flightIncluded !== undefined
@@ -821,15 +870,9 @@ function Bookings() {
                   {selectedBooking.tourDetails.status || 'N/A'}
                 </Tag>
               </Descriptions.Item>
-              {selectedBooking.tourDetails.startDate ? (
-                <Descriptions.Item label="Start Date" span={2}>
-                  {formatDate(selectedBooking.tourDetails.startDate)}
-                </Descriptions.Item>
-              ) : (
-                <Descriptions.Item label="Start Date" span={2}>
-                  N/A
-                </Descriptions.Item>
-              )}
+              <Descriptions.Item label="Start Date" span={2}>
+                {selectedBooking.tourDetails.startDate ? formatDate(selectedBooking.tourDetails.startDate) : 'N/A'}
+              </Descriptions.Item>
               <Descriptions.Item label="Description" span={2}>
                 {selectedBooking.tourDetails.description || 'N/A'}
               </Descriptions.Item>
@@ -840,16 +883,18 @@ function Bookings() {
                 <Divider orientation="left">Tour Itinerary</Divider>
                 <div className="itinerary-container bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                   {Object.entries(selectedBooking.tourDetails.itenaries as Record<string, {
-                    day: number;
                     title: string;
                     description: string;
-                  }>).map(([key, day]) => (
-                    <div key={key} className="day-item mb-4 border-l-4 border-blue-400 pl-4">
-                      <h4 className="text-lg font-medium mb-2">Day {day.day || 'N/A'}: {day.title || 'N/A'}</h4>
-                      <p className="text-gray-600 dark:text-gray-300">{day.description || 'N/A'}</p>
-                    </div>
-                  ))}
-
+                  }>).map(([key, day]) => {
+                    // Extract day number from key (e.g., "Day1" -> 1)
+                    const dayNumber = key.replace('Day', '');
+                    return (
+                      <div key={key} className="day-item mb-4 border-l-4 border-blue-400 pl-4">
+                        <h4 className="text-lg font-medium mb-2">Day {dayNumber}: {day.title || 'N/A'}</h4>
+                        <p className="text-gray-600 dark:text-gray-300">{day.description || 'N/A'}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -876,6 +921,9 @@ function Bookings() {
               <Descriptions.Item label="Duration">{selectedBooking.cruiseDetails.duration || 'N/A'}</Descriptions.Item>
               <Descriptions.Item label="Price">
                 {selectedBooking.cruiseDetails.price ? `₹${selectedBooking.cruiseDetails.price}` : 'N/A'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Start Date" span={2}>
+                {selectedBooking.cruiseDetails.startDate ? formatDate(selectedBooking.cruiseDetails.startDate) : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Status" span={2}>
                 <Tag color={selectedBooking.cruiseDetails.status === 'active' ? 'green' : 'red'} className="capitalize">

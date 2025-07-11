@@ -55,6 +55,7 @@ function EditCruise() {
     const [categoryLoading, setCategoryLoading] = useState(false)
     const [tagLoading, setTagLoading] = useState(false)
     const [updateCruiseLoading, setUpdateCruiseLoading] = useState(false)
+    const [editorContent, setEditorContent] = useState('')
 
     // Sailing dates state
     const [sailingDates, setSailingDates] = useState<[Dayjs, Dayjs][]>([])
@@ -127,7 +128,6 @@ function EditCruise() {
                 form.setFieldsValue({
                     title: data.title,
                     slug: data.slug,
-                    description: data.description,
                     categoryID: data.categoryDetails?.categoryID || "",
                     categoryName: data.categoryDetails?.name || "",
                     categorySlug: data.categoryDetails?.slug || "",
@@ -136,14 +136,12 @@ function EditCruise() {
                     isFeatured: data.isFeatured ? "Yes" : "No",
                     cruiseType: data.cruiseType || "domestic",
                     location: data.location || "",
-                    numberofDays: data.numberofDays || 0,
-                    numberofNights: data.numberofNights || 0,
-                    price: data.price || "0",
-                    startDate: data.startDate ? moment(data.startDate.toDate()) : null,
-                    endDate: data.endDate ? moment(data.endDate.toDate()) : null,
                     status: data.status || "active",
                     videoURL: data.videoURL || "",
                 })
+
+                // Set editor content
+                setEditorContent(data.description || "")
 
                 // If there's a video URL, extract filename
                 if (data.videoURL) {
@@ -369,15 +367,11 @@ function EditCruise() {
 
         try {
             setUpdateCruiseLoading(true)
-            // Convert sailing dates to string format
-            const sailingDatesStrings = sailingDates.map(([start, end]) =>
-                `${start.format('DD MMM YYYY')} - ${end.format('DD MMM YYYY')}`
-            );
 
             const cruiseData = {
                 title: values.title,
                 slug: values.slug,
-                description: values.description,
+                description: editorContent || "",
                 categoryDetails: {
                     categoryID: values.categoryID || "",
                     name: values.categoryName || "",
@@ -388,14 +382,8 @@ function EditCruise() {
                 isFeatured: values.isFeatured === "Yes", // Convert to boolean
                 cruiseType: values.cruiseType || "domestic",
                 location: values.location || "",
-                numberofDays: Number.parseInt(values.numberofDays) || 0,
-                numberofNights: Number.parseInt(values.numberofNights) || 0,
-                price: values.price || "0", // Store as string
-                startDate: values.startDate ? values.startDate.toDate() : null,
-                endDate: values.endDate ? values.endDate.toDate() : null,
                 status: values.status || "active",
                 videoURL: videoUrl,
-                sailingDates: sailingDatesStrings, // Add sailing dates
                 updatedAt: serverTimestamp(),
             };
 
@@ -514,36 +502,6 @@ function EditCruise() {
                                             <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Start Date</span>}
-                                                        name="startDate"
-                                                        rules={[{ required: true, message: "Please select start date" }]}
-                                                    >
-                                                        <DatePicker className="w-full py-2" format="YYYY-MM-DD" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">End Date</span>}
-                                                        name="endDate"
-                                                        rules={[{ required: true, message: "Please select end date" }]}
-                                                    >
-                                                        <DatePicker className="w-full py-2" format="YYYY-MM-DD" />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Price (₹)</span>}
-                                                        name="price"
-                                                        rules={[{ required: true, message: "Please enter cruise price" }]}
-                                                    >
-                                                        <Input type="number" placeholder="Enter price" className="py-2" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Status</span>}
                                                         name="status"
                                                         initialValue="active"
@@ -554,9 +512,6 @@ function EditCruise() {
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Location</span>}
@@ -566,6 +521,9 @@ function EditCruise() {
                                                         <Input placeholder="Enter cruise location" className="py-2" />
                                                     </Form.Item>
                                                 </Col>
+                                            </Row>
+
+                                            <Row gutter={24}>
                                                 <Col span={12}>
                                                     <Form.Item
                                                         label={<span className="text-dark dark:text-white/[.87] font-medium">Featured</span>}
@@ -576,29 +534,6 @@ function EditCruise() {
                                                             <Select.Option value="Yes">Yes</Select.Option>
                                                             <Select.Option value="No">No</Select.Option>
                                                         </Select>
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-
-                                            <Row gutter={24}>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={<span className="text-dark dark:text-white/[.87] font-medium">Number of Days</span>}
-                                                        name="numberofDays"
-                                                        rules={[{ required: true, message: "Please enter number of days" }]}
-                                                    >
-                                                        <Input type="number" placeholder="Enter number of days" className="py-2" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={
-                                                            <span className="text-dark dark:text-white/[.87] font-medium">Number of Nights</span>
-                                                        }
-                                                        name="numberofNights"
-                                                        rules={[{ required: true, message: "Please enter number of nights" }]}
-                                                    >
-                                                        <Input type="number" placeholder="Enter number of nights" className="py-2" />
                                                     </Form.Item>
                                                 </Col>
                                             </Row>
@@ -692,45 +627,6 @@ function EditCruise() {
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
-                                                <Col span={12}>
-                                                    <Form.Item
-                                                        label={
-                                                            <span className="text-dark dark:text-white/[.87] font-medium">
-                                                                Sailing Dates
-                                                            </span>
-                                                        }
-                                                    >
-                                                        <div className="flex gap-2 items-center">
-                                                            <RangePicker
-                                                                format="DD MMM YYYY"
-                                                                value={dateInput}
-                                                                onChange={(dates) => {
-                                                                    setDateInput(dates as [Dayjs, Dayjs] | null);
-                                                                }}
-                                                                className="flex-1"
-                                                            />
-                                                            <Button
-                                                                type="primary"
-                                                                onClick={handleAddSailingDate}
-                                                                disabled={!dateInput || !dateInput[0] || !dateInput[1]}
-                                                            >
-                                                                Add
-                                                            </Button>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-2 mt-2">
-                                                            {sailingDates.map((range, index) => (
-                                                                <Tag
-                                                                    key={index}
-                                                                    closable
-                                                                    onClose={() => handleDeleteSailingDate(index)}
-                                                                    className="py-1 px-3"
-                                                                >
-                                                                    {range[0].format("DD MMM YYYY")} - {range[1].format("DD MMM YYYY")}
-                                                                </Tag>
-                                                            ))}
-                                                        </div>
-                                                    </Form.Item>
-                                                </Col>
                                             </Row>
 
                                             <Row gutter={24}>
@@ -812,7 +708,24 @@ function EditCruise() {
                                                 label={<span className="text-dark dark:text-white/[.87] font-medium">Description</span>}
                                                 name="description"
                                             >
-                                                <Input.TextArea rows={3} placeholder="Write a brief summary of the cruise" className="text-base" />
+                                                <Editor
+                                                    value={editorContent}
+                                                    onEditorChange={(content) => setEditorContent(content)}
+                                                    apiKey="vk693p6lgtcyd2xpc283y9knpg1zphq39p5uqwd5y4coapxo"
+                                                    init={{
+                                                        height: 300,
+                                                        menubar: false,
+                                                        plugins: [
+                                                            'lists link image',
+                                                            'charmap emoticons',
+                                                            'table',
+                                                            'code',
+                                                            'help'
+                                                        ],
+                                                        toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image | help',
+                                                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                                                    }}
+                                                />
                                             </Form.Item>
                                         </div>
                                         <div className="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
