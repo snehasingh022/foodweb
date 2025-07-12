@@ -902,4 +902,4 @@ function Advertisement() {
 
 // Wrap the component with dynamic and Protected HOCs
 const DynamicAdvertisement = dynamic(() => Promise.resolve(Advertisement), { ssr: false });
-export default Protected(DynamicAdvertisement, ["admin", "tours+media"]); 
+export default Protected(DynamicAdvertisement, ["admin", "tours+media","partner"]); 

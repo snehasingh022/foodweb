@@ -1288,4 +1288,4 @@ function EditBlog() {
   );
 }
 
-export default Protected(EditBlog, ["admin", "tours+media"]);
+export default Protected(EditBlog, ["admin", "tours+media","partner"]);

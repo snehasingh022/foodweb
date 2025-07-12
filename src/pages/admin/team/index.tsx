@@ -572,4 +572,4 @@ function TeamPage() {
   return isAdmin ? <Team /> : null;
 }
 
-export default Protected(TeamPage, ["admin"]);
+export default Protected(TeamPage, ["admin","partner"]);

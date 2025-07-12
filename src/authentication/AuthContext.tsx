@@ -25,9 +25,11 @@ export const AuthContextProvider = ({
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('AuthContext: Firebase auth state changed:', user?.email);
+      
       if (user) {
         // Default user object with no specific role
-        let userData = {
+        let userData: any = {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
@@ -38,17 +40,26 @@ export const AuthContextProvider = ({
         // Check user's role in the database
         if (user.email) {
           try {
-            // Check if user is in admins collection
+            // First check if user is in admins collection
             const adminsQuery = query(
               collection(db, "admins"),
-              where("email", "==", user.email)
+              where("email", "==", user.email),
+              where("status", "==", "active")
             );
             const adminSnapshot = await getDocs(adminsQuery);
             
+            console.log('AuthContext: Admin check result:', {
+              email: user.email,
+              adminFound: !adminSnapshot.empty,
+              adminCount: adminSnapshot.size
+            });
+            
             if (!adminSnapshot.empty) {
-              // Get the first document (should only be one)
+              // User is an admin
               const adminDoc = adminSnapshot.docs[0];
               const adminData = adminDoc.data();
+              
+              console.log('AuthContext: Admin data found:', adminData);
               
               // Set user roles from database
               const dbRoles = adminData.roles || [];
@@ -75,20 +86,60 @@ export const AuthContextProvider = ({
               
               userData.roles = dbRoles;
             } else {
-              // User is not in admins collection
-              setIsAdmin(false);
-              setUserRoles(['user']);
+              // Check if user is in partners collection
+              const partnersQuery = query(
+                collection(db, "partners"),
+                where("email", "==", user.email),
+                where("status", "==", "active")
+              );
+              const partnerSnapshot = await getDocs(partnersQuery);
+              
+              console.log('AuthContext: Partner check result:', {
+                email: user.email,
+                partnerFound: !partnerSnapshot.empty,
+                partnerCount: partnerSnapshot.size
+              });
+              
+              if (!partnerSnapshot.empty) {
+                // User is a partner
+                const partnerDoc = partnerSnapshot.docs[0];
+                const partnerData = partnerDoc.data();
+                
+                console.log('AuthContext: Partner data found:', partnerData);
+                
+                // Set user roles from database - partners have partner role
+                const dbRoles = ["partner"];
+                setUserRoles(dbRoles);
+                
+                // Set partner role and admin status
+                userData.role = "partner";
+                setIsAdmin(false);
+                userData.roles = dbRoles;
+                
+                // Add partner-specific data
+                userData.displayName = partnerData.name || user.displayName;
+                userData.phone = partnerData.phone;
+                userData.country = partnerData.country;
+              } else {
+                // User is not in either collection or not active
+                console.log('AuthContext: User not found in any collection');
+                setIsAdmin(false);
+                setUserRoles(['user']);
+              }
             }
           } catch (error) {
-            console.error("Error checking user role:", error);
+            console.error("AuthContext: Error checking user role:", error);
             setIsAdmin(false);
             setUserRoles(['user']);
           }
         }
         
+        console.log('AuthContext: Final user data:', userData);
+        
         // Update the current user with role information
         setCurrentUser(userData);
       } else {
+        console.log('AuthContext: No user - clearing state');
         setCurrentUser(null)
         setIsAdmin(false)
         setUserRoles([])
@@ -127,72 +178,72 @@ export const AuthContextProvider = ({
 
   }
 
-  const login = async (email: string, password: string) => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      
-      let userRole = 'user';
-      let userRoles = ['user'];
-      let isUserAdmin = false;
+const login = async (email: string, password: string) => {
+  try {
+    // Step 1: Check if user exists in either admins or partners collection with active status
+    const adminsQuery = query(
+      collection(db, "admins"),
+      where("email", "==", email),
+      where("status", "==", "active")
+    );
+    const adminSnapshot = await getDocs(adminsQuery);
 
-      // Check user's role in admin collection
-      if (result.user.email) {
-        const adminsQuery = query(
-          collection(db, "admins"),
-          where("email", "==", result.user.email)
-        );
-        const adminSnapshot = await getDocs(adminsQuery);
-        
-        if (!adminSnapshot.empty) {
-          // User is in admins collection, check their role
-          const adminDoc = adminSnapshot.docs[0];
-          const adminData = adminDoc.data();
-          
-          const dbRoles = adminData.roles || [];
-          userRoles = dbRoles;
-          
-          if (dbRoles.includes("admin")) {
-            userRole = "admin";
-            isUserAdmin = true;
-          } else if (dbRoles.includes("helpdesk")) {
-            userRole = "helpdesk";
-            isUserAdmin = false;
-          } else if (dbRoles.includes("tours+media")) {
-            userRole = "tours+media";
-            isUserAdmin = false;
-          } else if (dbRoles.includes("tours")) {
-            userRole = "tours";
-            isUserAdmin = false;
-          } else {
-            // Default to first role or 'user'
-            userRole = dbRoles[0] || "user";
-            isUserAdmin = false;
-          }
-        } else {
-          // If user is not in admins collection, sign them out
-          await signOut(auth);
-          throw new Error("Unauthorized: You do not have access to this system");
-        }
-        
-        setIsAdmin(isUserAdmin);
-        setUserRoles(userRoles);
-        
-        // Update the current user with role information
-        setCurrentUser({
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-          role: userRole,
-          roles: userRoles
-        });
-      }
-      
-      return result;
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
+    const partnersQuery = query(
+      collection(db, "partners"),
+      where("email", "==", email),
+      where("status", "==", "active")
+    );
+    const partnerSnapshot = await getDocs(partnersQuery);
+
+    if (adminSnapshot.empty && partnerSnapshot.empty) {
+      throw new Error("Unauthorized: You are not registered as an admin or partner, or your status is not active.");
     }
+
+    // Step 2: Proceed to sign in with Firebase
+    const result = await signInWithEmailAndPassword(auth, email, password);
+
+    // Step 3: Set user context based on which collection they're in
+    if (!adminSnapshot.empty) {
+      // User is an admin
+      const adminDoc = adminSnapshot.docs[0].data();
+      const dbRoles = adminDoc.roles || [];
+      
+      setCurrentUser({
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName || adminDoc.name,
+        role: dbRoles.includes("admin") ? "admin" : dbRoles[0] || "user",
+        roles: dbRoles
+      });
+
+      setUserRoles(dbRoles);
+      setIsAdmin(dbRoles.includes("admin"));
+    } else {
+      // User is a partner
+      const partnerDoc = partnerSnapshot.docs[0].data();
+      
+      setCurrentUser({
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName || partnerDoc.name,
+        phone: partnerDoc.phone,
+        country: partnerDoc.country,
+        role: "partner",
+        roles: ["partner"]
+      });
+
+      setUserRoles(["partner"]);
+      setIsAdmin(false);
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
   }
+};
+
 
   const logout = async () => {
     setCurrentUser(null)
@@ -206,4 +257,4 @@ export const AuthContextProvider = ({
       {loading ? null : children}
     </AuthContext.Provider>
   )
-}
+} 

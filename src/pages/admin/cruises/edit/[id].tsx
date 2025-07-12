@@ -1025,4 +1025,4 @@ function EditCruise() {
     );
 }
 
-export default Protected(EditCruise, ["admin", "tours", "tours+media"]);
+export default Protected(EditCruise, ["admin", "tours", "tours+media","partner"]);

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { UilEllipsisV } from '@iconscout/react-unicons';
 import Customizer from '../customizer';
 import TopMenu from '@/layout/TopMenu';
@@ -26,14 +26,10 @@ interface RootState {
 const HeaderTop = () => {
   const [hide, setHide] = useState(true);
 
-  const { rtl, layoutMode, topMenu, collapsed } = useSelector((state:RootState) => {
-    return {
-      rtl: state.ChangeLayoutMode.rtlData,
-      layoutMode: state.ChangeLayoutMode.mode,
-      topMenu: state.ChangeLayoutMode.topMenu,
-      collapsed: state.ChangeLayoutMode.menuCollapse,
-    };
-  });
+  const rtl = useSelector((state: RootState) => state.ChangeLayoutMode.rtlData);
+  const layoutMode = useSelector((state: RootState) => state.ChangeLayoutMode.mode);
+  const topMenu = useSelector((state: RootState) => state.ChangeLayoutMode.topMenu);
+  const collapsed = useSelector((state: RootState) => state.ChangeLayoutMode.menuCollapse);
 
   const [isBrowser, setIsBrowser] = useState(false);
 

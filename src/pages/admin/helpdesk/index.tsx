@@ -821,4 +821,4 @@ const sendEmailNotification = async (
   );
 }
 
-export default Protected(Helpdesk, ["admin", "helpdesk"]);
+export default Protected(Helpdesk, ["admin", "helpdesk","partner"]);

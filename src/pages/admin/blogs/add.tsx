@@ -943,4 +943,4 @@ function AddBlog() {
   );
 }
 
-export default Protected(AddBlog, ["admin", "tours+media"]); 
+export default Protected(AddBlog, ["admin", "tours+media","partner"]); 

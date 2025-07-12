@@ -20,7 +20,7 @@ import {
   UilMegaphone,
   UilStar,
 } from '@iconscout/react-unicons';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Menu } from 'antd';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -50,6 +50,7 @@ function MenuItems() {
     const isHelpdesk = userRoles.includes('helpdesk');
     const isTours = userRoles.includes('tours');
     const isToursMedia = userRoles.includes('tours+media');
+    const isPartner = userRoles.includes('partner');
 
     interface RootState {
       ChangeLayoutMode: {
@@ -57,11 +58,7 @@ function MenuItems() {
       }
     }
 
-    const { topMenu } = useSelector((state:RootState) => {
-      return {
-        topMenu: state.ChangeLayoutMode.topMenu,
-      };
-    });
+    const topMenu = useSelector((state: RootState) => state.ChangeLayoutMode.topMenu);
 
     const router = useRouter();
     const { pathname } = router;
@@ -231,7 +228,7 @@ function MenuItems() {
     // Build menu items based on user roles
     let items: any[] = [];
 
-    if (isAdmin) {
+    if (isAdmin || isPartner) {
         // Admin gets everything
         items = [
             ...adminItems,

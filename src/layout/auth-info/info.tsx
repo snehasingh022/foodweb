@@ -43,7 +43,7 @@ const AuthInfo = React.memo((props:any) => {
 
   // Get user email and role
   const userEmail = user?.email || currentUser?.email || 'admin@example.com';
-  const userRole = 'Administrator'; // You can replace this with actual role if available
+  const userRole = currentUser?.role || 'Administrator';
 
   const userContent = (
     <div>

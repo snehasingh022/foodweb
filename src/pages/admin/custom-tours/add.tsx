@@ -532,4 +532,4 @@ function AddCustomTour() {
     );
 }
 
-export default Protected(AddCustomTour, ["admin", "tours", "tours+media"]);
+export default Protected(AddCustomTour, ["admin", "tours", "tours+media","partner"]);

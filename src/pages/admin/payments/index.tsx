@@ -40,4 +40,4 @@ function Payments() {
   );
 }
 
-export default Protected(Payments, ["admin"]); 
+export default Protected(Payments, ["admin","partner"]); 

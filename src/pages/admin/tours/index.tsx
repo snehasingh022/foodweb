@@ -897,4 +897,4 @@ function Tours() {
   );
 }
 
-export default Protected(Tours, ["admin", "tours", "tours+media"]);
+export default Protected(Tours, ["admin", "tours", "tours+media","partner"]);

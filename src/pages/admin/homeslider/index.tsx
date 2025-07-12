@@ -877,4 +877,4 @@ function Graphics() {
 
 // Wrap the component with dynamic and Protected HOCs
 const DynamicGraphics = dynamic(() => Promise.resolve(Graphics), { ssr: false });
-export default Protected(DynamicGraphics, ["admin", "tours+media"]);
+export default Protected(DynamicGraphics, ["admin", "tours+media","partner"]);

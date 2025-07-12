@@ -123,5 +123,5 @@ const DemoOne = () => {
   )
 }
 
-export default Protected(DemoOne, ["admin", "tours", "tours+media","helpdesk"]);
+export default Protected(DemoOne, ["admin", "tours", "tours+media","helpdesk","partner"]);
 

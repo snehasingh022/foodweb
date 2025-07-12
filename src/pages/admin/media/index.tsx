@@ -252,4 +252,4 @@ function Media() {
   );
 }
 
-export default Protected(Media, ["admin", "tours+media"]);
+export default Protected(Media, ["admin", "tours+media","partner"]);

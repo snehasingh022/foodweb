@@ -20,58 +20,51 @@ function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   
-  // Enhanced database checking logic matching your admin schema
-  const checkEmailInAdminDatabase = async (email: string) => {
+  // Enhanced database checking logic matching your partners schema
+  const checkEmailInPartnersDatabase = async (email: string) => {
     try {
-      console.log('Checking email in admin database:', email);
+      console.log('Checking email in partners database:', email);
       
-      // Query the admin collection using your exact schema
-      const adminsQuery = query(
-        collection(db, "admins"), 
+      // Query the partners collection using your exact schema
+      const partnersQuery = query(
+        collection(db, "partners"), 
         where("email", "==", email),
-        where("status", "==", "active") // Only check active admins
+        where("status", "==", "active") // Only check active partners
       );
-      const adminSnapshot = await getDocs(adminsQuery);
+      const partnerSnapshot = await getDocs(partnersQuery);
       
-      if (!adminSnapshot.empty) {
-        const adminDoc = adminSnapshot.docs[0];
-        const adminData = adminDoc.data();
+      if (!partnerSnapshot.empty) {
+        const partnerDoc = partnerSnapshot.docs[0];
+        const partnerData = partnerDoc.data();
         
-        console.log('Admin data found:', adminData);
+        console.log('Partner data found:', partnerData);
         
-        // Check if user has valid roles (admin or helpdesk)
-        if (adminData.roles && Array.isArray(adminData.roles)) {
-          const hasValidRole = adminData.roles.some((role: string) => 
-            role === "admin" || role === "helpdesk"
-          );
-          
-          if (hasValidRole) {
-            return {
-              exists: true,
-              userData: {
-                name: adminData.name,
-                email: adminData.email,
-                roles: adminData.roles,
-                status: adminData.status
-              }
-            };
+        // Partners are authorized if they exist and are active
+        return {
+          exists: true,
+          userData: {
+            name: partnerData.name,
+            email: partnerData.email,
+            phone: partnerData.phone,
+            country: partnerData.country,
+            status: partnerData.status
           }
-        }
+        };
       }
       
       return { exists: false, userData: null };
     } catch (error) {
-      console.error('Error checking email in admin database:', error);
+      console.error('Error checking email in partners database:', error);
       throw new Error('Failed to verify email in database');
     }
   };
 
   const forgotPassword = async (email: string) => {
     try {
-      const adminCheck = await checkEmailInAdminDatabase(email);
+      const partnerCheck = await checkEmailInPartnersDatabase(email);
       
-      if (!adminCheck.exists) {
-        throw new Error('UNAUTHORIZED: You do not have access to this system');
+      if (!partnerCheck.exists) {
+        throw new Error('UNAUTHORIZED: You are not registered as a partner or your status is not active');
       }
 
       try {
@@ -81,7 +74,7 @@ function ForgotPassword() {
         return { 
           success: true, 
           message: 'Password reset instructions sent successfully',
-          userData: adminCheck.userData 
+          userData: partnerCheck.userData 
         };
       } catch (firebaseError: any) {
         console.error('Firebase sendPasswordResetEmail error:', firebaseError);

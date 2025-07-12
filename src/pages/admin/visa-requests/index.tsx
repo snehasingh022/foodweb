@@ -442,4 +442,4 @@ function VisaRequests() {
   );
 }
 
-export default Protected(VisaRequests, ["admin", "helpdesk"]); 
+export default Protected(VisaRequests, ["admin", "helpdesk","partner"]); 

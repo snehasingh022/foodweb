@@ -1017,4 +1017,4 @@ function Bookings() {
   );
 }
 
-export default Protected(Bookings, ["admin"]);
+export default Protected(Bookings, ["admin","partner"]);

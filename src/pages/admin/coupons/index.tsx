@@ -717,4 +717,4 @@ function Coupons() {
   );
 }
 
-export default Protected(Coupons, ["admin"]); 
+export default Protected(Coupons, ["admin","partner"]); 

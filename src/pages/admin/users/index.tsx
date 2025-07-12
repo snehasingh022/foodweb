@@ -309,4 +309,4 @@ function Users() {
   );
 }
 
-export default Protected(Users, ["admin"]); 
+export default Protected(Users, ["admin","partner"]); 

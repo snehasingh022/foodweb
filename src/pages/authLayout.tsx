@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 
@@ -13,11 +13,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
     };
   }
 
-  const { isLoggedIn } = useSelector((state:RootState) => {
-    return {
-      isLoggedIn: state.auth.login,
-    };
-  });
+  const isLoggedIn = useSelector((state:RootState) => state.auth.login);
 
   const router = useRouter();
 
@@ -31,7 +27,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       style={{
-        backgroundImage: `url(${backgroundImage.src})`,
+        backgroundImage: `url()`,
       }}
       className="bg-top bg-no-repeat mt-24"
     >

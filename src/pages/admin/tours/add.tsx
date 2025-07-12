@@ -1690,4 +1690,4 @@ function AddTour() {
         </>
     );
 }
-export default Protected(AddTour, ["admin", "tours", "tours+media"]);
+export default Protected(AddTour, ["admin", "tours", "tours+media","partner"]);

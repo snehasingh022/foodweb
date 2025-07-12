@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { Spin } from "antd";
 import { useAuth } from "../../authentication/AuthContext";
@@ -15,11 +15,21 @@ const Protected = (WrappedComponent: React.ComponentType<any>, requiredRoles: st
     const [isAuthorized, setIsAuthorized] = useState(false);
     const { currentUser } = useAuth();
     const router = useRouter();
+    const toastShownRef = useRef(false);
+    const redirectingRef = useRef(false);
 
     useEffect(() => {
+      // Prevent multiple redirects
+      if (redirectingRef.current) {
+        return;
+      }
+
       // Wait until authentication is resolved
       if (currentUser === null) {
+        console.log("currentUser in Protected HOC:", currentUser);
+
         // If there's no user, redirect to login
+        redirectingRef.current = true;
         router.push("/");
         return;
       }
@@ -30,19 +40,31 @@ const Protected = (WrappedComponent: React.ComponentType<any>, requiredRoles: st
       // Check if user has required role
       if (requiredRoles.includes(userRole)) {
         setIsAuthorized(true);
+        setLoading(false);
       } else {
-        toast.error("You do not have permission to view this page.");
+        // Only show toast once
+        if (!toastShownRef.current) {
+          toast.error("You do not have permission to view this page.");
+          toastShownRef.current = true;
+        }
         
         // Redirect based on role
+        redirectingRef.current = true;
         if (userRole === "helpdesk" && !router.pathname.includes("/support")) {
           router.push("/admin/helpdesk");
         } else {
           router.push("/admin");
         }
       }
-      
-      setLoading(false);
-    }, [currentUser, router]);
+    }, [currentUser, router, requiredRoles]);
+
+    // Reset refs when component unmounts or path changes
+    useEffect(() => {
+      return () => {
+        toastShownRef.current = false;
+        redirectingRef.current = false;
+      };
+    }, []);
 
     if (loading) {
       return (

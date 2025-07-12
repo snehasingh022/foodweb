@@ -14,7 +14,7 @@ type RoleWrapperProps = {
  */
 const RoleWrapper: React.FC<RoleWrapperProps> = ({ 
   children, 
-  allowedRoles = ['admin'] // By default, only admin can access
+  allowedRoles = ['admin',"partner"] // By default, only admin can access
 }) => {
   const { currentUser } = useAuth();
   const router = useRouter();

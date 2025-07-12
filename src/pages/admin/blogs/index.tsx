@@ -493,4 +493,4 @@ function Blogs() {
   );
 }
 
-export default Protected(Blogs, ["admin", "tours+media"]);
+export default Protected(Blogs, ["admin", "tours+media","partner"]);

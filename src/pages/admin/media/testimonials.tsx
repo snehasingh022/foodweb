@@ -940,4 +940,4 @@ function Testimonials() {
 
 // Wrap the component with dynamic and Protected HOCs
 const DynamicTestimonials = dynamic(() => Promise.resolve(Testimonials), { ssr: false });
-export default Protected(DynamicTestimonials, ["admin", "tours+media"]); 
+export default Protected(DynamicTestimonials, ["admin", "tours+media","partner"]); 

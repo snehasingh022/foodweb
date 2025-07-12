@@ -19,11 +19,7 @@ interface RootState {
 }
 
 const NotificationBox = React.memo(() => {
-  const { rtl } = useSelector((state:RootState) => {
-    return {
-      rtl: state.ChangeLayoutMode.rtlData,
-    };
-  });
+  const rtl = useSelector((state: RootState) => state.ChangeLayoutMode.rtlData);
 
   const content = (
     <div className="min-sm:min-w-[370px] sm:max-w-full">

@@ -435,4 +435,4 @@ function Tags() {
   );
 }
 
-export default Protected(Tags, ["admin", "tours+media"]);
+export default Protected(Tags, ["admin", "tours+media","partner"]);

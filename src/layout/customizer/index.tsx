@@ -37,13 +37,9 @@ const Customizer = (props:any) => {
     }
   }
 
-  const { rtl, layoutMode, topMenu } = useSelector((state:RootState) => {
-    return {
-      rtl: state.ChangeLayoutMode.rtlData,
-      layoutMode: state.ChangeLayoutMode.mode,
-      topMenu: state.ChangeLayoutMode.topMenu,
-    };
-  });
+  const rtl = useSelector((state: RootState) => state.ChangeLayoutMode.rtlData);
+  const layoutMode = useSelector((state: RootState) => state.ChangeLayoutMode.mode);
+  const topMenu = useSelector((state: RootState) => state.ChangeLayoutMode.topMenu);
 
   const dispatch = useDispatch();
 

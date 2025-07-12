@@ -655,4 +655,4 @@ function Cruises() {
   );
 }
 
-export default Protected(Cruises, ["admin", "tours+media","tours"]);
+export default Protected(Cruises, ["admin", "tours+media","tours","partner"]);

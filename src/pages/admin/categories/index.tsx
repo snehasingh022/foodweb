@@ -419,4 +419,4 @@ function Categories() {
   );
 }
 
-export default Protected(Categories, ["admin", "tours+media"]);
+export default Protected(Categories, ["admin", "tours+media","partner"]);

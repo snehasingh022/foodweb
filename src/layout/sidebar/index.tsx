@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux';
+import { useMemo } from 'react';
 import MenuItems from '../../layout/MenuItems';
 
 import { Layout } from 'antd';
@@ -14,12 +15,8 @@ interface RootState {
 
 const Sidebar = () => {
 
-  const { topMenu, collapsed } = useSelector((state:RootState) => {
-    return {
-      topMenu: state.ChangeLayoutMode.topMenu,
-      collapsed: state.ChangeLayoutMode.menuCollapse,
-    };
-  });
+  const topMenu = useSelector((state: RootState) => state.ChangeLayoutMode.topMenu);
+  const collapsed = useSelector((state: RootState) => state.ChangeLayoutMode.menuCollapse);
 
   return (
     <>

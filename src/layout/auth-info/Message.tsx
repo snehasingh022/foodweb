@@ -15,11 +15,7 @@ interface RootState {
 }
 
 const MessageBox = React.memo((props:any) => {
-  const { rtl } = useSelector((state:RootState) => {
-    return {
-      rtl: state.ChangeLayoutMode.rtlData,
-    };
-  });
+  const rtl = useSelector((state: RootState) => state.ChangeLayoutMode.rtlData);
 
   const content = (
     <div className="pt-[5px]">

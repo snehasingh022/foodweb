@@ -881,4 +881,4 @@ function AddCruise() {
     )
 }
 
-export default Protected(AddCruise, ["admin", "tours", "tours+media"])
+export default Protected(AddCruise, ["admin", "tours", "tours+media","partner"])
