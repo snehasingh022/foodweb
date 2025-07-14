@@ -10,6 +10,7 @@ import {
   UilPlaneDeparture,
   UilShip,
   UilCreateDashboard as UilCustomTours,
+  UilCircle,
   UilHeadphones as UilHelpdesk,
   UilComment,
   UilNewspaper,
@@ -221,7 +222,19 @@ function MenuItems() {
             </Link>
           ),
           null,
-        )
+        ),
+        getItem(
+          <Link href={`${path}/pages/faq`}>
+            {t('Faqs')}
+          </Link>,
+          'faq',
+          !topMenu && (
+            <Link className="menuItem-icon" href={`${path}/pages/faq`}>
+              <UilCircle />
+            </Link>
+          ),
+          null,
+        ),
     ];
 
     
