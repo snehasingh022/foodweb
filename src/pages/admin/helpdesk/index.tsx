@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import TicketHistoryTimeline from '@/components/TicketHistoryTimeline';
 import FirebaseFileUploader from '@/components/FirebaseFileUploader';
+import { InboxOutlined } from '@ant-design/icons';
+import { Select, Upload } from 'antd';
+import { v4 as uuidv4 } from 'uuid';
+import { convertImageToWebP } from '@/components/imageConverter'; 
+
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined
+} from '@ant-design/icons';
 import {
   Row,
   Col,
@@ -21,6 +31,7 @@ import { db } from '../../../authentication/firebase';
 import moment from 'moment';
 import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import Protected from '../../../components/Protected/Protected';
+
 
 const { Text } = Typography;
 
@@ -94,6 +105,7 @@ function Helpdesk() {
   const [responseModalVisible, setResponseModalVisible] = useState(false);
   const [responseForm] = Form.useForm();
   const [emailSent, setEmailSent] = useState(false);
+  const [attachmentURL, setAttachmentURL] = useState('');
 
   useEffect(() => {
     fetchTickets();
@@ -315,7 +327,7 @@ const sendEmailNotification = async (
 
   const getActionButtons = (record: Ticket) => {
     const actions = [];
-    if (record.status === 'Opened') {
+  /*  if (record.status === 'Opened') {
       actions.push(
         <Button
           key="resolve"
@@ -361,7 +373,7 @@ const sendEmailNotification = async (
           Close
         </Button>
       );
-    }
+    }*/
 
     actions.push(
       <Button
@@ -380,59 +392,101 @@ const sendEmailNotification = async (
     return <div className="flex items-center gap-[15px]">{actions}</div>;
   };
 
-  const columns = [
-    {
-      title: 'Ticket ID',
-      dataIndex: 'helpDeskID',
-      key: 'helpDeskID',
-      className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (helpDeskID: string, record: Ticket) => (
-        <span className="text-[15px] font-medium">{helpDeskID || record.id}</span>
-      ),
+const columns = [
+  {
+    title: 'Ticket ID',
+    dataIndex: 'helpDeskID',
+    key: 'helpDeskID',
+    className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
+    render: (helpDeskID: string, record: Ticket) => (
+      <span className="text-[15px] font-medium">{helpDeskID || record.id}</span>
+    ),
+  },
+  {
+    title: 'Category',
+    dataIndex: 'category',
+    key: 'category',
+    className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
+    render: (text: string) => (
+      <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">
+        {formatCategory(text)}
+      </span>
+    ),
+  },
+  {
+    title: 'Status',
+    dataIndex: 'status',
+    key: 'status',
+    className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
+    render: (status: string) => {
+      let badgeColor = '';
+      let textColor = '';
+
+      switch (status) {
+        case 'Opened':
+          badgeColor = 'bg-blue-100';
+          textColor = 'text-blue-600';
+          break;
+        case 'Resolved':
+          badgeColor = 'bg-green-100';
+          textColor = 'text-green-700';
+          break;
+        case 'Re-Opened':
+          badgeColor = 'bg-yellow-100';
+          textColor = 'text-yellow-800';
+          break;
+        case 'Closed':
+          badgeColor = 'bg-red-100';
+          textColor = 'text-red-700';
+          break;
+        default:
+          badgeColor = 'bg-gray-100';
+          textColor = 'text-gray-600';
+          break;
+      }
+
+      return (
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${badgeColor} ${textColor}`}
+        >
+          {status}
+        </span>
+      );
     },
-    {
-      title: 'Customer Name',
-      dataIndex: 'customerName',
-      key: 'customerName',
-      className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (text: string) => <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">{text}</span>,
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (text: string) => <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">{text}</span>,
-    },
-    {
-      title: 'Category',
-      dataIndex: 'category',
-      key: 'category',
-      className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (text: string) => <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">{formatCategory(text)}</span>,
-    },
-    {
-      title: 'Updated Date',
-      dataIndex: 'updatedAt',
-      key: 'updatedAt',
-      className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
-      render: (date: any) => {
-        if (!date) return <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">N/A</span>;
-        const jsDate = date.toDate ? date.toDate() : new Date(date);
-        return (
-          <span className="text-[15px] text-theme-gray dark:text-white/60 font-medium">
-            {jsDate.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'numeric',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            })}
-          </span>
-        );
-      },
-    },
+  },
+{
+  title: 'Created At',
+  dataIndex: 'createdAt',
+  key: 'createdAt',
+  className: 'text-dark dark:text-white/[.87] font-medium text-[15px] py-[16px]',
+  render: (createdAt: any) => {
+    if (!createdAt) {
+      return <span className="text-[15px] text-black">N/A</span>;
+    }
+
+    const dateObj = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    return (
+      <span className="text-[15px] text-black font-medium">
+        {formattedDate}
+      </span>
+    );
+  },
+  sorter: (a: any, b: any) => {
+    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+    return aTime - bTime;
+  },
+},
+
     {
       title: 'Actions',
       key: 'action',
@@ -550,6 +604,11 @@ const sendEmailNotification = async (
     }
   }, [viewModalVisible, currentTicket]);
 
+const [tagModalVisible, setTagModalVisible] = useState(false);
+const [tagCategory, setTagCategory] = useState('');
+const [tagDescription, setTagDescription] = useState('');
+
+
   return (
     <>
       <main className="min-h-[715px] lg:min-h-[580px] px-4 sm:px-8 xl:px-[15px] pb-[30px] pt-6 bg-transparent">
@@ -560,6 +619,17 @@ const sendEmailNotification = async (
                 <h1 className="text-[24px] font-medium text-dark dark:text-white/[.87]">Helpdesk Management</h1>
               </div>
               <div className="flex items-center gap-2">
+
+              <Button
+                type="primary"
+                onClick={() => setTagModalVisible(true)}
+                icon={<PlusOutlined />}
+                className="h-10 bg-primary hover:bg-primary-hbr inline-flex items-center justify-center rounded-[4px] px-[20px] text-white dark:text-white/[.87]"
+              >
+                Add Ticket
+              </Button>
+
+
                 <Input
                   placeholder="Search queries..."
                   prefix={<SearchOutlined />}
@@ -595,12 +665,7 @@ const sendEmailNotification = async (
                     activeKey={currentTab}
                     onChange={setCurrentTab}
                     className="mb-6"
-                    items={[
-                      { key: 'opened', label: 'Opened' },
-                      { key: 'resolved', label: 'Resolved' },
-                      { key: 'reopened', label: 'Reopened' },
-                      { key: 'closed', label: 'Closed' },
-                    ]}
+                    
                   />
                   <div className="overflow-x-auto">
                     <Table
@@ -648,49 +713,15 @@ const sendEmailNotification = async (
             Close
           </Button>
         ]}
-        width={900}
+        width={400}
         className="ticket-detail-modal"
         bodyStyle={{ padding: "20px 24px" }}
         maskClosable={false}
       >
         {currentTicket ? (
           <div className="p-4 bg-white dark:bg-[#1b1e2b] rounded-lg shadow-sm">
-            <div className="grid grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               {/* Left Column - User Details */}
-              <div className="bg-regularBG dark:bg-[#323440] p-6 rounded-lg border border-gray-100 dark:border-gray-700">
-                <div className="space-y-4">
-                  <div className="border-b pb-3">
-                    <Text type="secondary" className="text-sm">User ID:</Text>
-                    <div className="mt-1">
-                      <Text strong className="text-base">{currentTicket.userDetails?.userID || currentTicket.userDetails?.uid || 'N/A'}</Text>
-                    </div>
-                  </div>
-                  <div className="border-b pb-3">
-                    <Text type="secondary" className="text-sm">Username:</Text>
-                    <div className="mt-1">
-                      <Text strong className="text-base">{currentTicket.userDetails?.name || currentTicket.customerName || 'N/A'}</Text>
-                    </div>
-                  </div>
-                  <div className="border-b pb-3">
-                    <Text type="secondary" className="text-sm">User Email:</Text>
-                    <div className="mt-1">
-                      <Text strong className="text-base">{currentTicket.userDetails?.email || currentTicket.email || 'N/A'}</Text>
-                    </div>
-                  </div>
-                  <div className="border-b pb-3">
-                    <Text type="secondary" className="text-sm">Phone Number:</Text>
-                    <div className="mt-1">
-                      <Text strong className="text-base">{currentTicket.userDetails?.phone || currentTicket.phone || 'N/A'}</Text>
-                    </div>
-                  </div>
-                  <div>
-                    <Text type="secondary" className="text-sm">Category:</Text>
-                    <div className="mt-1">
-                      <Text strong className="text-base">{formatCategory(currentTicket.category)}</Text>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               <div className="bg-regularBG dark:bg-[#323440] p-6 rounded-lg border border-gray-100 dark:border-gray-700">
                 <Text strong className="text-lg block mb-4">Ticket History</Text>
@@ -766,15 +797,14 @@ const sendEmailNotification = async (
                   maxSizeMB={10}
                   onUploadSuccess={(url) => {
                     responseForm.setFieldsValue({ attachmentURL: url });
-                  }}
+                  } }
                   onUploadStart={() => {
                     responseForm.setFieldsValue({ attachmentURL: '' });
-                  }}
+                  } }
                   onUploadError={(error) => {
                     console.error('Upload error:', error);
                     message.error('Failed to upload attachment');
-                  }}
-                />
+                  } } partnerUID={''}                />
               </Form.Item>
 
               <Form.Item name="attachmentURL" hidden>
@@ -817,6 +847,113 @@ const sendEmailNotification = async (
           )}
         </div>
       </Modal>
+      <Modal 
+  title={
+    <div style={{ padding: '12px 24px 0' }}>
+      <h2 style={{ margin: 0 }}>Create New Ticket</h2>
+    </div>
+  }
+  open={tagModalVisible}
+  onCancel={() => setTagModalVisible(false)}
+  footer={null}
+>
+  <div style={{ padding: '24px 24px' }}>
+    <Form
+      layout="vertical"
+      onFinish={async () => {
+        try {
+          const newTicketID = uuidv4(); // unique ID
+          await setDoc(doc(db, 'helpdesk', newTicketID), {
+            helpDeskID: `TICKET-${Date.now()}`,
+            category: tagCategory,
+            description: tagDescription,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            status: 'opened',
+            responses: {
+              opened: {
+                createdAt: serverTimestamp(),
+                response: tagDescription,
+                ...(attachmentURL && { attachmentURL }) // include if uploaded
+              }
+            },
+            userDetails: {
+              name: 'Guest User',
+              email: 'guest@example.com',
+              phone: 'N/A',
+              uid: 'guest',
+              userID: 'guest'
+            }
+          });
+
+          message.success('Ticket created successfully!');
+          setTagModalVisible(false);
+          setTagCategory('');
+          setTagDescription('');
+          setAttachmentURL('');
+          fetchTickets(); // optional: refresh tickets table
+        } catch (err) {
+          console.error('Error creating ticket:', err);
+          message.error('Failed to create ticket');
+        }
+      }}
+    >
+      <Form.Item
+        label="Category"
+        name="category"
+        rules={[{ required: true, message: 'Please select a category!' }]}
+      >
+        <Select
+          placeholder="Select a category"
+          onChange={(value) => setTagCategory(value)}
+        >
+          <Select.Option value="Account Related">Account Related</Select.Option>
+          <Select.Option value="Technical">Technical Support</Select.Option>
+          <Select.Option value="Billing">Billing</Select.Option>
+          <Select.Option value="Feature Request">Feature Request</Select.Option>
+          <Select.Option value="Other">Other</Select.Option>
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        label="Description"
+        name="description"
+        rules={[{ required: true, min: 10, message: 'Minimum 10 characters required' }]}
+      >
+        <Input.TextArea
+          rows={4}
+          placeholder="Describe your issue in detail (minimum 10 characters)"
+          maxLength={1000}
+          onChange={(e) => setTagDescription(e.target.value)}
+        />
+      </Form.Item>
+
+      <Form.Item label="Attachment (Optional)" name="attachment">
+        <FirebaseFileUploader
+          storagePath="helpdesk/attachments"
+          accept=".jpg,.png,.pdf,.doc,.docx"
+          maxSizeMB={15}
+          onUploadSuccess={(url) => setAttachmentURL(url)}
+          onUploadStart={() => setAttachmentURL('')}
+          onUploadError={(err) => {
+            console.error(err);
+            message.error('Upload failed!');
+          }}
+          partnerUID={''}
+        />
+      </Form.Item>
+
+      <Form.Item>
+        <div className="flex justify-end gap-2">
+          <Button onClick={() => setTagModalVisible(false)}>Cancel</Button>
+          <Button type="primary" htmlType="submit">Submit Ticket</Button>
+        </div>
+      </Form.Item>
+    </Form>
+  </div>
+</Modal>
+
+
     </>
   );
 }

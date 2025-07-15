@@ -3,8 +3,10 @@ import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase-secondary'; // Adjust the import based on your Firebase setup
 import Image from 'next/image';
+import { message } from 'antd';
 
 interface FirebaseFileUploaderProps {
+  partnerUID: string;
   storagePath?: string;
   accept?: string;
   maxSizeMB?: number;
@@ -14,15 +16,19 @@ interface FirebaseFileUploaderProps {
   disabled?: boolean;
 }
 
-export const FirebaseFileUploader = ({
-  storagePath = 'uploads/files',
-  accept = '*',
-  maxSizeMB = 10,
-  onUploadSuccess,
-  onUploadStart,
-  onUploadError,
-  disabled = false,
-}: FirebaseFileUploaderProps) => {
+export const FirebaseFileUploader = (props: FirebaseFileUploaderProps) => {
+  const {
+    partnerUID,
+    storagePath = `partners/${partnerUID}/attachments`,
+    accept = '*',
+    maxSizeMB = 10,
+    onUploadSuccess,
+    onUploadStart,
+    onUploadError,
+    disabled = false,
+  } = props;
+
+
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -57,33 +63,86 @@ export const FirebaseFileUploader = ({
       }
     }
   };
+  const convertImageToWebP = (file: File): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new (window.Image as { new(): HTMLImageElement })();
+    const reader = new FileReader();
 
-  const uploadFile = async (fileToUpload: File) => {
-    setUploading(true);
-    onUploadStart?.();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') return reject('Invalid file');
+      img.src = reader.result;
+    };
 
-    try {
-      const timestamp = Date.now();
-      const fileExtension = fileToUpload.name.split('.').pop();
-      const originalName = fileToUpload.name.split('.').slice(0, -1).join('.');
-      const filename = `${originalName}_${timestamp}.${fileExtension}`;
-      const storageRef = ref(storage, `${storagePath}/${filename}`);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject('Canvas not supported');
 
-      const snapshot = await uploadBytes(storageRef, fileToUpload);
-      const url = await getDownloadURL(snapshot.ref);
+      ctx.drawImage(img, 0, 0);
 
-      setDownloadUrl(url);
-      setFile(null);
-      onUploadSuccess?.(url, fileToUpload.type);
-    } catch (err) {
-      console.error('Upload failed:', err);
-      const error = err as Error;
-      setError('Upload failed. Please try again.');
-      onUploadError?.(error);
-    } finally {
-      setUploading(false);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const webpFile = new File([blob], file.name.replace(/\.\w+$/, '.webp'), { type: 'image/webp' });
+          resolve(webpFile);
+        } else {
+          reject('Failed to convert to WebP');
+        }
+      }, 'image/webp');
+    };
+
+    img.onerror = () => reject('Failed to load image');
+
+    reader.readAsDataURL(file);
+  });
+};
+
+
+const uploadFile = async (fileToUpload: File) => {
+  if (!partnerUID) {
+    console.warn('Partner UID is required to generate storage path!');
+    message.warning('Upload failed: Partner UID missing');
+    return;
+  }
+
+  setUploading(true);
+  onUploadStart?.();
+
+  try {
+    const timestamp = Date.now();
+    let file = fileToUpload;
+
+    if (fileToUpload.type.startsWith('image/') && fileToUpload.type !== 'image/webp') {
+      file = await convertImageToWebP(fileToUpload);
     }
-  };
+
+    const fileExtension = file.name.split('.').pop();
+    const originalName = file.name.split('.').slice(0, -1).join('.');
+    const filename = `${originalName}_${timestamp}.${fileExtension}`;
+    const storageRef = ref(storage, `${storagePath}/${filename}`);
+
+    const snapshot = await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
+
+    setDownloadUrl(url);
+    setFile(null);
+    onUploadSuccess?.(url, file.type);
+
+    // ✅ Toast for success
+    message.success('File uploaded successfully!');
+  } catch (err) {
+    console.error('Upload failed:', err);
+    const error = err as Error;
+    setError('Upload failed. Please try again.');
+    onUploadError?.(error);
+    message.error('File upload failed');
+  } finally {
+    setUploading(false);
+  }
+};
+
+
 
   const handleRemove = () => {
     setFile(null);

@@ -211,25 +211,26 @@ function MenuItems() {
           !topMenu && <UilTagAlt />,
           null,
         ),
-         getItem(
-          <Link href={`${path}/pages/settings`}>
-            {t('Settings')}
-          </Link>,
-          'settings',
-          !topMenu && (
-            <Link className="menuItem-icon" href={`${path}/pages/settings`}>
-              <UilSetting />
-            </Link>
-          ),
-          null,
-        ),
+getItem(
+  <Link href={`${path}/settings`}>
+    {t('Settings')}
+  </Link>,
+  `${path}/settings`,
+  !topMenu && (
+    <Link className="menuItem-icon" href={`${path}/settings`}>
+      <UilSetting />
+    </Link>
+  ),
+  null,
+),
+
         getItem(
-          <Link href={`${path}/pages/faq`}>
+          <Link href={`${path}/faq`}>
             {t('Faqs')}
           </Link>,
           'faq',
           !topMenu && (
-            <Link className="menuItem-icon" href={`${path}/pages/faq`}>
+            <Link className="menuItem-icon" href={`${path}/faq`}>
               <UilCircle />
             </Link>
           ),
